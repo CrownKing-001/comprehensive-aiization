@@ -203,15 +203,20 @@ const DEFINITION = {
     this.setData({
       ready: true,
       themeClass: settings.theme === 'light' ? 'theme-light' : '',
-      // 自己存过的套餐：只显示名字和摘要，点一下套用
-      savedTemplates: (store.shape.templates || []).map((t) => ({
-        id: t.id,
-        name: t.name,
-        meal: t.meal,
-        count: (t.items || []).length,
-        summary: (t.items || []).map((i) => i.name).join(' + '),
-        protein: Math.round((t.items || []).reduce((s, i) => s + (i.protein || 0), 0)),
-      })),
+      // 自己存过的套餐：只显示名字和摘要，点一下套用。
+      // items 逐项过滤 —— store 只保证外层数组没空洞，嵌套的 items 可能是脏的
+      // （手动改过的备份/旧版本写进去的），不过滤会让整页 refresh 抛错。
+      savedTemplates: (store.shape.templates || []).map((t) => {
+        const items = (t.items || []).filter((i) => i && typeof i === 'object');
+        return {
+          id: t.id,
+          name: t.name,
+          meal: t.meal,
+          count: items.length,
+          summary: items.map((i) => i.name).join(' + '),
+          protein: Math.round(items.reduce((s, i) => s + (i.protein || 0), 0)),
+        };
+      }),
       proteinTarget: target,
       calorieTarget,
       latestWeight: latestWeightVal,
@@ -429,7 +434,7 @@ const DEFINITION = {
     const id = e.currentTarget.dataset.id;
     const t = (store.shape.templates || []).find((x) => x.id === id);
     if (!t) return;
-    const picked = (t.items || []).map((it) => {
+    const picked = (t.items || []).filter((it) => it && typeof it === 'object').map((it) => {
       const f = foodById(it.foodId);
       return {
         foodId: it.foodId,

@@ -435,6 +435,35 @@ section('[13] 导航完整性');
   scanWxml(path.join(MP, 'pages'));
   T('指向 tabBar 页的入口都走 goTab', badTile.length === 0, badTile.join('; '));
 
+  // 反向也查：goTab 走的是 switchTab，只能打开 tabBar 页面。
+  // 如果 data-url 指向一个**非** tabBar 页（比如「今日」并入总览之后的
+  // /pages/today/today），switchTab 会静默失败 —— 不报错、不跳转、没日志，
+  // 用户只看到「点了没反应」。这个坑真的踩过。
+  const badTabTarget = [];
+  const scanWxml2 = (dir) => {
+    for (const f of fs.readdirSync(dir, { withFileTypes: true })) {
+      const p = path.join(dir, f.name);
+      if (f.isDirectory()) { scanWxml2(p); continue; }
+      if (!f.name.endsWith('.wxml')) continue;
+      const src = fs.readFileSync(p, 'utf8');
+      for (const m of src.matchAll(/<[a-z-]+[^>]*>/g)) {
+        const tag = m[0];
+        const u = /data-url="(\/pages\/[^"]+)"/.exec(tag);
+        if (!u) continue;
+        // 只查绑 goTab 的（navigateTo 才是非 tabBar 页的正确选择）
+        const h = /bindtap="([^"]+)"/.exec(tag);
+        if (!h || !/goTab$/.test(h[1])) continue;
+        // 指向自己所在宿主页 + data-seg 是允许的（切分段而非换页）
+        if (tabPaths.includes(u[1].slice(1))) continue;
+        if (/data-seg="/.test(tag)) continue;
+        badTabTarget.push(`${f.name}: goTab → ${u[1]}（不是 tabBar 页，switchTab 会静默失败）`);
+      }
+    }
+  };
+  scanWxml2(path.join(MP, 'pages'));
+  T('goTab 的目标都是 tabBar 页（否则 switchTab 静默失败）',
+    badTabTarget.length === 0, badTabTarget.join('; '));
+
   // 合并页必须能取到全部子模块定义（文件末尾的 module.exports = DEFINITION）
   const { buildHost } = require(path.join(MP, 'utils', 'tabHost.js'));
   const check = (name, expect) => {
@@ -1090,6 +1119,212 @@ section('[19] 健康 · 月历打卡与连续天数');
   store.setSettings({ trainDays: '' });
   p.refresh();
   T('没设训练日时 hasPlan=false', p.data.hasPlan === false);
+
+  store.resetAll();
+}
+
+// ══ 20. store 数组里的空洞 ══
+// wx.getStorageSync 返回的是 JSON.parse 的结果，本地存储被写坏、或者用户手动
+// 粘贴备份时留下 [null, {...}] 这种空洞是完全可能的。数组里夹一个 null，
+// 各页面的 `.map(m => m.xxx)` / `sort((a,b) => a.done...)` 就会当场抛错 ——
+// 而 store 的 notify 是逐订阅者 try/catch 的，页面不白屏，只是**停在旧数据上
+// 不再更新**，表现为「点了没反应」，比白屏更难查。所以在 store 这一层统一收敛。
+section('[20] store 数组里的空洞');
+{
+  T('对象数组过滤 null/undefined',
+    (() => {
+      store.resetAll();
+      store.setMilestones([null, { id: 'm1', title: '真的', date: '2026-11-01' },
+        undefined, { id: 'm2', title: '也是', date: '2026-12-01' }]);
+      return store.shape.milestones.length === 2
+        && store.shape.milestones.map((m) => m.id).join(',') === 'm1,m2';
+    })());
+
+  // trainDone 存的是日期字符串数组 —— 不能被「元素必须是对象」的校验滤没，
+  // 这是打卡功能的地基（曾因为统一用对象校验而把打卡记录全部清空）。
+  T('日期字符串数组（打卡记录）不被误滤',
+    (() => {
+      store.resetAll();
+      store.setTrainDone([null, '2026-10-12', '2026-10-09', undefined, '2026-10-07']);
+      return store.shape.trainDone.length === 3
+        && store.shape.trainDone.join(',') === '2026-10-12,2026-10-09,2026-10-07';
+    })());
+
+  T('本地存储里的空洞也会被 hydrate 过滤',
+    (() => {
+      store.resetAll();
+      // 直接用存储键写一份带空洞的数据，模拟本地存储被写坏
+      const SK = require(path.join(MP, 'utils', 'storage.js')).KEYS;
+      mem[SK.milestones] = [null, { id: 'z1', title: '存储里的', date: '2026-11-01' }, null];
+      store.ready = false;
+      store.hydrate();
+      return store.shape.milestones.length === 1;
+    })());
+
+  // 10 个 setter × 各种垃圾输入，一律收敛成干净数组
+  const SETTERS = [
+    ['milestones', 'setMilestones'], ['todos', 'setTodos'], ['courses', 'setCourses'],
+    ['assignments', 'setAssignments'], ['templates', 'setTemplates'], ['run', 'setRun'],
+    ['diet', 'setDiet'], ['health', 'setHealth'], ['trainDone', 'setTrainDone'],
+    ['calendars', 'setCalendars'],
+  ];
+  const junk = [['null', null], ['undefined', undefined], ['数字', 42], ['字符串', 'abc'],
+    ['对象', {}], ['布尔', true], ['函数', () => {}], ['含空洞数组', [null, { id: 'a' }]]];
+  const offenders = [];
+  for (const [key, setter] of SETTERS) {
+    for (const [label, value] of junk) {
+      store.resetAll();
+      let threw = null;
+      try { store[setter](value); } catch (e) { threw = e.message; }
+      const got = store.shape[key];
+      const okShape = key === 'courses'
+        ? (got === null || (Array.isArray(got) && got.every((x) => x && typeof x === 'object')))
+        : (Array.isArray(got) && got.every((x) => x && typeof x === 'object'));
+      if (threw || !okShape) offenders.push(`${setter}(${label})`);
+    }
+  }
+  T('10 个 setter × 8 种垃圾输入全部收敛成干净数组', offenders.length === 0, offenders.join(', '));
+
+  // courses 用 null 表示「还没导课」，不能被收敛成 []
+  store.resetAll();
+  store.setCourses(null);
+  T('setCourses(null) 仍是 null（表示还没导课）', store.shape.courses === null);
+
+  // 嵌套 items 也要抗空洞：store 只保证外层数组，页面自己 map 嵌套时要过滤
+  store.resetAll();
+  store.setTemplates([{ id: 'tp', name: '脏套餐', meal: '早餐',
+    items: [null, { foodId: 'f1', name: '鸡蛋', qty: 2, protein: 12, calories: 140 }] }]);
+  let dp = null;
+  {
+    const saved = global.Page;
+    global.Page = (x) => { dp = x; };
+    const f = path.join(MP, 'pages/diet/diet.js');
+    delete require.cache[require.resolve(f)];
+    require(f);
+    global.Page = saved;
+  }
+  dp = Object.assign({}, dp, {
+    data: JSON.parse(JSON.stringify(dp.data || {})),
+    setData(patch, cb) {
+      for (const k of Object.keys(patch)) this.data[k] = patch[k];
+      if (typeof cb === 'function') cb();
+    },
+  });
+  let nestedErr = null;
+  try { dp.onLoad(); } catch (e) { nestedErr = e.message; }
+  T('饮食页能加载带空洞 items 的套餐', !nestedErr, nestedErr);
+  T('  摘要只统计有效项', dp.data.savedTemplates[0].count === 1);
+  T('  摘要文本正确', dp.data.savedTemplates[0].summary === '鸡蛋');
+  T('  蛋白合计正确', dp.data.savedTemplates[0].protein === 12);
+  nestedErr = null;
+  try { dp.applySaved({ currentTarget: { dataset: { id: 'tp' } } }); } catch (e) { nestedErr = e.message; }
+  T('  套用时不崩', !nestedErr, nestedErr);
+
+  // 全量：16 个页面在空洞数据下都要能加载
+  const allPages = ['dashboard', 'today', 'courses', 'todos', 'assignments', 'week',
+    'coursescan', 'calendaracademic', 'run', 'diet', 'health', 'milestones',
+    'analysis', 'settings', 'tasks', 'healthhub'];
+  const crashed = [];
+  for (const name of allPages) {
+    store.resetAll();
+    store.setMilestones([null, { id: 'm', title: 'x', date: '2026-11-01' }]);
+    store.setTodos([null, { id: 't', text: 'x' }]);
+    store.setCourses([null, { id: 'c', name: 'x', day: 1, weeks: [1] }]);
+    store.setTemplates([null, { id: 'tp', name: 'x', meal: '早餐', items: [null, { name: 'y' }] }]);
+    store.setCalendars([null, { id: 'cal', name: 'x', events: [null, { date: '2026-10-01', title: 'y' }] }]);
+    try {
+      let def = null;
+      const saved = global.Page;
+      global.Page = (x) => { def = x; };
+      const f = path.join(MP, 'pages', name, `${name}.js`);
+      delete require.cache[require.resolve(f)];
+      require(f);
+      global.Page = saved;
+      const pg = Object.assign({}, def, {
+        data: JSON.parse(JSON.stringify(def.data || {})),
+        setData(patch) { for (const k of Object.keys(patch)) this.data[k] = patch[k]; },
+      });
+      if (pg.onLoad) pg.onLoad();
+    } catch (e) {
+      crashed.push(`${name}: ${e.message}`);
+    }
+  }
+  T('16 个页面在空洞数据下都能加载', crashed.length === 0, crashed.join(' | '));
+
+  store.resetAll();
+}
+
+// ══ 21. 重要事项 · 提前提醒天数可编辑 ══
+// 桌面版在编辑表单里有「提前提醒（天）」（Milestones.tsx:273-283），
+// 分析页用它判断「临近」，重要事项页用它给「接下来」标红。
+// 之前这个字段只在保存时原样带走、界面上没有输入框 —— 值永远是默认 7，
+// 用户改了也不生效，等于这个设置不存在。
+section('[21] 重要事项 · 提前提醒天数可编辑');
+{
+  store.resetAll();
+  const p = loadPage('milestones');
+  p.onLoad();
+
+  T('新建时默认 7 天', p.data.draft.remindDaysBefore === 7, String(p.data.draft.remindDaysBefore));
+
+  p.setData({ editing: true, draft: Object.assign({}, p.data.draft, { title: '期末考试', date: '2026-11-01' }) });
+  p.onDraftInput({ currentTarget: { dataset: { field: 'remindDaysBefore' } }, detail: { value: '14' } });
+  T('输入 14 后草稿里是数字 14',
+    p.data.draft.remindDaysBefore === 14 && typeof p.data.draft.remindDaysBefore === 'number',
+    `${typeof p.data.draft.remindDaysBefore} ${p.data.draft.remindDaysBefore}`);
+  p.save();
+  T('  保存后事项带 14', store.shape.milestones[0].remindDaysBefore === 14,
+    JSON.stringify(store.shape.milestones[0].remindDaysBefore));
+
+  // 编辑已有事项要回填真实值，不能永远是 7
+  p.startEdit({ currentTarget: { dataset: { id: store.shape.milestones[0].id } } });
+  T('编辑时回填真实值 14', p.data.draft.remindDaysBefore === 14, String(p.data.draft.remindDaysBefore));
+  p.onDraftInput({ currentTarget: { dataset: { field: 'remindDaysBefore' } }, detail: { value: '3' } });
+  p.save();
+  T('  改成 3 生效', store.shape.milestones[0].remindDaysBefore === 3);
+
+  // 0 是有意义的值（当天才提醒），不能被当成「空」
+  p.onDraftInput({ currentTarget: { dataset: { field: 'remindDaysBefore' } }, detail: { value: '0' } });
+  T('0 是合法值（当天提醒）', p.data.draft.remindDaysBefore === 0, String(p.data.draft.remindDaysBefore));
+  p.save();
+  T('  存进去仍是 0，没被当成空值', store.shape.milestones[0].remindDaysBefore === 0,
+    JSON.stringify(store.shape.milestones[0].remindDaysBefore));
+
+  // 清空是「正在输入」的中间态，保存时兜底
+  p.onDraftInput({ currentTarget: { dataset: { field: 'remindDaysBefore' } }, detail: { value: '' } });
+  T('清空后草稿是空串（允许正在输入）', p.data.draft.remindDaysBefore === '');
+  p.save();
+  T('  保存时兜底成 7', store.shape.milestones[0].remindDaysBefore === 7,
+    JSON.stringify(store.shape.milestones[0].remindDaysBefore));
+
+  // 脏输入不崩、不写坏
+  p.onDraftInput({ currentTarget: { dataset: { field: 'remindDaysBefore' } }, detail: { value: 'abc' } });
+  T('非数字输入收敛到 0', p.data.draft.remindDaysBefore === 0, String(p.data.draft.remindDaysBefore));
+  p.onDraftInput({ currentTarget: { dataset: { field: 'remindDaysBefore' } }, detail: { value: '-5' } });
+  T('负数夹到 0', p.data.draft.remindDaysBefore === 0, String(p.data.draft.remindDaysBefore));
+
+  // 别的字段不受这个特判影响
+  p.onDraftInput({ currentTarget: { dataset: { field: 'place' } }, detail: { value: '教三-201' } });
+  T('其他字段仍按原样存字符串', p.data.draft.place === '教三-201', String(p.data.draft.place));
+
+  // 分析页按每条事项自己的阈值判断「临近」，不是写死 7
+  store.resetAll();
+  const now = store.today;
+  const shift = (n) => {
+    const d = new Date(now.getTime() + n * 86400000);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  };
+  store.setMilestones([
+    { id: 'ra', title: '三天后·提前7天', date: shift(3), done: false, remindDaysBefore: 7 },
+    { id: 'rb', title: '三天后·提前1天', date: shift(3), done: false, remindDaysBefore: 1 },
+  ]);
+  const an = loadPage('analysis');
+  an.onLoad();
+  const byId = {};
+  an.data.milestones.forEach((m) => { byId[m.id] = m; });
+  T('分析页：提前 7 天的算「临近」', byId.ra.urgent === true, JSON.stringify(byId.ra));
+  T('  提前 1 天的不算「临近」', byId.rb.urgent === false, JSON.stringify(byId.rb));
+  T('  两条阈值不同，说明读的是各自的设置', byId.ra.urgent !== byId.rb.urgent);
 
   store.resetAll();
 }

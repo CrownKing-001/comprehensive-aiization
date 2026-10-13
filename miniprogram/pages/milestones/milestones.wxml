@@ -72,10 +72,20 @@
         </view>
       </view>
 
-      <view class="field">
-        <view class="field-label">地点（可选）</view>
-        <input class="input" value="{{draft.place}}" data-field="place" bindinput="onDraftInput"
-          placeholder="如：教三-201" placeholder-class="input-ph" cursor-spacing="24" />
+      <view class="field-row">
+        <view class="field">
+          <view class="field-label">地点（可选）</view>
+          <input class="input" value="{{draft.place}}" data-field="place" bindinput="onDraftInput"
+            placeholder="如：教三-201" placeholder-class="input-ph" cursor-spacing="24" />
+        </view>
+        <!-- 提前提醒天数：分析页的「临近」红标和「接下来」都用它，
+             以前只能吃默认值 7，用户改不了。 -->
+        <view class="field">
+          <view class="field-label">提前提醒（天）</view>
+          <input class="input" type="number" value="{{draft.remindDaysBefore}}"
+            data-field="remindDaysBefore" bindinput="onDraftInput"
+            placeholder="7" placeholder-class="input-ph" cursor-spacing="24" />
+        </view>
       </view>
 
       <view class="field">

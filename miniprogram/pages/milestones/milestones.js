@@ -229,6 +229,14 @@ Page({
 
   onDraftInput(e) {
     const field = e.currentTarget.dataset.field;
+    // 提前提醒天数是数字：桌面版也是 onChange 里 Number(...) || 0。
+    // 留着字符串的话，分析页那边 `d <= remind` 会变成字符串比较，结果不对。
+    if (field === 'remindDaysBefore') {
+      const raw = String(e.detail.value).trim();
+      // 允许暂时留空（正在输入），保存时再兜底成默认值
+      this.setData({ 'draft.remindDaysBefore': raw === '' ? '' : Math.max(0, Math.floor(Number(raw) || 0)) });
+      return;
+    }
     this.setData({ [`draft.${field}`]: e.detail.value });
   },
 
@@ -290,7 +298,12 @@ Page({
       time: d.time || undefined,
       place: String(d.place || '').trim() || undefined,
       note: String(d.note || '').trim() || undefined,
-      remindDaysBefore: d.remindDaysBefore,
+      // 留空/非法一律回到默认 7（桌面版读的时候是 `?? 7`）。
+      // 注意 0 是有意义的值（表示「当天才提醒」），不能被当成空值吞掉。
+      remindDaysBefore: d.remindDaysBefore === '' || d.remindDaysBefore === undefined
+        || d.remindDaysBefore === null || isNaN(Number(d.remindDaysBefore))
+        ? 7
+        : Math.max(0, Math.floor(Number(d.remindDaysBefore))),
       done: !!d.done,
       pinned: d.pinned,
       checklist: (d.checklist || []).map((c) => String(c).trim()).filter(Boolean),

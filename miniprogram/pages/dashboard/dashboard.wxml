@@ -149,7 +149,11 @@
     <view class="card-head">
       <view class="icon-chip tone-sky">🕐</view>
       <view class="card-head-title">今日时间轴</view>
-      <view class="head-link" data-url="/pages/today/today" bindtap="dashboard_goTab">查看详情 →</view>
+      <!-- 「今日」已并入总览，不再是 tabBar 页面。
+           用 switchTab 打开 /pages/today/today 会**静默失败**（不报错也不跳），
+           所以这里指向总览自己并带上 seg，由 onShow 消费 pendingSeg 切到今日段。 -->
+      <view class="head-link" data-url="/pages/dashboard/dashboard" data-seg="today"
+        bindtap="dashboard_goTab">查看详情 →</view>
     </view>
     <view class="card-body">
       <view class="empty" wx:if="{{dashboard_timeline.length === 0}}">
