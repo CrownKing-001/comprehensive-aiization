@@ -1744,6 +1744,36 @@ section('[24] 小程序运行时兼容性（不能用 Node 专有 API）');
       for (const k of ['data', 'onLoad', 'onShow', 'onUnload']) {
         if (reg[k] === undefined) results.push(`${name}: 缺 ${k}`);
       }
+      // 光注册成功不够 —— 子模块的 data 是 host.onLoad() 里才并进来的，
+      // 而且 onLoad 里还会调子模块的 onLoad，那里同样是 Node 专有 API
+      // 的高发区。所以这里也要真跑一遍。
+      const inst = Object.assign({}, reg, {
+        data: JSON.parse(JSON.stringify(reg.data || {})),
+        setData(patch, cb) {
+          for (const k of Object.keys(patch)) {
+            if (k.includes('.')) {
+              const q = k.split('.');
+              let t = this.data;
+              for (let i = 0; i < q.length - 1; i++) t = t[q[i]];
+              if (t) t[q[q.length - 1]] = patch[k];
+              continue;
+            }
+            this.data[k] = patch[k];
+          }
+          if (typeof cb === 'function') cb();
+        },
+      });
+      try {
+        inst.onLoad();
+      } catch (e) {
+        results.push(`${name}: onLoad 抛 ${e.message}`);
+      }
+      // 合并页的 data 键应该远多于单个页面（子模块的都并进来了）。
+      // 取不到子模块时 buildHost 只 console.error 再 continue，
+      // 页面照样注册成功、onLoad 也不抛 —— 只有键数能暴露。
+      const n = Object.keys(inst.data || {}).length;
+      const minKeys = { dashboard: 20, tasks: 20, healthhub: 20 }[name] || 5;
+      if (n < minKeys) results.push(`${name}: data 只有 ${n} 个键（应 >= ${minKeys}，子模块可能没挂上）`);
     }
   } finally {
     // 一定要还原，否则后面的用例全废
@@ -1751,7 +1781,7 @@ section('[24] 小程序运行时兼容性（不能用 Node 专有 API）');
     Module.prototype.require.cache = realCache;
     Module.prototype.require.resolve = realResolve;
   }
-  T('  5 个 tabBar 页在「无 Node API」环境下都能注册', results.length === 0, results.join('; '));
+  T('  5 个 tabBar 页在「无 Node API」环境下都能注册 + onLoad 通过', results.length === 0, results.join('; '));
 
   // ── 24d. 三个宿主页确实取到了全部子模块 ──
   // buildHost 取不到子模块时只 console.error 然后 continue，
