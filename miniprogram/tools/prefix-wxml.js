@@ -67,13 +67,21 @@ function prefixWxml(pageName, opts) {
       lits.push(s);
       return '\u0000' + (lits.length - 1) + '\u0000';
     });
-    // item.xxx / index.xxx 整体保留：item 是 wx:for 变量
-    work = work.replace(/\b(item|index)\s*\.\s*[a-zA-Z_$][\w$]*/g, (s) => s.replace(/\./g, '\u0001'));
+    // item.xxx / index.xxx 整体保留：item 是 wx:for 变量。
+    // 这里把点号换成 \u0001 只是为了让下面的属性名判断能识别，
+    // 关键是**连属性名一起**换成占位符 —— 否则属性名会被当成根标识符，
+    // 只要它恰好和页面 data 的某个键重名（meal / week / weight / sleep…）
+    // 就会被加上前缀，变成 item.diet_meal 这种不存在的键，页面静默变空白。
+    const fields = [];
+    work = work.replace(/\b(item|index)\s*\.\s*[a-zA-Z_$][\w$]*/g, (s) => {
+      fields.push(s.replace(/\s+/g, ''));
+      return '\u0002' + (fields.length - 1) + '\u0002';
+    });
     // 给根标识符加前缀
     work = work.replace(/([a-zA-Z_$][\w$]*)/g, (name, _g, offset) => {
       const before = work.slice(0, offset);
-      // 前面是点号说明它是属性名，不动
-      if (/[\w$]\s*\.\s*$/.test(before)) return name;
+      // 前面是点号（含已占位的 \u0001）说明它是属性名，不动
+      if (/[\w$]\s*[.\u0001]\s*$/.test(before)) return name;
       if (NEVER.has(name)) return name;
       if (name === 'item' || name === 'index') return name;
       if (['true', 'false', 'null', 'undefined'].includes(name)) return name;
@@ -81,6 +89,7 @@ function prefixWxml(pageName, opts) {
       return prefix + name;
     });
     // 还原
+    work = work.replace(/\u0002(\d+)\u0002/g, (_s, i) => fields[+i]);
     work = work.replace(/\u0001/g, '.');
     work = work.replace(/\u0000(\d+)\u0000/g, (_s, i) => lits[+i]);
     return '{{' + work + '}}';

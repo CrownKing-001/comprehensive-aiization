@@ -1,21 +1,31 @@
-test(miniprogram): 备份导入导出端到端用例（含桌面备份兼容性）
+fix(miniprogram): 健康合并页 7 处绑定失效 —— 生成器误伤嵌套字段
 
-验收标准点名要求「备份导入导出」可用，之前只验过「不崩」，
-没有验过真的能来回。补上完整链路：
+上一轮用 prefix-wxml.js 机械生成 healthhub.wxml 时，把 wx:for 里的
+嵌套字段也加上了页面前缀，页面不报错、只是渲染成空白：
 
-  · 造数据 → 导出到剪贴板 → 清空 → 导入 → 逐字段比对
-  · 桌面版备份能否直接导入（这是移植的关键卖点）
-  · 6 种坏备份不崩溃
+  item.meal      → item.diet_meal     「今日明细按餐次」的餐次名全空
+  item.meal      → item.diet_meal     套餐卡的「· 午餐」后缀全空
+  item.week      → item.run_week      「第 N 周」标签全空
+  item.barWidth  → item.run_barWidth  每个周条宽度 0% → 柱状图整块空白
+  item.weight    → item.health_weight 历史数据「kg」前面没数字
+  item.sleep     → item.health_sleep  同上
+  item.steps     → item.health_steps  同上
 
-查证结论（都不是 bug，是测试预期写错了）：
-  · 桌面版 exportAll 返回的是**解析后的对象**，不是 JSON 字符串 ——
-    它的存储层写入时 stringify、读取时 parse，内存里就是对象。
-    我一开始按 JSON 字符串造 mock，导入后变成 105 门课。
-  · dietSeed 和 notes 不导出，与桌面版一致：前者是「哪些食物进过种子库」
-    的本地标记、后者是临时便签，属可再生的本地状态。
-  · 13 个存储键与桌面版逐字节相同，桌面备份可无损导入。
+根因在 tools/prefix-wxml.js：为了标记「这是属性名」把点号换成 \u0001，
+但紧接着的判断用的是「前面是字面点号」的正则，永远匹配不上。
+于是属性名被当成根标识符，只要它恰好和页面 data 的某个键重名
+（meal / week / barWidth / weight / sleep / steps 全都是），就被加前缀。
 
-同时把剪贴板 mock 从「只读空串」改成可读写，否则导出写进去、
-导入读不出来，测了个寂寞。
+改法：把 item.xxx **整体**换成占位符，还原时再换回来；
+属性名判断同时认字面点号和占位符。
 
-验证：自测 117/117
+独立页面不受影响（run/diet/health 自己没做前缀化），
+tasks.wxml 也没事 —— 它的 todos_text、assignments_due 是页面级表单字段，
+本来就该带前缀。
+
+顺带加了 tools/check-item-fields.js：按作用域检查每个 wx:for 区间内的
+item.xxx 是否在页面 JS 里存在，并专门抓「item.<模块名>_xxx」这种
+误加前缀的形态。这次就是靠它确认修复到位的。
+
+验证：自测 126/126，编译 0 错误（329.8 KB），WXML 平衡 0 错误，
+      检查器 0 处「疑似误加前缀」

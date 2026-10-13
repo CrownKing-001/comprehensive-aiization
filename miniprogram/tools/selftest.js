@@ -634,6 +634,62 @@ section('[16] 备份导入导出');
   store.resetAll();
 }
 
+// ══ 17. 文字解析：校历事项规则 ══
+// 桌面版原有 21 条事项规则必须一条不少，另加 7 条（期中考试 / 补考 /
+// 四六级 / 计算机等级 / 运动会 / 选课 / 实习）。
+// 注意：事项必须带「日号」才会生成 —— 只有「6月 中秋节」没有可挂靠的日期，
+// 这是正确行为，不是漏识别。
+section('[17] 文字解析 · 校历事项');
+{
+  const tp = require(path.join(MP, 'utils', 'textParse.js'));
+
+  const ORIGINAL = [
+    ['9月1日 军训开始', '军训及入学教育'], ['9月5日 新生报到', '新生报到'],
+    ['9月8日 新生开课', '新生开课'], ['9月10日 正式上课', '正式上课'],
+    ['1月5日 考试周', '期末考试周'], ['1月20日 寒假开始', '寒假'],
+    ['7月10日 暑假', '暑假'], ['9月29日 中秋节', '中秋节'],
+    ['10月1日 国庆节', '国庆节'], ['1月1日 元旦', '元旦'],
+    ['2月16日 除夕', '除夕'], ['2月17日 春节', '春节'],
+    ['3月8日 妇女节', '妇女节'], ['4月5日 清明节', '清明节'],
+    ['5月1日 劳动节', '劳动节'], ['5月4日 青年节', '青年节'],
+    ['6月1日 儿童节', '儿童节'], ['6月10日 端午节', '端午节'],
+    ['7月1日 建党节', '建党节'], ['8月1日 建军节', '建军节'],
+    ['6月30日 毕业典礼', '毕业生离校'],
+  ];
+  const missOrig = ORIGINAL.filter(([line, want]) =>
+    !tp.parseCalendarText(line).events.some((e) => e.title === want));
+  T('桌面版 21 条原有规则全部命中', missOrig.length === 0,
+    missOrig.map((m) => m[0]).join('; '));
+
+  const ADDED = [
+    ['11月5日 期中考试', '期中考试'], ['3月1日 补考', '补考'],
+    ['6月15日 英语四级考试', '四六级考试'], ['3月20日 计算机等级考试', '计算机等级考试'],
+    ['4月20日 校运动会', '运动会'], ['6月1日 选课开始', '选课'],
+    ['7月1日 实习', '实习实践'],
+  ];
+  const missAdded = ADDED.filter(([line, want]) =>
+    !tp.parseCalendarText(line).events.some((e) => e.title === want));
+  T('新增 7 条规则全部命中', missAdded.length === 0, missAdded.map((m) => m[0]).join('; '));
+
+  // 无日号 → 不产生事项（没有可挂靠的日期）
+  T('无日号不产生事项', tp.parseCalendarText('6月 中秋节').events.length === 0);
+  T('  补上日号即可识别', tp.parseCalendarText('9月29日 中秋节').events.length === 1);
+
+  // 周次表 → 反推学期起点
+  const c = tp.parseCalendarText('第 1 周：9.7–9.13\n第 2 周：9.14–9.20\n第 3 周：9.21–9.27');
+  T('解析周次表', c.weeks.length === 3, c.weeks.length + ' 周');
+  T('  反推学期起点', c.semesterStart === '2026-09-07', c.semesterStart);
+
+  // 课表文字解析
+  const r = tp.parseTimetableText(
+    '周一\n高等数学，1-2节，教一A101，1-16周\n大学英语，3-4节，外语楼B202，1-16周\n周二\n体育，5-6节，体育馆，1-16周');
+  T('课表解析出 3 门课', r.courses.length === 3, r.courses.length + '');
+  const math = r.courses.filter((x) => x.name === '高等数学')[0];
+  T('  节次转成时间', !!math && math.start === '08:00' && math.end === '09:40',
+    math ? math.start + '-' + math.end : '(无)');
+  T('  地点与周次', !!math && math.place === '教一A101' && math.weeks.length === 16);
+}
+
 console.log('\n══════════════════════════════');
 console.log(`  验收: ${ok} 通过 / ${bad} 失败`);
 process.exit(bad ? 1 : 0);

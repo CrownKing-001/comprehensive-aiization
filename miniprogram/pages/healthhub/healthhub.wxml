@@ -52,7 +52,7 @@
         <!-- 今日明细按餐次 -->
         <view class="meal-group" wx:for="{{diet_meals}}" wx:key="meal">
           <view class="meal-head">
-            <text class="meal-name">{{item.diet_meal}}</text>
+            <text class="meal-name">{{item.meal}}</text>
             <text class="meal-sum">{{item.protein}}g / {{item.calories}}kcal</text>
           </view>
           <view class="meal-item" wx:for="{{item.items}}" wx:for-item="it" wx:key="idx">
@@ -155,7 +155,7 @@
           <view class="tpl-card" wx:for="{{diet_templates}}" wx:key="id" data-id="{{item.id}}" bindtap="diet_applyTemplate">
             <view class="tpl-name">{{item.name}}</view>
             <view class="tpl-sum">{{item.summary}}</view>
-            <view class="tpl-num">{{item.protein}}g 蛋白 · {{item.diet_meal}}</view>
+            <view class="tpl-num">{{item.protein}}g 蛋白 · {{item.meal}}</view>
           </view>
         </view>
       </view>
@@ -385,9 +385,9 @@
         </view>
         <block wx:else>
           <view class="week-bar-row" wx:for="{{run_byWeek}}" wx:key="week">
-            <text class="week-bar-label {{item.isCurrent ? 'is-current' : ''}}">第{{item.run_week}}周</text>
+            <text class="week-bar-label {{item.isCurrent ? 'is-current' : ''}}">第{{item.week}}周</text>
             <view class="bar-track bar-track-sm">
-              <view class="bar-fill bar-{{item.tone}}" style="width: {{item.run_barWidth}}%"></view>
+              <view class="bar-fill bar-{{item.tone}}" style="width: {{item.barWidth}}%"></view>
             </view>
             <text class="week-bar-count">{{item.n}} 次</text>
           </view>
@@ -515,9 +515,9 @@
         <block wx:else>
           <view class="log-row" wx:for="{{health_logs}}" wx:key="date">
             <text class="log-date">{{item.date}}</text>
-            <text class="hd-weight">{{item.health_weight}}kg</text>
-            <text class="hd-sleep">{{item.health_sleep}}h</text>
-            <text class="hd-steps">{{item.health_steps}}步</text>
+            <text class="hd-weight">{{item.weight}}kg</text>
+            <text class="hd-sleep">{{item.sleep}}h</text>
+            <text class="hd-steps">{{item.steps}}步</text>
             <view class="icon-btn tone-emerald btn-mini" data-date="{{item.date}}" bindtap="health_startEdit">✏️</view>
             <view class="icon-btn tone-rose btn-mini" data-date="{{item.date}}" bindtap="health_removeLog">🗑️</view>
           </view>
