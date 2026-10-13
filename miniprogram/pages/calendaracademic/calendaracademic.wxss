@@ -1,0 +1,164 @@
+/* 校历识别页样式 */
+
+/* ── 提示条 ───────────────────────────────────── */
+.msg-box.is-ok {
+  background: rgba(16, 185, 129, 0.1);
+  border-color: rgba(16, 185, 129, 0.35);
+  color: #6ee7b7;
+}
+
+.msg-box.is-err {
+  background: rgba(244, 63, 94, 0.1);
+  border-color: rgba(244, 63, 94, 0.35);
+  color: #fb7185;
+}
+
+/* ── 指令原文 ─────────────────────────────────── */
+.prompt-box {
+  margin-top: 18rpx;
+  max-height: 640rpx;
+  overflow-y: auto;
+  background: var(--surface-0);
+  border: 2rpx solid var(--border-2);
+  border-radius: 14rpx;
+  padding: 20rpx;
+}
+
+.prompt-text {
+  font-size: 21rpx;
+  line-height: 1.75;
+  color: var(--text-3);
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+/* ── 输入区 ───────────────────────────────────── */
+.textarea {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 300rpx;
+  background: var(--surface-0);
+  border: 2rpx solid var(--border-2);
+  border-radius: 16rpx;
+  padding: 20rpx 22rpx;
+  font-size: 23rpx;
+  color: var(--text-1);
+  line-height: 1.7;
+}
+
+/* ── 识别记录 ─────────────────────────────────── */
+.doc-item {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  background: var(--surface-3);
+  border: 2rpx solid var(--border-2);
+  border-radius: 16rpx;
+  padding: 18rpx 20rpx;
+  margin-bottom: 12rpx;
+}
+
+.doc-item.is-active {
+  border-color: rgba(16, 185, 129, 0.5);
+  background: rgba(16, 185, 129, 0.08);
+}
+
+.doc-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+}
+
+.doc-name {
+  font-size: 24rpx;
+  font-weight: 500;
+  color: var(--text-1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.doc-meta {
+  font-size: 20rpx;
+  color: var(--text-4);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── 原始文字回看 ─────────────────────────────── */
+.raw-box {
+  max-height: 460rpx;
+  overflow-y: auto;
+  background: var(--surface-0);
+  border: 2rpx solid var(--border-2);
+  border-radius: 14rpx;
+  padding: 18rpx 20rpx;
+  margin-bottom: 20rpx;
+}
+
+.raw-line {
+  display: block;
+  font-size: 20rpx;
+  line-height: 1.7;
+  color: var(--text-4);
+  word-break: break-all;
+}
+
+/* ── 核对条目 ─────────────────────────────────── */
+.draft-item {
+  border: 2rpx solid var(--border-2);
+  border-radius: 18rpx;
+  background: var(--surface-3);
+  padding: 20rpx 22rpx;
+  margin-bottom: 14rpx;
+  opacity: 0.6;
+}
+
+.draft-item.is-on {
+  opacity: 1;
+  border-color: rgba(16, 185, 129, 0.4);
+  background: rgba(16, 185, 129, 0.06);
+}
+
+.draft-top {
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
+}
+
+.draft-emoji {
+  font-size: 30rpx;
+  flex-shrink: 0;
+}
+
+.draft-title {
+  flex: 1;
+  min-width: 0;
+}
+
+.draft-fields {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin-top: 14rpx;
+  flex-wrap: wrap;
+}
+
+.picker-sm {
+  height: 56rpx;
+  line-height: 56rpx;
+  padding: 0 18rpx;
+  font-size: 22rpx;
+  border-radius: 12rpx;
+}
+
+.draft-raw {
+  font-size: 19rpx;
+  color: var(--text-4);
+  line-height: 1.6;
+  margin-top: 12rpx;
+  word-break: break-all;
+}

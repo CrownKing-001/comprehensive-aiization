@@ -29,7 +29,6 @@
   color: var(--text-3);
 }
 
-.hm-day-head { background: transparent; }
 
 .hm-cell {
   width: 74rpx;
@@ -195,12 +194,6 @@
 
 .ms-mini.is-urgent .ms-mini-days {
   color: #fb7185;
-  font-weight: 600;
-}
-
-/* ── 通用 ─────────────────────────────────────── */
-.hl {
-  color: #34d399;
   font-weight: 600;
 }
 

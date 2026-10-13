@@ -1,0 +1,156 @@
+/* 周计划页样式 */
+
+/* ── 周次切换条 ───────────────────────────────── */
+.wk-nav {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.wk-arrow {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 50%;
+  background: var(--surface-3);
+  border: 2rpx solid var(--border-2);
+  color: var(--text-2);
+  font-size: 34rpx;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.wk-arrow.is-off { opacity: 0.35; }
+
+.wk-scroll {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.wk-tabs {
+  display: inline-flex;
+  gap: 10rpx;
+}
+
+.wk-tab {
+  flex-shrink: 0;
+  padding: 10rpx 20rpx;
+  border-radius: 999rpx;
+  border: 2rpx solid var(--border-2);
+  background: var(--surface-3);
+  color: var(--text-3);
+  font-size: 22rpx;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.wk-tab.is-active {
+  background: #059669;
+  border-color: #059669;
+  color: #fff;
+}
+
+/* 当前周未选中时给个虚边提示 */
+.wk-tab.is-this:not(.is-active) {
+  border-color: rgba(16, 185, 129, 0.5);
+  color: #6ee7b7;
+}
+
+/* ── 七天网格 ─────────────────────────────────── */
+.wk-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 18rpx;
+}
+
+.wk-day {
+  background: var(--surface-1);
+  border: 2rpx solid var(--border-1);
+  border-radius: 24rpx;
+  padding: 22rpx 24rpx;
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+.wk-day.is-today {
+  border-color: rgba(16, 185, 129, 0.55);
+  background: rgba(16, 185, 129, 0.06);
+}
+
+.wk-day-head {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin-bottom: 14rpx;
+}
+
+.wk-day-name {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: var(--text-1);
+}
+
+.wk-day-date {
+  font-size: 21rpx;
+  color: var(--text-4);
+  font-variant-numeric: tabular-nums;
+}
+
+.wk-today-chip {
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.wk-empty {
+  font-size: 22rpx;
+  color: var(--text-4);
+  padding: 8rpx 0;
+}
+
+/* ── 课程条 ───────────────────────────────────── */
+.wk-course {
+  background: rgba(14, 165, 233, 0.14);
+  border: 2rpx solid rgba(14, 165, 233, 0.25);
+  border-radius: 16rpx;
+  padding: 16rpx 18rpx;
+  margin-bottom: 10rpx;
+}
+
+.wk-course-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+
+.wk-course-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 24rpx;
+  font-weight: 500;
+  color: var(--text-1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wk-course-time {
+  font-size: 21rpx;
+  color: #38bdf8;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+.wk-course-place {
+  display: block;
+  font-size: 20rpx;
+  color: var(--text-4);
+  margin-top: 6rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

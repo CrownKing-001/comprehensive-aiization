@@ -8,6 +8,10 @@ page {
   font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif;
   font-size: 28rpx;
   line-height: 1.5;
+  /* .page-wrap 用的是 min-height:100%，需要一个有确定高度的父级才生效；
+     内容很短的页面（例如空的待办列表）否则撑不满屏，下方会露出系统底色。
+     这里不能写 100vh —— vh 把 tabBar 也算进视口高度，反而会把内容顶出屏幕。 */
+  min-height: 100%;
 }
 
 .page-wrap {
@@ -669,4 +673,10 @@ page {
   height: 48rpx;
   border-radius: 12rpx;
   font-size: 22rpx;
+}
+
+/* ── 行内强调文字（分析 / 设置共用） ───────────── */
+.hl {
+  color: #34d399;
+  font-weight: 600;
 }

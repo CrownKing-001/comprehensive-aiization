@@ -83,11 +83,6 @@
   margin-top: 10rpx;
 }
 
-.hl {
-  color: #34d399;
-  font-weight: 600;
-}
-
 .add-row {
   display: flex;
   align-items: center;

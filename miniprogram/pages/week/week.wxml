@@ -1,0 +1,64 @@
+<!-- 周计划 -->
+<view class="page-wrap stack {{themeClass}}">
+
+  <!-- ── 周次选择 ── -->
+  <view class="card">
+    <view class="card-head">
+      <view class="icon-chip tone-emerald">📅</view>
+      <view class="card-head-title">第 {{week}} 教学周 · 共 {{weekCourses}} 节课</view>
+      <view class="card-head-action" wx:if="{{!isCurrent}}" bindtap="goThisWeek">回本周</view>
+    </view>
+    <view class="card-body">
+      <view class="wk-nav">
+        <view class="wk-arrow {{week <= 1 ? 'is-off' : ''}}" bindtap="prevWeek">‹</view>
+        <scroll-view scroll-x class="wk-scroll" scroll-into-view="wk-{{week}}" scroll-with-animation>
+          <view class="wk-tabs">
+            <view class="wk-tab {{item.active ? 'is-active' : ''}} {{item.isThis ? 'is-this' : ''}}"
+              wx:for="{{weekTabs}}" wx:key="w" id="wk-{{item.w}}"
+              data-w="{{item.w}}" bindtap="pickWeek">{{item.label}}</view>
+          </view>
+        </scroll-view>
+        <view class="wk-arrow {{week >= maxWeek ? 'is-off' : ''}}" bindtap="nextWeek">›</view>
+      </view>
+      <view class="chip-row">
+        <text class="chip chip-emerald" wx:if="{{isCurrent}}">当前周</text>
+        <text class="chip chip-slate" wx:else>第 {{thisWeek}} 周是本周</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- ── 七天安排 ── -->
+  <view class="wk-grid">
+    <view class="wk-day {{item.isToday ? 'is-today' : ''}}" wx:for="{{grid}}" wx:key="day">
+      <view class="wk-day-head">
+        <text class="wk-day-name">{{item.label}}</text>
+        <text class="wk-day-date">{{item.dateText}}</text>
+        <text class="chip chip-emerald wk-today-chip" wx:if="{{item.isToday}}">今天</text>
+      </view>
+      <view class="wk-empty" wx:if="{{item.empty}}">本周全天无安排</view>
+      <view class="wk-course" wx:for="{{item.items}}" wx:for-item="c" wx:key="key">
+        <view class="wk-course-top">
+          <text class="wk-course-name">{{c.name}}</text>
+          <text class="wk-course-time">{{c.start}}–{{c.end}}</text>
+        </view>
+        <text class="wk-course-place" wx:if="{{c.place}}">{{c.place}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- ── 空课表引导 ── -->
+  <view class="card" wx:if="{{!hasCourses}}">
+    <view class="card-body">
+      <view class="empty">
+        <view class="empty-icon">📚</view>
+        <view class="empty-title">课表为空</view>
+        <view class="empty-desc">去「课表」页新增课程，或用「课表识别」粘贴导入</view>
+      </view>
+      <view class="row-actions mt">
+        <view class="btn-primary btn-sm" bindtap="goCourses">去课表页</view>
+        <view class="btn-ghost btn-sm" bindtap="goScan">课表识别</view>
+      </view>
+    </view>
+  </view>
+
+</view>

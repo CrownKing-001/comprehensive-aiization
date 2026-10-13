@@ -1,0 +1,168 @@
+<!-- 校历识别 -->
+<view class="page-wrap stack {{themeClass}}">
+
+  <!-- ── 说明 ── -->
+  <view class="card">
+    <view class="card-head">
+      <view class="icon-chip tone-amber">🗓️</view>
+      <view class="card-head-title">校历识别</view>
+      <view class="card-head-action" bindtap="goMilestones">重要事项 ›</view>
+    </view>
+    <view class="card-body">
+      <view class="chip-row">
+        <text class="chip chip-amber">⚠ 测试版 · 不稳定</text>
+        <text class="chip chip-slate">只支持粘贴文字</text>
+      </view>
+      <view class="bullet-note">
+        把学校校历的文字（报到、上课、考试、放假等关键日期）粘贴进来，自动解析成条目 ——
+        解析结果会先列出来让你逐条核对，确认后才写入「重要事项」。
+      </view>
+      <view class="tip-box">
+        <view class="tip-text">💡 为什么不支持拍照识别</view>
+        <view class="bullet-note">
+          桌面版用 Windows 自带的 OCR 识图，小程序没有这个能力。好在校历文字里通常自带
+          「第 N 周：9.7–9.13」这种周次表，粘文字比识图更准。
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- ── 提示 ── -->
+  <view class="msg-box {{msg.kind === 'ok' ? 'is-ok' : 'is-err'}}" wx:if="{{msg}}">{{msg.text}}</view>
+
+  <!-- ── 第一步：AI 指令 ── -->
+  <view class="card">
+    <view class="card-head">
+      <view class="icon-chip tone-sky">🤖</view>
+      <view class="card-head-title">第一步 · 整理成固定格式</view>
+    </view>
+    <view class="card-body">
+      <view class="bullet-note">
+        复制下面的指令，连同你的校历原文（或截图）发给豆包等 AI，让它按固定格式输出；
+        然后回到这里把 AI 输出的文字粘贴到下面，点「解析文字」。
+      </view>
+      <view class="row-actions mt">
+        <view class="btn-primary btn-sm" bindtap="copyPrompt">📋 复制给 AI 的指令</view>
+        <view class="btn-ghost btn-sm" bindtap="togglePrompt">{{promptOpen ? '隐藏指令原文' : '查看指令原文'}}</view>
+      </view>
+      <view class="prompt-box" wx:if="{{promptOpen}}">
+        <text class="prompt-text" user-select="{{true}}">{{promptText}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- ── 第二步：粘贴 ── -->
+  <view class="card">
+    <view class="card-head">
+      <view class="icon-chip tone-emerald">📝</view>
+      <view class="card-head-title">第二步 · 粘贴校历文字</view>
+    </view>
+    <view class="card-body">
+      <textarea class="textarea" value="{{pasteText}}" bindinput="onPasteInput"
+        placeholder="秋季学期：9 月 7 日～次年 1 月 17 日，共 19 周&#10;&#10;第 1 周：9.7–9.13&#10;第 2 周：9.14–9.20&#10;&#10;2026：中秋节 (9.25)、国庆节 (10.1)&#10;8月29日 老生报到注册&#10;8月31日 正式上课"
+        placeholder-class="input-ph" maxlength="-1" auto-height cursor-spacing="24"></textarea>
+
+      <view class="row-actions mt">
+        <view class="btn-primary btn-sm" bindtap="parsePasted">🔍 解析文字</view>
+        <view class="btn-ghost btn-sm" bindtap="clearPaste" wx:if="{{pasteText}}">清空</view>
+      </view>
+      <view class="tiny-note">
+        支持「第 N 周：9.7–9.13」周次表、「共 19 周」、军训/开课/节假日等关键日期。
+      </view>
+
+      <!-- 解析出的学期信息 -->
+      <view class="tip-box" wx:if="{{parsedStart || parsedWeeks}}">
+        <view class="tip-text">📌 从这段文字里还读到了学期设置</view>
+        <view class="chip-row">
+          <text class="chip chip-emerald" wx:if="{{parsedStart}}">学期起点 {{parsedStart}}</text>
+          <text class="chip chip-sky" wx:if="{{parsedWeeks}}">共 {{parsedWeeks}} 周</text>
+        </view>
+        <view class="row-actions">
+          <view class="btn-ghost btn-sm" bindtap="applyParsedSettings">应用到设置</view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- ── 识别记录列表 ── -->
+  <view class="card" wx:if="{{docs.length > 0}}">
+    <view class="card-head">
+      <view class="icon-chip tone-violet">📚</view>
+      <view class="card-head-title">识别记录 · {{docs.length}} 条</view>
+    </view>
+    <view class="card-body">
+      <view class="doc-item {{item.active ? 'is-active' : ''}}" wx:for="{{docs}}" wx:key="id"
+        data-id="{{item.id}}" bindtap="pickDoc">
+        <view class="doc-body">
+          <text class="doc-name">{{item.name}}</text>
+          <text class="doc-meta">{{item.engine}} · {{item.lineCount}} 行 · {{item.eventCount}} 条 · {{item.createdAt}}</text>
+        </view>
+        <view class="icon-btn tone-rose btn-mini" data-id="{{item.id}}" catchtap="deleteDoc">🗑️</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- ── 解析结果 · 逐条核对 ── -->
+  <view class="card" wx:if="{{draft.length > 0}}">
+    <view class="card-head">
+      <view class="icon-chip tone-emerald">✅</view>
+      <view class="card-head-title">核对结果 · 勾选 {{acceptedCount}}/{{draft.length}}</view>
+      <view class="card-head-action" bindtap="toggleRaw">{{showRaw ? '收起原文' : '看原始文字'}}</view>
+    </view>
+    <view class="card-body">
+
+      <view class="raw-box" wx:if="{{showRaw}}">
+        <text class="raw-line" wx:for="{{rawLines}}" wx:key="*this">{{item}}</text>
+      </view>
+
+      <view class="draft-item {{item.accepted ? 'is-on' : ''}}" wx:for="{{draft}}" wx:key="id">
+        <view class="draft-top">
+          <view class="checkbox {{item.accepted ? 'is-on' : ''}}" data-idx="{{index}}" bindtap="toggleAccept">
+            <text wx:if="{{item.accepted}}">✓</text>
+          </view>
+          <text class="draft-emoji">{{item.emoji}}</text>
+          <input class="input draft-title" value="{{item.title}}" data-idx="{{index}}" bindinput="editTitle"
+            placeholder="标题" placeholder-class="input-ph" cursor-spacing="24" />
+        </view>
+
+        <view class="draft-fields">
+          <picker mode="date" value="{{item.date}}" data-idx="{{index}}" bindchange="pickDate">
+            <view class="picker picker-sm">{{item.date}}</view>
+          </picker>
+          <picker mode="selector" range="{{catOptions}}" data-idx="{{index}}" bindchange="pickCategory">
+            <view class="picker picker-sm">{{item.category}}</view>
+          </picker>
+          <text class="chip chip-emerald" wx:if="{{item.importedAs}}">已写入</text>
+        </view>
+
+        <view class="draft-raw" wx:if="{{item.raw}}">原文：{{item.raw}}</view>
+      </view>
+
+      <view class="row-actions mt">
+        <view class="btn-primary" bindtap="importToMilestones">＋ 添加到重要事项（{{acceptedCount}} 条）</view>
+      </view>
+      <view class="row-actions">
+        <view class="btn-ghost btn-sm" bindtap="applyTeachingWeeks">📅 用「正式上课」校准学期起点</view>
+        <view class="btn-ghost btn-sm" bindtap="goMilestones">查看重要事项</view>
+      </view>
+      <view class="tiny-note">
+        已按「标题 + 日期」自动判重，重复导入会被跳过，可以放心多次点击。
+      </view>
+    </view>
+  </view>
+
+  <!-- ── 空状态 ── -->
+  <view class="card" wx:if="{{draft.length === 0}}">
+    <view class="card-body">
+      <view class="empty">
+        <view class="empty-icon">🗓️</view>
+        <view class="empty-title">还没有解析结果</view>
+        <view class="empty-desc">把校历文字粘贴到上面，点「解析文字」就能看到关键日期</view>
+      </view>
+      <view class="row-actions mt">
+        <view class="btn-ghost btn-sm" bindtap="goScan">去「课表识别」</view>
+      </view>
+    </view>
+  </view>
+
+</view>
