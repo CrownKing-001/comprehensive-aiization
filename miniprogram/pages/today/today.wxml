@@ -1,0 +1,117 @@
+<!-- 今日 -->
+<view class="page-wrap stack {{themeClass}}">
+
+  <!-- 日期切换 -->
+  <view class="date-bar">
+    <view class="date-nav" bindtap="prevDay">‹</view>
+    <view class="date-mid">
+      <view class="date-main">
+        {{dateStr}} · {{weekdayStr}}
+        <text class="date-rel">{{relLabel}}</text>
+      </view>
+      <view class="date-week">第 {{week}} 教学周</view>
+    </view>
+    <view class="date-right">
+      <view class="btn-back-today" wx:if="{{!isToday}}" bindtap="backToday">回到今天</view>
+      <view class="date-nav" bindtap="nextDay">›</view>
+    </view>
+  </view>
+
+  <!-- 课程 -->
+  <view class="card">
+    <view class="card-head">
+      <view class="icon-chip tone-sky">📘</view>
+      <view class="card-head-title">
+        {{isToday ? '今日' : '当日'}}课程（{{isToday ? '还有 ' + shown.length : shown.length}} 节）
+      </view>
+      <view class="head-note" wx:if="{{finished > 0}}">✓ 已上完 {{finished}} 节</view>
+    </view>
+    <view class="card-body">
+      <view class="empty" wx:if="{{shown.length === 0}}">
+        <view class="empty-icon">🎉</view>
+        <view class="empty-text">
+          {{isToday && finished > 0 ? '今天的课都上完了 🎉' : '这一天没有课，时间都是你的 🎉'}}
+        </view>
+      </view>
+      <view class="course-list" wx:else>
+        <view class="course-item {{item.ongoing ? 'is-ongoing' : ''}}" wx:for="{{shown}}" wx:key="uid">
+          <view class="course-main">
+            <view class="course-name-row">
+              <text class="course-name">{{item.name}}</text>
+              <text class="chip chip-sky" wx:if="{{item.tag}}">{{item.tag}}</text>
+              <text class="chip chip-emerald" wx:if="{{item.ongoing}}">进行中</text>
+            </view>
+            <view class="course-place">{{item.place}}</view>
+          </view>
+          <view class="course-time">{{item.start}}–{{item.end}}</view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 当天要处理的事 -->
+  <view class="card">
+    <view class="card-head">
+      <view class="icon-chip tone-emerald">✅</view>
+      <view class="card-head-title">当天要处理的事</view>
+    </view>
+    <view class="card-body">
+      <view class="empty" wx:if="{{dayTodos.length === 0 && dayAssign.length === 0}}">
+        <view class="empty-icon">🎉</view>
+        <view class="empty-text">没有到期的待办和作业 🎉</view>
+      </view>
+      <view wx:else>
+        <view wx:if="{{dayTodos.length > 0}}">
+          <view class="sec-label">待办</view>
+          <view class="todo-list-wrap">
+            <view class="todo-line" wx:for="{{dayTodos}}" wx:key="id">
+              <view class="checkbox-sm" data-id="{{item.id}}" bindtap="toggleTodo"></view>
+              <view class="todo-text">{{item.text}}</view>
+              <text class="chip chip-rose" wx:if="{{item.overdue}}">逾期</text>
+            </view>
+          </view>
+        </view>
+        <view wx:if="{{dayAssign.length > 0}}" style="margin-top: 20rpx;">
+          <view class="sec-label">作业</view>
+          <view class="todo-list-wrap">
+            <view class="todo-line" wx:for="{{dayAssign}}" wx:key="id">
+              <view class="todo-icon">📖</view>
+              <view class="todo-text"><text class="muted">{{item.course}} · </text>{{item.title}}</view>
+              <text class="chip chip-{{item.chipTone}}">{{item.chipText}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 完整时间轴 -->
+  <view class="card">
+    <view class="card-head">
+      <view class="icon-chip tone-violet">🕐</view>
+      <view class="card-head-title">当日完整时间轴</view>
+    </view>
+    <view class="card-body">
+      <view class="empty" wx:if="{{timeline.length === 0}}">
+        <view class="empty-icon">🕐</view>
+        <view class="empty-text">这一天没有任何安排</view>
+      </view>
+      <view class="tl" wx:else>
+        <view class="tl-item" wx:for="{{timeline}}" wx:key="id">
+          <view class="tl-time">{{item.time}}</view>
+          <view class="tl-body {{item.ongoing ? 'is-ongoing' : ''}}">
+            <view class="tl-title-row">
+              <text class="tl-title">{{item.title}}</text>
+              <text class="chip chip-emerald" wx:if="{{item.ongoing}}">进行中</text>
+              <text class="tl-min" wx:if="{{item.minutes > 0}}">{{item.minutes}} 分钟</text>
+            </view>
+            <view class="tl-sub" wx:if="{{item.sub}}">{{item.sub}}</view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="btn-ghost full" wx:if="{{!isToday}}" bindtap="backToday">回到今天</view>
+
+</view>

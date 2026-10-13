@@ -1,0 +1,259 @@
+<!-- 设置 -->
+<view class="page-wrap stack {{themeClass}}">
+
+  <!-- ── 提示 ── -->
+  <view class="msg-box {{msg.kind === 'ok' ? 'is-ok' : 'is-err'}}" wx:if="{{msg}}">{{msg.text}}</view>
+
+  <!-- ── 外观 ── -->
+  <view class="card">
+    <view class="card-head">
+      <view class="icon-chip tone-violet">🎨</view>
+      <view class="card-head-title">外观</view>
+    </view>
+    <view class="card-body">
+      <view class="switch-row">
+        <view class="switch-col">
+          <text class="switch-label">浅色主题</text>
+          <text class="switch-hint">当前：{{isLight ? '浅色' : '深色'}}</text>
+        </view>
+        <switch checked="{{isLight}}" bindchange="toggleTheme" color="#7c3aed" />
+      </view>
+    </view>
+  </view>
+
+  <!-- ── 数据用量 ── -->
+  <view class="card">
+    <view class="card-head">
+      <view class="icon-chip tone-emerald">💾</view>
+      <view class="card-head-title">数据存放</view>
+    </view>
+    <view class="card-body">
+      <view class="big-stat">
+        <view class="big-num">{{usageText}}</view>
+        <view class="big-side">{{quotaText}}</view>
+      </view>
+      <view class="bar-track">
+        <view class="bar-fill bar-emerald" style="width: 20%"></view>
+      </view>
+      <view class="tiny-note">小程序数据保存在本地缓存里，卸载小程序会被清除，建议定期导出备份。</view>
+
+      <view class="count-grid">
+        <view class="count-item" wx:for="{{counts}}" wx:key="label">
+          <text class="count-num">{{item.n}}</text>
+          <text class="count-label">{{item.label}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- ── 备份 ── -->
+  <view class="card">
+    <view class="card-head">
+      <view class="icon-chip tone-sky">📦</view>
+      <view class="card-head-title">备份与恢复</view>
+    </view>
+    <view class="card-body">
+      <view class="bullet-note">
+        导出会把整份数据复制到剪贴板，粘贴保存即可；导入时先把备份内容复制到剪贴板，再点导入。
+      </view>
+      <view class="row-actions mt">
+        <view class="btn-primary btn-sm" bindtap="doExport">⬇️ 导出到剪贴板</view>
+        <view class="btn-ghost btn-sm" bindtap="doImport">⬆️ 从剪贴板导入</view>
+      </view>
+      <view class="row-actions">
+        <view class="btn-ghost btn-sm" bindtap="clearStorageCache">🧹 清理缓存</view>
+        <view class="btn-ghost btn-sm btn-danger" bindtap="doReset">🗑️ 清空全部数据</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- ── 学期与日期 ── -->
+  <view class="card">
+    <view class="card-head">
+      <view class="icon-chip tone-amber">📅</view>
+      <view class="card-head-title">学期与日期</view>
+    </view>
+    <view class="card-body">
+      <view class="field">
+        <view class="field-label">学期第一周的周一</view>
+        <picker mode="date" value="{{semesterStart}}" bindchange="onSemesterStart">
+          <view class="picker">{{semesterStart || '选择日期'}}</view>
+        </picker>
+        <view class="field-hint">当前推算：第 {{week}} 教学周 · 共 {{totalWeeks}} 周</view>
+      </view>
+
+      <view class="field">
+        <view class="field-label">按「今天是第几周」反推起点</view>
+        <view class="add-row">
+          <input class="input add-input" type="number" value="{{weekJump}}" bindinput="onWeekJump"
+            placeholder="如 8" placeholder-class="input-ph" cursor-spacing="24" />
+          <view class="btn-ghost btn-sm" bindtap="applyWeekJump">应用</view>
+        </view>
+        <view class="field-hint">不知道学期起点时，直接填「今天是第 N 周」，全应用周次会自动重算。</view>
+      </view>
+
+      <view class="field">
+        <view class="field-label">学期总周数</view>
+        <input class="input" type="number" value="{{totalWeeks}}" bindinput="onTotalWeeks"
+          placeholder="18" placeholder-class="input-ph" cursor-spacing="24" />
+      </view>
+
+      <view class="field">
+        <view class="field-label">锁定「今天」（调试/预览用）</view>
+        <picker mode="date" value="{{pinnedDate}}" bindchange="onPinnedDate">
+          <view class="picker">{{pinnedDate || '未锁定，跟随真实日期'}}</view>
+        </picker>
+        <view class="row-actions" wx:if="{{pinnedDate}}">
+          <view class="btn-ghost btn-sm" bindtap="clearPinnedDate">取消锁定</view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- ── 作息时间表 ── -->
+  <view class="card">
+    <view class="card-head">
+      <view class="icon-chip tone-sky">🕐</view>
+      <view class="card-head-title">作息时间表 · {{periodCount}} 节</view>
+    </view>
+    <view class="card-body">
+      <view class="field-hint">每行一节，格式如「第1节 8:00-8:45」。留空则使用内置默认作息。</view>
+      <textarea class="textarea" value="{{scheduleText}}" bindinput="onScheduleText"
+        placeholder="第1节 8:00-8:45&#10;第2节 8:55-9:40" placeholder-class="input-ph"
+        maxlength="-1" auto-height cursor-spacing="24"></textarea>
+      <view class="schedule-msg {{scheduleMsg.kind === 'ok' ? 'is-ok' : 'is-err'}}" wx:if="{{scheduleMsg}}">
+        {{scheduleMsg.text}}
+      </view>
+      <view class="row-actions">
+        <view class="btn-primary btn-sm" bindtap="importSchedule">导入作息</view>
+        <view class="btn-ghost btn-sm" bindtap="resetSchedule">用回默认</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- ── 蛋白质目标 ── -->
+  <view class="card">
+    <view class="card-head">
+      <view class="icon-chip tone-emerald">🎯</view>
+      <view class="card-head-title">蛋白质目标</view>
+    </view>
+    <view class="card-body">
+      <view class="field">
+        <view class="field-label">系数（g 蛋白 / kg 体重）</view>
+        <input class="input" type="digit" value="{{proteinFactor}}" bindinput="onProteinFactor"
+          placeholder="1.8" placeholder-class="input-ph" cursor-spacing="24" />
+        <view class="field-hint">
+          常用范围 1.6–2.2。按最近一次体重 {{latestWeight ? latestWeight + ' kg' : '—'}} 推算，
+          当前目标 <text class="hl">{{proteinTarget}}</text> g/天。
+        </view>
+      </view>
+      <view class="field">
+        <view class="field-label">手动覆盖（留空 = 自动按体重算）</view>
+        <view class="add-row">
+          <input class="input add-input" type="number" value="{{proteinTargetOverride}}" bindinput="onProteinOverride"
+            placeholder="如 130" placeholder-class="input-ph" cursor-spacing="24" />
+          <view class="btn-ghost btn-sm" wx:if="{{proteinTargetOverride}}" bindtap="clearProteinOverride">改回自动</view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- ── 运动打卡 ── -->
+  <view class="card">
+    <view class="card-head">
+      <view class="icon-chip tone-amber">🏃</view>
+      <view class="card-head-title">运动打卡</view>
+    </view>
+    <view class="card-body">
+      <view class="switch-row">
+        <view class="switch-col">
+          <text class="switch-label">显示「运动打卡」模块</text>
+          <text class="switch-hint">关闭后总览与今日页都不再出现这一项</text>
+        </view>
+        <switch checked="{{runEnabled}}" bindchange="toggleRunEnabled" color="#059669" />
+      </view>
+
+      <view class="field">
+        <view class="field-label">目标次数 / 周</view>
+        <input class="input" type="number" value="{{runTarget}}" bindinput="onRunTarget"
+          placeholder="30" placeholder-class="input-ph" cursor-spacing="24" />
+      </view>
+
+      <view class="field-row">
+        <view class="field">
+          <view class="field-label">开始日期（可选）</view>
+          <picker mode="date" value="{{runStart}}" bindchange="onRunStart">
+            <view class="picker">{{runStart || '不限'}}</view>
+          </picker>
+        </view>
+        <view class="field">
+          <view class="field-label">结束日期（可选）</view>
+          <picker mode="date" value="{{runEnd}}" bindchange="onRunEnd">
+            <view class="picker">{{runEnd || '不限'}}</view>
+          </picker>
+        </view>
+      </view>
+
+      <view class="field">
+        <view class="field-label">打卡类型（用逗号分隔）</view>
+        <input class="input" value="{{runTypes}}" bindinput="onRunTypes"
+          placeholder="跑步,健步走,健身房,球类,游泳" placeholder-class="input-ph" cursor-spacing="24" />
+        <view class="field-hint">每个类型会成为「运动打卡」页上的一个按钮，按你自己的习惯改。</view>
+      </view>
+
+      <view class="field">
+        <view class="field-label">训练日（点选，用于打卡日历标记）</view>
+        <view class="train-pick-row">
+          <view class="train-pick {{item.on ? 'is-on' : ''}}" wx:for="{{trainDayChips}}" wx:key="day"
+            data-day="{{item.day}}" bindtap="toggleTrainDay">{{item.label}}</view>
+        </view>
+        <view class="field-hint">{{trainDaysText ? '已选：周' + trainDaysText : '留空则不区分训练日与休息日'}}</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- ── 提醒 ── -->
+  <view class="card">
+    <view class="card-head">
+      <view class="icon-chip tone-rose">🔔</view>
+      <view class="card-head-title">提醒</view>
+    </view>
+    <view class="card-body">
+      <view class="switch-row">
+        <view class="switch-col">
+          <text class="switch-label">开启通知提醒</text>
+          <text class="switch-hint">小程序需「订阅消息」授权，当前版本尚未接入，开关会被保存但不会推送</text>
+        </view>
+        <switch checked="{{notifyEnabled}}" bindchange="toggleNotify" color="#e11d48" />
+      </view>
+      <view class="field">
+        <view class="field-label">提前多少分钟提醒</view>
+        <input class="input" type="number" value="{{notifyMinutesBefore}}" bindinput="onNotifyMinutes"
+          placeholder="15" placeholder-class="input-ph" cursor-spacing="24" />
+      </view>
+    </view>
+  </view>
+
+  <!-- ── 关于 ── -->
+  <view class="card">
+    <view class="card-head">
+      <view class="icon-chip tone-slate">ℹ️</view>
+      <view class="card-head-title">关于</view>
+    </view>
+    <view class="card-body">
+      <view class="bullet">
+        <view class="bullet-dot"></view>
+        <view class="bullet-text">大学日程 · 小程序版<view class="bullet-note">从桌面版移植，数据键与桌面版一致（fitplan-*），桌面备份可直接导入。</view></view>
+      </view>
+      <view class="bullet">
+        <view class="bullet-dot"></view>
+        <view class="bullet-text">数据保存在本机<view class="bullet-note">不上传云端，卸载小程序或清理缓存会丢失数据，请定期导出备份。</view></view>
+      </view>
+      <view class="bullet">
+        <view class="bullet-dot"></view>
+        <view class="bullet-text">桌面版独有功能<view class="bullet-note">系统通知、饮食照片存档、课程表 OCR 识别依赖桌面环境，小程序端未包含。</view></view>
+      </view>
+    </view>
+  </view>
+
+</view>

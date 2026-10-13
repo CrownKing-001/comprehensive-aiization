@@ -1,0 +1,170 @@
+<!-- 重要事项 -->
+<view class="page-wrap stack {{themeClass}}">
+
+  <!-- ── 顶部 ── -->
+  <view class="card">
+    <view class="card-head">
+      <view class="icon-chip tone-violet">⭐</view>
+      <view class="card-head-title">重要事项 · {{totalCount}} 条 · 待办 {{upcomingCount}} 个</view>
+    </view>
+    <view class="card-body">
+      <view class="bullet-note">
+        期末考试、竞赛、证书报名……都记在这里。距离近的会标红，钉住后会出现在总览的倒计时条上。
+      </view>
+      <view class="row-actions mt">
+        <view class="btn-primary" bindtap="startNew">＋ 新建事项</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- ── 提示 ── -->
+  <view class="msg-box" wx:if="{{note}}">{{note}}</view>
+
+  <!-- ── 编辑 / 新建 ── -->
+  <view class="card" wx:if="{{editing}}">
+    <view class="card-head">
+      <view class="icon-chip tone-emerald">✨</view>
+      <view class="card-head-title">{{isNew ? '新建事项' : '编辑事项'}}</view>
+    </view>
+    <view class="card-body">
+
+      <!-- 快捷模板（仅新建时） -->
+      <block wx:if="{{isNew}}">
+        <view class="field-label">快捷模板</view>
+        <view class="filter-row">
+          <view class="filter-pill" wx:for="{{presets}}" wx:key="label"
+            data-label="{{item.label}}" bindtap="applyPreset">{{item.emoji}} {{item.label}}</view>
+        </view>
+      </block>
+
+      <view class="field">
+        <view class="field-label">名称 *</view>
+        <input class="input" value="{{draft.title}}" data-field="title" bindinput="onDraftInput"
+          placeholder="如：高等数学期末考试" placeholder-class="input-ph" cursor-spacing="24" />
+      </view>
+
+      <view class="field-row">
+        <view class="field">
+          <view class="field-label">分类</view>
+          <picker mode="selector" range="{{catOptions}}" value="{{catPickerIndex}}" bindchange="onCatPick">
+            <view class="picker">{{draft.category}}</view>
+          </picker>
+        </view>
+        <view class="field">
+          <view class="field-label">图标</view>
+          <input class="input" value="{{draft.emoji}}" data-field="emoji" bindinput="onDraftInput"
+            placeholder="📌" placeholder-class="input-ph" cursor-spacing="24" />
+        </view>
+      </view>
+
+      <view class="field-row">
+        <view class="field">
+          <view class="field-label">日期</view>
+          <picker mode="date" value="{{draft.date}}" bindchange="onDatePick">
+            <view class="picker">{{draft.date || '选择日期'}}</view>
+          </picker>
+        </view>
+        <view class="field">
+          <view class="field-label">时间（可选）</view>
+          <picker mode="time" value="{{draft.time}}" bindchange="onTimePick">
+            <view class="picker">{{draft.time || '选择时间'}}</view>
+          </picker>
+        </view>
+      </view>
+
+      <view class="field">
+        <view class="field-label">地点（可选）</view>
+        <input class="input" value="{{draft.place}}" data-field="place" bindinput="onDraftInput"
+          placeholder="如：教三-201" placeholder-class="input-ph" cursor-spacing="24" />
+      </view>
+
+      <view class="field">
+        <view class="field-label">备注（可选）</view>
+        <input class="input" value="{{draft.note}}" data-field="note" bindinput="onDraftInput"
+          placeholder="补充说明" placeholder-class="input-ph" cursor-spacing="24" />
+      </view>
+
+      <!-- 清单 -->
+      <view class="field">
+        <view class="field-label">准备清单（{{draft.checklist.length}} 项）</view>
+        <view class="check-item" wx:for="{{draft.checklist}}" wx:key="*this">
+          <text class="check-text">{{item}}</text>
+          <view class="icon-btn tone-rose btn-mini" data-idx="{{index}}" bindtap="dropDraftCheck">✕</view>
+        </view>
+        <view class="add-row">
+          <input class="input add-input" value="{{newItem}}" bindinput="onNewItemInput"
+            placeholder="加一项…" placeholder-class="input-ph" cursor-spacing="24" confirm-type="done"
+            bindconfirm="addDraftCheck" />
+          <view class="btn-ghost btn-sm" bindtap="addDraftCheck">添加</view>
+        </view>
+      </view>
+
+      <view class="row-actions mt">
+        <view class="btn-primary" bindtap="save">保存</view>
+        <view class="btn-ghost" bindtap="cancelEdit">取消</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- ── 筛选 ── -->
+  <view class="card">
+    <view class="card-body">
+      <view class="filter-row">
+        <view class="filter-pill {{filter === item ? 'is-active' : ''}}" wx:for="{{cats}}" wx:key="*this"
+          data-cat="{{item}}" bindtap="setFilter">{{item}}</view>
+      </view>
+      <view class="switch-row">
+        <text class="switch-label">显示已完成的事项</text>
+        <switch checked="{{showDone}}" bindchange="toggleShowDone" color="#059669" />
+      </view>
+    </view>
+  </view>
+
+  <!-- ── 列表 ── -->
+  <view class="card">
+    <view class="card-head">
+      <view class="icon-chip tone-sky">📌</view>
+      <view class="card-head-title">事项列表（{{list.length}}）</view>
+    </view>
+    <view class="card-body">
+      <view class="empty" wx:if="{{list.length === 0}}">
+        <view class="empty-icon">⭐</view>
+        <view class="empty-title">还没有事项</view>
+        <view class="empty-desc">点上面「新建事项」，或先用快捷模板生成一份</view>
+      </view>
+
+      <view class="ms-item {{item.done ? 'is-done' : ''}}" wx:for="{{list}}" wx:key="id">
+        <view class="ms-top">
+          <view class="checkbox {{item.done ? 'is-on' : ''}}" data-id="{{item.id}}" bindtap="toggleDone">
+            <text wx:if="{{item.done}}">✓</text>
+          </view>
+          <text class="ms-emoji">{{item.emoji}}</text>
+          <text class="ms-title">{{item.title}}</text>
+          <text class="ms-pin {{item.pinned ? 'is-on' : ''}}" data-id="{{item.id}}" bindtap="togglePin">📌</text>
+        </view>
+
+        <view class="chip-row">
+          <text class="chip chip-slate">{{item.category}}</text>
+          <text class="chip chip-{{item.urgencyTone}}">{{item.urgencyText}}</text>
+          <text class="chip chip-violet" wx:if="{{item.checkCount > 0}}">清单 {{item.checkCount}} 项</text>
+        </view>
+
+        <view class="ms-meta" wx:if="{{item.metaText}}">{{item.metaText}}</view>
+
+        <!-- 清单项：点一下即勾掉 -->
+        <view class="ms-check" wx:for="{{item.checklist}}" wx:for-item="c" wx:key="idx"
+          data-id="{{item.id}}" data-idx="{{c.idx}}" bindtap="toggleCheck">
+          <text class="ms-check-box">☐</text>
+          <text class="ms-check-text">{{c.text}}</text>
+        </view>
+
+        <view class="row-actions ms-ops">
+          <view class="btn-ghost btn-xs" data-id="{{item.id}}" bindtap="startEdit">✏️ 编辑</view>
+          <view class="btn-ghost btn-xs" data-id="{{item.id}}" bindtap="duplicate">📋 复制</view>
+          <view class="btn-ghost btn-xs" data-id="{{item.id}}" bindtap="remove">🗑️ 删除</view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+</view>

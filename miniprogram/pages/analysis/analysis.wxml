@@ -1,0 +1,142 @@
+<!-- 空闲时段分析 -->
+<view class="page-wrap stack {{themeClass}}">
+
+  <!-- ── 空课表引导 ── -->
+  <view class="card" wx:if="{{!hasCourses}}">
+    <view class="card-head">
+      <view class="icon-chip tone-sky">📊</view>
+      <view class="card-head-title">空闲时段分析</view>
+    </view>
+    <view class="card-body">
+      <view class="empty">
+        <view class="empty-icon">📚</view>
+        <view class="empty-title">还没有课程数据</view>
+        <view class="empty-desc">{{hint}}</view>
+      </view>
+      <view class="row-actions mt">
+        <view class="btn-primary btn-sm" bindtap="goScan">📷 课表识别</view>
+        <view class="btn-ghost btn-sm" bindtap="goCourses">✍️ 手动添加课程</view>
+      </view>
+    </view>
+  </view>
+
+  <block wx:else>
+    <!-- ── 结论 ── -->
+    <view class="card">
+      <view class="card-head">
+        <view class="icon-chip tone-sky">📊</view>
+        <view class="card-head-title">空闲时段分析</view>
+      </view>
+      <view class="card-body">
+        <view class="bullet-note">
+          按你导入的课表统计第 {{weekFrom}}–{{weekTo}} 周，共 {{courseCount}} 门课。
+          <block wx:if="{{hasFree}}">整体最空的是 <text class="hl">{{bestText}}</text>，这 {{total}} 周里有多周完全没课。</block>
+          <block wx:else>这几周每个时段都排了课，可以考虑换一个分析窗口或调整课程周次。</block>
+        </view>
+      </view>
+    </view>
+
+    <!-- ── 热力图 ── -->
+    <view class="card">
+      <view class="card-head">
+        <view class="icon-chip tone-emerald">🔥</view>
+        <view class="card-head-title">空闲热力图（第 {{weekFrom}}–{{weekTo}} 周）</view>
+      </view>
+      <view class="card-body">
+        <scroll-view scroll-x class="hm-scroll">
+          <view class="hm-table">
+            <!-- 表头 -->
+            <view class="hm-row hm-head">
+              <view class="hm-day hm-day-head"></view>
+              <view class="hm-cell hm-head-cell" wx:for="{{slotHeads}}" wx:key="label">
+                <text class="hm-head-label">{{item.label}}</text>
+                <text class="hm-head-range">{{item.range}}</text>
+              </view>
+            </view>
+            <!-- 数据行 -->
+            <view class="hm-row" wx:for="{{heatRows}}" wx:key="label">
+              <view class="hm-day">{{item.label}}</view>
+              <view class="{{c.cls}}" wx:for="{{item.cells}}" wx:for-item="c" wx:key="key">{{c.free}}</view>
+            </view>
+          </view>
+        </scroll-view>
+
+        <view class="tiny-note">
+          数字 = 该时段在这 {{total}} 周中有几周完全没课。
+          <text class="hl">深绿</text> = 全空，可固定安排；
+          <text class="warn">红</text> = 全有课，放弃这个时段。
+        </view>
+
+        <view class="tip-box" wx:if="{{hasFree}}">
+          <view class="tip-text">🏋️ 本周期最空闲的时段</view>
+          <view class="chip-row">
+            <text class="chip chip-{{item.tone}}" wx:for="{{ranked}}" wx:key="key">{{item.first ? '最佳 · ' : ''}}{{item.text}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- ── 推荐 ── -->
+    <view class="card">
+      <view class="card-head">
+        <view class="icon-chip tone-amber">💡</view>
+        <view class="card-head-title">空闲时段推荐（按优先级）</view>
+      </view>
+      <view class="card-body">
+        <view class="empty" wx:if="{{!hasFree}}">
+          <view class="empty-desc">这几周所有时段都排了课，暂时给不出可固定安排的时间。</view>
+        </view>
+        <view class="rec-item" wx:for="{{flattest}}" wx:key="key">
+          <view class="rec-rank">{{item.rank}}</view>
+          <view class="rec-body">
+            <view class="chip-row">
+              <text class="chip chip-emerald">{{item.title}}</text>
+              <text class="chip chip-{{item.kindTone}}">{{item.kindText}}</text>
+            </view>
+            <view class="rec-desc">{{item.desc}}</view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- ── 按时段汇总 ── -->
+    <view class="card">
+      <view class="card-head">
+        <view class="icon-chip tone-violet">🕐</view>
+        <view class="card-head-title">各时段整体空闲度（跨 7 天）</view>
+      </view>
+      <view class="card-body">
+        <view class="week-bar-row" wx:for="{{bySlot}}" wx:key="label">
+          <text class="week-bar-label">{{item.label}}</text>
+          <view class="bar-track bar-track-sm">
+            <view class="bar-fill bar-violet" style="width: {{item.width}}%"></view>
+          </view>
+          <text class="week-bar-count">{{item.free}}/{{item.cap}}</text>
+        </view>
+      </view>
+    </view>
+  </block>
+
+  <!-- ── 重要事项 ── -->
+  <view class="card">
+    <view class="card-head">
+      <view class="icon-chip tone-rose">⭐</view>
+      <view class="card-head-title">接下来要做的事</view>
+      <view class="card-head-action" bindtap="goMilestones">全部 ›</view>
+    </view>
+    <view class="card-body">
+      <view class="empty" wx:if="{{milestones.length === 0}}">
+        <view class="empty-desc">还没有重要事项，去「重要事项」页记一条考试或 DDL 吧</view>
+      </view>
+      <view class="ms-mini {{item.urgent ? 'is-urgent' : ''}}" wx:for="{{milestones}}" wx:key="id">
+        <text class="ms-mini-emoji">{{item.emoji}}</text>
+        <view class="ms-mini-body">
+          <text class="ms-mini-title {{item.done ? 'is-done' : ''}}">{{item.title}}</text>
+          <text class="ms-mini-meta">{{item.category}}{{item.date ? ' · ' + item.date : ''}}</text>
+        </view>
+        <text class="ms-mini-days">{{item.done ? '已完成' : item.daysText}}</text>
+      </view>
+    </view>
+  </view>
+
+</view>

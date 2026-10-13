@@ -1,0 +1,56 @@
+{
+  "pages": [
+    "pages/dashboard/dashboard",
+    "pages/today/today",
+    "pages/courses/courses",
+    "pages/todos/todos",
+    "pages/assignments/assignments",
+    "pages/coursescan/coursescan",
+    "pages/run/run",
+    "pages/diet/diet",
+    "pages/health/health",
+    "pages/milestones/milestones",
+    "pages/analysis/analysis",
+    "pages/settings/settings"
+  ],
+  "window": {
+    "backgroundTextStyle": "light",
+    "navigationBarBackgroundColor": "#151a21",
+    "navigationBarTitleText": "大学日程",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#12161d",
+    "backgroundColorTop": "#12161d",
+    "backgroundColorBottom": "#12161d"
+  },
+  "tabBar": {
+    "color": "#64748b",
+    "selectedColor": "#10b981",
+    "backgroundColor": "#0d1117",
+    "borderStyle": "black",
+    "list": [
+      {
+        "pagePath": "pages/dashboard/dashboard",
+        "text": "总览"
+      },
+      {
+        "pagePath": "pages/today/today",
+        "text": "今日"
+      },
+      {
+        "pagePath": "pages/courses/courses",
+        "text": "课表"
+      },
+      {
+        "pagePath": "pages/todos/todos",
+        "text": "待办"
+      },
+      {
+        "pagePath": "pages/assignments/assignments",
+        "text": "作业"
+      }
+    ]
+  },
+  "style": "v2",
+  "lazyCodeLoading": "requiredComponents",
+  "sitemapLocation": "sitemap.json"
+}

@@ -1,0 +1,224 @@
+<!-- 饮食记录 -->
+<view class="page-wrap stack {{themeClass}}">
+
+  <!-- ── 今日汇总 ── -->
+  <view class="card">
+    <view class="card-head">
+      <view class="icon-chip tone-emerald">🍽️</view>
+      <view class="card-head-title">今日摄入</view>
+    </view>
+    <view class="card-body">
+      <view class="nutri-row">
+        <view class="nutri-col">
+          <view class="nutri-num">{{todayProtein}}<text class="nutri-unit"> / {{proteinTarget}} g</text></view>
+          <view class="nutri-label">蛋白质</view>
+          <view class="bar-track"><view class="bar-fill bar-emerald" style="width: {{proteinBar}}%"></view></view>
+        </view>
+        <view class="nutri-col">
+          <view class="nutri-num">{{todayCalories}}<text class="nutri-unit"> / {{calorieTarget}}</text></view>
+          <view class="nutri-label">热量 kcal</view>
+          <view class="bar-track"><view class="bar-fill bar-amber" style="width: {{calorieBar}}%"></view></view>
+        </view>
+      </view>
+
+      <view class="chip-row">
+        <text class="chip chip-sky" wx:if="{{latestWeight}}">按体重 {{latestWeight}}kg 估算目标</text>
+        <text class="chip chip-slate" wx:else>还没记体重，用默认目标</text>
+        <text class="chip chip-emerald" bindtap="goHealth">去记体重 ›</text>
+      </view>
+
+      <!-- 今日明细按餐次 -->
+      <view class="meal-group" wx:for="{{meals}}" wx:key="meal">
+        <view class="meal-head">
+          <text class="meal-name">{{item.meal}}</text>
+          <text class="meal-sum">{{item.protein}}g / {{item.calories}}kcal</text>
+        </view>
+        <view class="meal-item" wx:for="{{item.items}}" wx:for-item="it" wx:key="idx">
+          <text class="meal-item-text">{{it.text}}</text>
+          <text class="meal-item-num">{{it.protein}}g</text>
+          <view class="icon-btn tone-rose btn-mini" data-idx="{{it.idx}}" bindtap="removeLog">🗑️</view>
+        </view>
+      </view>
+
+      <view class="empty" wx:if="{{meals.length === 0}}">
+        <view class="empty-icon">🥗</view>
+        <view class="empty-title">今天还没记录</view>
+        <view class="empty-desc">下面点食物库，或写一句「2个鸡蛋 一碗粥」自动识别</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- ── 快速记录 ── -->
+  <view class="card">
+    <view class="card-head">
+      <view class="icon-chip tone-sky">✍️</view>
+      <view class="card-head-title">记一笔</view>
+    </view>
+    <view class="card-body">
+
+      <!-- 餐次 -->
+      <view class="field">
+        <view class="field-label">餐次</view>
+        <view class="filter-row">
+          <view class="filter-pill {{meal === item ? 'is-active' : ''}}" wx:for="{{mealOptions}}" wx:key="*this"
+            data-meal="{{item}}" bindtap="setMealTap">{{item}}</view>
+        </view>
+      </view>
+
+      <view class="msg-box" wx:if="{{msg}}">{{msg}}</view>
+
+      <!-- 已选清单 -->
+      <block wx:if="{{picked.length > 0}}">
+        <view class="field-label">已选 {{picked.length}} 项 · 合计 {{pickedProtein}}g 蛋白 / {{pickedCalories}} kcal</view>
+        <view class="picked-item" wx:for="{{picked}}" wx:key="foodId">
+          <text class="picked-name">{{item.name}}</text>
+          <view class="qty-group">
+            <view class="qty-btn" data-idx="{{index}}" data-delta="-0.5" bindtap="changeQty">−</view>
+            <text class="qty-num">{{item.qty}}</text>
+            <view class="qty-btn" data-idx="{{index}}" data-delta="0.5" bindtap="changeQty">＋</view>
+          </view>
+          <text class="picked-num">{{item.protein}}g</text>
+          <view class="icon-btn tone-rose btn-mini" data-idx="{{index}}" bindtap="removePicked">✕</view>
+        </view>
+        <view class="row-actions">
+          <view class="btn-primary btn-sm" bindtap="save">保存到{{meal}}</view>
+          <view class="btn-ghost btn-sm" bindtap="clearPicked">清空</view>
+        </view>
+      </block>
+
+      <!-- 文字识别 -->
+      <view class="field">
+        <view class="field-label">或用一句话描述（自动识别）</view>
+        <input class="input" value="{{text}}" bindinput="onTextInput"
+          placeholder="如：2个鸡蛋 一碗粥 一杯牛奶" placeholder-class="input-ph" cursor-spacing="24" />
+      </view>
+      <view class="row-actions">
+        <view class="btn-ghost btn-sm" bindtap="recognizeText">🔍 识别</view>
+        <view class="btn-ghost btn-sm" wx:if="{{picked.length === 0}}" bindtap="save">直接保存</view>
+      </view>
+
+      <!-- 手动记账 -->
+      <view class="divider"></view>
+      <view class="field-label">手动记账（识别不出时的兜底）</view>
+      <view class="field">
+        <input class="input" value="{{mText}}" bindinput="onMText"
+          placeholder="吃了什么" placeholder-class="input-ph" cursor-spacing="24" />
+      </view>
+      <view class="field-row">
+        <view class="field">
+          <view class="field-label">蛋白 g</view>
+          <input class="input" type="digit" value="{{mProtein}}" bindinput="onMProtein"
+            placeholder="留空=自动算" placeholder-class="input-ph" cursor-spacing="24" />
+        </view>
+        <view class="field">
+          <view class="field-label">热量 kcal</view>
+          <input class="input" type="digit" value="{{mCalories}}" bindinput="onMCalories"
+            placeholder="留空=自动算" placeholder-class="input-ph" cursor-spacing="24" />
+        </view>
+      </view>
+      <view class="row-actions">
+        <view class="btn-ghost btn-sm" bindtap="addManual">＋ 手动记一笔</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- ── 套餐模板 ── -->
+  <view class="card">
+    <view class="card-head">
+      <view class="icon-chip tone-violet">⚡</view>
+      <view class="card-head-title">常用套餐（一键加入清单）</view>
+    </view>
+    <view class="card-body">
+      <view class="tpl-grid">
+        <view class="tpl-card" wx:for="{{templates}}" wx:key="id" data-id="{{item.id}}" bindtap="applyTemplate">
+          <view class="tpl-name">{{item.name}}</view>
+          <view class="tpl-sum">{{item.summary}}</view>
+          <view class="tpl-num">{{item.protein}}g 蛋白 · {{item.meal}}</view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- ── 食物库 ── -->
+  <view class="card">
+    <view class="card-head">
+      <view class="icon-chip tone-amber">🥩</view>
+      <view class="card-head-title">食物库 · {{library.length}} 种</view>
+    </view>
+    <view class="card-body">
+      <input class="input" value="{{q}}" bindinput="onSearch"
+        placeholder="搜索食物名或别名…" placeholder-class="input-ph" cursor-spacing="24" />
+
+      <view class="filter-row" style="margin-top: 18rpx;">
+        <picker mode="selector" range="{{catOptions}}" value="{{catIndex}}" bindchange="onCatChange">
+          <view class="filter-pill is-active">分类：{{cat}} ▾</view>
+        </picker>
+      </view>
+
+      <view class="food-grid">
+        <view class="food-card" wx:for="{{libraryShown}}" wx:key="id" data-id="{{item.id}}" bindtap="addFood">
+          <view class="food-name">{{item.name}}</view>
+          <view class="food-unit">{{item.unit}}</view>
+          <view class="food-num">{{item.protein}}g / {{item.calories}}kcal</view>
+        </view>
+      </view>
+
+      <view class="row-actions mt" wx:if="{{libraryShown.length < library.length}}">
+        <view class="btn-ghost btn-sm" bindtap="showMoreLibrary">显示更多（还有 {{library.length - libraryShown.length}} 种）</view>
+      </view>
+
+      <view class="empty" wx:if="{{library.length === 0}}">
+        <view class="empty-desc">没有匹配的食物，换个词试试</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- ── 近 7 天趋势 ── -->
+  <view class="card">
+    <view class="card-head">
+      <view class="icon-chip tone-sky">📈</view>
+      <view class="card-head-title">近 7 天蛋白摄入</view>
+    </view>
+    <view class="card-body">
+      <view class="week-bar-row" wx:for="{{trend}}" wx:key="date">
+        <text class="week-bar-label">{{item.label}}</text>
+        <view class="bar-track bar-track-sm">
+          <view class="bar-fill {{item.hit ? 'bar-emerald' : 'bar-sky'}}" style="width: {{item.barWidth}}%"></view>
+        </view>
+        <text class="week-bar-count">{{item.protein}}g</text>
+      </view>
+      <view class="tiny-note">绿条 = 当天达标（目标 {{proteinTarget}}g）</view>
+    </view>
+  </view>
+
+  <!-- ── 历史 ── -->
+  <view class="card">
+    <view class="card-head">
+      <view class="icon-chip tone-slate">📚</view>
+      <view class="card-head-title">历史记录 · {{historyTotal}} 天</view>
+    </view>
+    <view class="card-body">
+      <view class="empty" wx:if="{{historyDays.length === 0}}">
+        <view class="empty-desc">还没有历史记录</view>
+      </view>
+      <block wx:else>
+        <view class="hist-day" wx:for="{{historyDays}}" wx:key="date">
+          <view class="hist-head">
+            <text class="hist-date">{{item.date}}</text>
+            <text class="hist-sum">{{item.protein}}g / {{item.calories}}kcal · {{item.count}} 笔</text>
+          </view>
+          <view class="hist-item" wx:for="{{item.items}}" wx:for-item="it" wx:key="idx">
+            <text class="hist-meal">{{it.meal}}</text>
+            <text class="hist-text">{{it.text}}</text>
+            <text class="hist-num">{{it.protein}}g</text>
+            <view class="icon-btn tone-rose btn-mini" data-idx="{{it.idx}}" bindtap="removeLog">🗑️</view>
+          </view>
+        </view>
+        <view class="row-actions mt">
+          <view class="btn-ghost btn-sm" bindtap="toggleHistory">{{showAllHistory ? '只看最近 7 天' : '展开全部'}}</view>
+        </view>
+      </block>
+    </view>
+  </view>
+
+</view>

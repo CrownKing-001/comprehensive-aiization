@@ -1,0 +1,187 @@
+/* 课表识别页样式 */
+
+/* ── 提示条 ───────────────────────────────────── */
+.notice {
+  border-radius: 18rpx;
+  padding: 20rpx 24rpx;
+  font-size: 24rpx;
+  line-height: 1.6;
+  border: 2rpx solid transparent;
+}
+
+.notice-text { color: inherit; }
+
+.notice-ok   { background: rgba(16, 185, 129, 0.12); border-color: rgba(16, 185, 129, 0.35); color: #6ee7b7; }
+.notice-err  { background: rgba(244, 63, 94, 0.12);  border-color: rgba(244, 63, 94, 0.35);  color: #fda4af; }
+.notice-info { background: rgba(14, 165, 233, 0.12); border-color: rgba(14, 165, 233, 0.35); color: #7dd3fc; }
+
+/* ── 说明块 ───────────────────────────────────── */
+.hint-box {
+  font-size: 23rpx;
+  color: var(--text-3);
+  line-height: 1.7;
+  background: var(--surface-3);
+  border-radius: 16rpx;
+  padding: 20rpx 22rpx;
+  margin-bottom: 20rpx;
+}
+
+.prompt-box {
+  background: var(--surface-3);
+  border: 2rpx solid var(--border-2);
+  border-radius: 16rpx;
+  padding: 22rpx;
+  margin-bottom: 20rpx;
+  max-height: 620rpx;
+  overflow-y: auto;
+}
+
+.prompt-text {
+  font-size: 22rpx;
+  color: var(--text-3);
+  line-height: 1.75;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+/* ── 粘贴区 ───────────────────────────────────── */
+.paste-area {
+  width: 100%;
+  height: 420rpx;
+  box-sizing: border-box;
+  border-radius: 18rpx;
+  border: 2rpx solid var(--border-3);
+  background: var(--surface-3);
+  padding: 20rpx 22rpx;
+  font-size: 25rpx;
+  line-height: 1.7;
+  color: var(--text-1);
+}
+
+/* ── 周次检测 ─────────────────────────────────── */
+.week-detect {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14rpx;
+  background: rgba(14, 165, 233, 0.1);
+  border: 2rpx solid rgba(14, 165, 233, 0.32);
+  border-radius: 16rpx;
+  padding: 18rpx 22rpx;
+  margin-bottom: 18rpx;
+}
+
+.week-detect-text {
+  flex: 1;
+  min-width: 0;
+  font-size: 23rpx;
+  color: #7dd3fc;
+}
+
+/* ── 原始文字 ─────────────────────────────────── */
+.raw-box {
+  background: var(--surface-3);
+  border-radius: 16rpx;
+  padding: 18rpx 22rpx;
+  margin-bottom: 20rpx;
+  max-height: 420rpx;
+  overflow-y: auto;
+}
+
+.raw-line {
+  display: block;
+  font-size: 21rpx;
+  color: var(--text-4);
+  line-height: 1.7;
+  font-family: monospace;
+  word-break: break-all;
+}
+
+/* ── 草稿列表 ─────────────────────────────────── */
+.draft-list { margin-top: 4rpx; }
+
+.draft-item {
+  border-radius: 20rpx;
+  border: 2rpx solid var(--border-2);
+  background: var(--surface-3);
+  padding: 20rpx 22rpx;
+  margin-bottom: 16rpx;
+}
+
+.draft-item.is-off { opacity: 0.5; }
+
+.draft-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12rpx;
+  margin-bottom: 16rpx;
+}
+
+.checkbox.is-on {
+  background: #059669;
+  border-color: #059669;
+}
+
+.draft-day {
+  font-size: 25rpx;
+  font-weight: 600;
+  color: var(--text-1);
+}
+
+.draft-time {
+  font-size: 23rpx;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.draft-field {
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
+  margin-bottom: 12rpx;
+}
+
+.draft-label {
+  width: 68rpx;
+  flex-shrink: 0;
+  font-size: 22rpx;
+  color: var(--text-4);
+}
+
+.draft-input {
+  flex: 1;
+  min-width: 0;
+  height: 66rpx;
+  border-radius: 14rpx;
+  border: 2rpx solid var(--border-3);
+  background: var(--surface-1);
+  padding: 0 18rpx;
+  font-size: 25rpx;
+  color: var(--text-1);
+  box-sizing: border-box;
+}
+
+.draft-raw {
+  font-size: 20rpx;
+  color: var(--text-4);
+  margin-top: 10rpx;
+  line-height: 1.6;
+  word-break: break-all;
+}
+
+/* ── 格式说明 ─────────────────────────────────── */
+.fmt-line {
+  font-size: 23rpx;
+  color: var(--text-3);
+  line-height: 1.9;
+}
+
+.mono {
+  font-family: monospace;
+  font-size: 22rpx;
+  color: #38bdf8;
+  background: var(--chip-bg);
+  padding: 2rpx 8rpx;
+  border-radius: 6rpx;
+}

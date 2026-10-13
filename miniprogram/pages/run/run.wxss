@@ -1,0 +1,14 @@
+/* 运动打卡页 —— 大部分样式已提到 app.wxss 的通用组件类，
+   这里只放本页特有的微调。 */
+
+/* 记录列表限高，避免长列表把页面撑得很难滚 */
+.log-list {
+  max-height: 880rpx;
+  overflow-y: auto;
+}
+
+/* 打卡按钮在窄屏换行时保持等宽观感 */
+.row-actions .btn-primary,
+.row-actions .btn-ghost {
+  flex: 0 0 auto;
+}

@@ -1,0 +1,103 @@
+<!-- 待办清单 -->
+<view class="page-wrap stack {{themeClass}}">
+
+  <!-- 新建待办 -->
+  <view class="card">
+    <view class="card-head">
+      <view class="icon-chip tone-emerald">＋</view>
+      <view class="card-head-title">新建待办</view>
+    </view>
+    <view class="card-body">
+      <input
+        class="input"
+        placeholder="要做什么？"
+        placeholder-class="input-ph"
+        value="{{text}}"
+        bindinput="onText"
+        confirm-type="done"
+        bindconfirm="add"
+        cursor-spacing="24"
+      />
+
+      <view class="form-row">
+        <view class="form-col">
+          <view class="field-label">截止日期</view>
+          <picker mode="date" value="{{due}}" bindchange="onDue">
+            <view class="input picker-input">{{due || '选择日期'}}</view>
+          </picker>
+        </view>
+        <view class="form-col">
+          <view class="field-label">优先级</view>
+          <picker mode="selector" range="{{priorityOptions}}" range-key="label" value="{{priorityIndex}}" bindchange="onPriority">
+            <view class="input picker-input">{{priorityOptions[priorityIndex].label}}</view>
+          </picker>
+        </view>
+      </view>
+
+      <view class="field-label" style="margin-top: 18rpx;">标签</view>
+      <input class="input" placeholder="可选，如 复习" placeholder-class="input-ph" value="{{tag}}" bindinput="onTag"
+        cursor-spacing="24"
+      />
+
+      <view class="quick-row">
+        <text class="quick-label">快捷日期：</text>
+        <view class="quick-pill" wx:for="{{quickDates}}" wx:key="label" data-value="{{item.value}}" bindtap="pickQuickDate">{{item.label}}</view>
+        <view class="quick-clear" wx:if="{{due}}" bindtap="clearDue">清除日期</view>
+      </view>
+
+      <view class="btn-primary {{text ? '' : 'is-disabled'}}" style="margin-top: 22rpx; width: 100%;" bindtap="add">＋ 添加</view>
+    </view>
+  </view>
+
+  <!-- 待办列表 -->
+  <view class="card">
+    <view class="card-head">
+      <view class="icon-chip tone-sky">☰</view>
+      <view class="card-head-title">待办列表（{{list.length}}）</view>
+      <view class="head-link" wx:if="{{counts.done > 0}}" bindtap="clearDone">清除已完成 ({{counts.done}})</view>
+    </view>
+    <view class="card-body">
+      <view class="filter-row">
+        <view
+          class="filter-pill {{filter === item.id ? 'is-active' : ''}}"
+          wx:for="{{filters}}"
+          wx:key="id"
+          data-id="{{item.id}}"
+          bindtap="setFilter"
+        >
+          {{item.label}}<text class="filter-count" wx:if="{{item.count > 0}}">{{item.count}}</text>
+        </view>
+      </view>
+
+      <view class="empty" wx:if="{{list.length === 0}}">
+        <view class="empty-icon">✨</view>
+        <view class="empty-text">{{filter === 'done' ? '还没有完成的事项' : '这里空空的，享受一下吧 ✨'}}</view>
+      </view>
+
+      <view class="todo-list" wx:else>
+        <view class="todo-item {{item.done ? 'is-done' : (item.overdue ? 'is-overdue' : '')}}" wx:for="{{list}}" wx:key="id">
+          <view class="tick {{item.done ? 'is-checked' : ''}}" data-id="{{item.id}}" bindtap="toggle">
+            <text wx:if="{{item.done}}">✓</text>
+          </view>
+          <view class="todo-main">
+            <view class="todo-text {{item.done ? 'is-struck' : ''}}">{{item.text}}</view>
+            <view class="todo-meta">
+              <text class="chip chip-{{item.priorityTone}}">⚑ {{item.priorityText}}</text>
+              <text class="todo-due is-{{item.dueTone}}" wx:if="{{item.due}}">📅 {{item.dueText}}</text>
+              <text class="chip chip-sky" wx:if="{{item.tag}}">{{item.tag}}</text>
+            </view>
+          </view>
+          <view class="del-btn" data-id="{{item.id}}" bindtap="remove">🗑</view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 逾期提醒 -->
+  <view class="alert alert-amber" wx:if="{{counts.overdue > 0}}">
+    有 <text class="bold">{{counts.overdue}}</text> 项待办已经超过截止日期，建议重新排一下优先级。
+  </view>
+
+  <view class="footnote">✅ 数据保存在本机，关掉小程序也不会丢</view>
+
+</view>

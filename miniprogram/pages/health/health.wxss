@@ -1,0 +1,130 @@
+/* 体重作息页样式 */
+
+/* ── 概览卡（复用 dashboard 的 stat-grid 结构） ── */
+.stat-sub {
+  font-size: 20rpx;
+  color: var(--text-4);
+  margin-top: 8rpx;
+  line-height: 1.5;
+}
+
+.stat-num-sm {
+  font-size: 38rpx;
+  font-weight: 800;
+  color: var(--text-1);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── 图表 ─────────────────────────────────────── */
+.chart-canvas {
+  width: 100%;
+  height: 280rpx;
+}
+
+.chart-note {
+  font-size: 21rpx;
+  margin-top: 12rpx;
+  line-height: 1.6;
+}
+
+.chart-note.is-ok { color: #34d399; }
+.chart-note.is-warn { color: #fbbf24; }
+
+/* ── 训练打卡 7 格 ───────────────────────────── */
+.train-grid {
+  display: flex;
+  gap: 10rpx;
+}
+
+.train-day {
+  flex: 1;
+  min-width: 0;
+  border-radius: 16rpx;
+  border: 2rpx solid var(--border-2);
+  background: var(--surface-3);
+  padding: 14rpx 0 12rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4rpx;
+}
+
+.train-day.is-today {
+  border-color: rgba(16, 185, 129, 0.5);
+}
+
+.train-day.is-done {
+  background: rgba(16, 185, 129, 0.16);
+  border-color: #059669;
+}
+
+.train-wd {
+  font-size: 19rpx;
+  color: var(--text-4);
+}
+
+.train-num {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.train-mark {
+  font-size: 20rpx;
+  color: #34d399;
+  line-height: 1;
+}
+
+.train-plan {
+  font-size: 22rpx;
+  color: var(--text-4);
+  line-height: 1;
+}
+
+/* ── 历史行 ───────────────────────────────────── */
+.hd-weight,
+.hd-sleep,
+.hd-steps {
+  font-size: 21rpx;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+.hd-weight { color: #34d399; }
+.hd-sleep { color: #38bdf8; }
+.hd-steps { color: var(--text-4); }
+
+/* ── 弹层 ─────────────────────────────────────── */
+.modal-mask {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48rpx;
+  z-index: 100;
+}
+
+.modal-card {
+  width: 100%;
+  max-width: 620rpx;
+  max-height: 80%;
+  overflow-y: auto;
+  background: var(--surface-1);
+  border: 2rpx solid var(--border-2);
+  border-radius: 28rpx;
+  padding: 34rpx 32rpx;
+  box-sizing: border-box;
+}
+
+.modal-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: var(--text-1);
+  margin-bottom: 26rpx;
+}

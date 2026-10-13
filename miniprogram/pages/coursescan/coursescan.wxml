@@ -1,0 +1,136 @@
+<!-- 课表识别（文字解析导入） -->
+<view class="page-wrap stack {{themeClass}}">
+
+  <!-- ── 提示条 ── -->
+  <view class="notice notice-{{msg.kind}}" wx:if="{{msg}}">
+    <text class="notice-text">{{msg.text}}</text>
+  </view>
+
+  <!-- ── 粘贴文字 ── -->
+  <view class="card">
+    <view class="card-head">
+      <view class="icon-chip tone-emerald">📋</view>
+      <view class="card-head-title">粘贴课表文字</view>
+    </view>
+    <view class="card-body">
+      <view class="hint-box">
+        从教务系统复制课表文字，或让 AI 先整理成固定格式再粘贴进来 —— 文字是确定的，比截图识别准得多。
+      </view>
+
+      <view class="row-actions">
+        <view class="btn-ghost btn-sm" bindtap="copyPrompt">📎 复制「给 AI 的指令」</view>
+        <view class="btn-ghost btn-sm" bindtap="togglePrompt">{{showPrompt ? '收起指令原文' : '查看指令原文'}}</view>
+      </view>
+
+      <view class="prompt-box" wx:if="{{showPrompt}}">
+        <text class="prompt-text" user-select="{{true}}">{{promptText}}</text>
+      </view>
+
+      <textarea
+        class="paste-area"
+        value="{{pasteText}}"
+        bindinput="onPasteInput"
+        placeholder="周一&#10;1. 高等数学，3-4 节（10:00-11:35），瑞安楼阶 3，1-16 周&#10;2. 线性代数，9-10 节，北 229，1-16 周&#10;&#10;周三&#10;1. 体育，1-2 节，足球场，1-16 周"
+        placeholder-class="input-ph"
+        maxlength="-1"
+        cursor-spacing="24"
+        auto-height="{{false}}"
+      />
+
+      <view class="row-actions mt">
+        <view class="btn-primary" bindtap="parsePasted">🔍 解析</view>
+        <view class="btn-ghost" bindtap="goCourses">去课表</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- ── 解析结果 ── -->
+  <view class="card" wx:if="{{hasDraft}}">
+    <view class="card-head">
+      <view class="icon-chip tone-sky">✅</view>
+      <view class="card-head-title">核对结果 · 已勾选 {{acceptedCount}} 门</view>
+    </view>
+    <view class="card-body">
+
+      <!-- 检测到的周次 -->
+      <view class="week-detect" wx:if="{{detectedWeek}}">
+        <text class="week-detect-text">文字里标了「第 {{detectedWeek}} 周」</text>
+        <view class="btn-ghost btn-xs" bindtap="applyCurrentWeek">把当前周设为第 {{detectedWeek}} 周</view>
+      </view>
+
+      <!-- 只导入本周 -->
+      <view class="switch-row">
+        <text class="switch-label">只显示本周有课的（第 {{currentWeekNum}} 周）</text>
+        <switch checked="{{onlyThisWeek}}" bindchange="toggleOnlyThisWeek" color="#059669" />
+      </view>
+
+      <view class="row-actions">
+        <view class="btn-ghost btn-sm" bindtap="acceptAll">全选</view>
+        <view class="btn-ghost btn-sm" bindtap="acceptNone">全不选</view>
+        <view class="btn-ghost btn-sm" bindtap="toggleRaw">{{showRaw ? '隐藏原文' : '看原始文字'}}</view>
+      </view>
+
+      <!-- 原始文字 -->
+      <view class="raw-box" wx:if="{{showRaw}}">
+        <text class="raw-line" wx:for="{{rawLines}}" wx:key="*this">{{item}}</text>
+      </view>
+
+      <!-- 草稿列表 -->
+      <view class="draft-list">
+        <view class="draft-item {{item.accepted ? '' : 'is-off'}}" wx:for="{{draft}}" wx:key="id">
+          <view class="draft-top">
+            <view class="checkbox {{item.accepted ? 'is-on' : ''}}" data-id="{{item.id}}" bindtap="toggleAccept">
+              <text wx:if="{{item.accepted}}">✓</text>
+            </view>
+            <text class="draft-day">{{item.dayText}}</text>
+            <text class="draft-time">{{item.timeText}}</text>
+            <text class="chip chip-{{item.confidenceTone}}">{{item.confidenceText}}</text>
+            <text class="chip chip-amber" wx:if="{{item.nonThisWeek}}">非本周</text>
+          </view>
+
+          <view class="draft-field">
+            <text class="draft-label">课程</text>
+            <input class="draft-input" value="{{item.name}}" data-id="{{item.id}}" bindinput="onNameEdit"
+              placeholder="课程名" placeholder-class="input-ph" cursor-spacing="24" />
+          </view>
+
+          <view class="draft-field">
+            <text class="draft-label">地点</text>
+            <input class="draft-input" value="{{item.place}}" data-id="{{item.id}}" bindinput="onPlaceEdit"
+              placeholder="未识别到" placeholder-class="input-ph" cursor-spacing="24" />
+          </view>
+
+          <view class="draft-field">
+            <text class="draft-label">周次</text>
+            <input class="draft-input" value="{{item.weeksText}}" data-id="{{item.id}}" bindinput="onWeeksEdit"
+              placeholder="留空=每周" placeholder-class="input-ph" cursor-spacing="24" />
+          </view>
+
+          <view class="draft-raw">原文：{{item.raw}}</view>
+        </view>
+      </view>
+
+      <view class="row-actions mt">
+        <view class="btn-primary {{acceptedCount ? '' : 'is-disabled'}}" bindtap="importToCourses">
+          导入课表{{acceptedCount ? ' (' + acceptedCount + ')' : ''}}
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- ── 说明 ── -->
+  <view class="card" wx:if="{{!hasDraft}}">
+    <view class="card-head">
+      <view class="icon-chip tone-violet">💡</view>
+      <view class="card-head-title">支持的格式</view>
+    </view>
+    <view class="card-body">
+      <view class="fmt-line">· 按 <text class="mono">周一</text> / <text class="mono">星期二</text> / <text class="mono">礼拜三</text> 分段，下面跟若干门课</view>
+      <view class="fmt-line">· 每行格式：<text class="mono">课程名，节次（时间），地点，周次</text></view>
+      <view class="fmt-line">· 只写节次也行：<text class="mono">高等数学，3-4 节，教三-201</text> —— 时间按作息表推算</view>
+      <view class="fmt-line">· 周次支持：<text class="mono">1-16 周</text> / <text class="mono">单周</text> / <text class="mono">双周</text> / <text class="mono">非本周</text></view>
+      <view class="fmt-line">· 全角标点、序号（<text class="mono">1.</text> <text class="mono">①</text>）、OCR 空格都能容错</view>
+    </view>
+  </view>
+
+</view>

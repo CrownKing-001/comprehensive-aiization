@@ -1,0 +1,154 @@
+<!-- 体重作息 -->
+<view class="page-wrap stack {{themeClass}}">
+
+  <!-- ── 概览卡 ── -->
+  <view class="stat-grid">
+    <view class="stat-card" wx:for="{{stats}}" wx:key="label">
+      <view class="stat-top">
+        <view class="icon-chip tone-{{item.tone}}">{{item.icon}}</view>
+        <view class="stat-label">{{item.label}}</view>
+      </view>
+      <view class="stat-value"><text class="stat-num-sm">{{item.value}}</text></view>
+      <view class="stat-sub">{{item.sub}}</view>
+    </view>
+  </view>
+
+  <!-- ── 今日录入 ── -->
+  <view class="card">
+    <view class="card-head">
+      <view class="icon-chip tone-emerald">📝</view>
+      <view class="card-head-title">记录今天的身体数据</view>
+    </view>
+    <view class="card-body">
+      <view class="field-row">
+        <view class="field">
+          <view class="field-label">体重 kg</view>
+          <input class="input" type="digit" value="{{weight}}" bindinput="onWeight"
+            placeholder="如 68.5" placeholder-class="input-ph" cursor-spacing="24" />
+        </view>
+        <view class="field">
+          <view class="field-label">睡眠 h</view>
+          <input class="input" type="digit" value="{{sleep}}" bindinput="onSleep"
+            placeholder="如 7.5" placeholder-class="input-ph" cursor-spacing="24" />
+        </view>
+        <view class="field">
+          <view class="field-label">步数</view>
+          <input class="input" type="number" value="{{steps}}" bindinput="onSteps"
+            placeholder="选填" placeholder-class="input-ph" cursor-spacing="24" />
+        </view>
+      </view>
+      <view class="row-actions">
+        <view class="btn-primary" bindtap="save">保存今天</view>
+      </view>
+      <view class="tiny-note">同一天重复保存会覆盖，不会产生多条记录。</view>
+    </view>
+  </view>
+
+  <!-- ── 体重曲线 ── -->
+  <view class="card">
+    <view class="card-head">
+      <view class="icon-chip tone-emerald">⚖️</view>
+      <view class="card-head-title">体重曲线（最近 {{weightPoints.length}} 次）</view>
+    </view>
+    <view class="card-body">
+      <view class="empty" wx:if="{{weightPoints.length < 2}}">
+        <view class="empty-desc">至少记录 2 天体重后，这里会出现体重曲线</view>
+      </view>
+      <canvas wx:else type="2d" id="weightCanvas" class="chart-canvas"></canvas>
+    </view>
+  </view>
+
+  <!-- ── 睡眠曲线 ── -->
+  <view class="card">
+    <view class="card-head">
+      <view class="icon-chip tone-sky">🌙</view>
+      <view class="card-head-title">睡眠曲线（最近 {{sleepPoints.length}} 次）</view>
+    </view>
+    <view class="card-body">
+      <view class="empty" wx:if="{{sleepPoints.length < 2}}">
+        <view class="empty-desc">至少记录 2 天睡眠后，这里会出现睡眠曲线</view>
+      </view>
+      <block wx:else>
+        <canvas type="2d" id="sleepCanvas" class="chart-canvas"></canvas>
+        <view class="chart-note {{sleepSummary.ok ? 'is-ok' : 'is-warn'}}" wx:if="{{sleepSummary}}">
+          {{sleepSummary.text}} · 达标 {{sleepSummary.hit}}/{{sleepSummary.total}} 天
+        </view>
+      </block>
+    </view>
+  </view>
+
+  <!-- ── 训练打卡 ── -->
+  <view class="card">
+    <view class="card-head">
+      <view class="icon-chip tone-amber">🏋️</view>
+      <view class="card-head-title">本周训练打卡 · 第 {{week}} 周 · {{doneCount}}/7 天</view>
+    </view>
+    <view class="card-body">
+      <view class="train-grid">
+        <view class="train-day {{item.checked ? 'is-done' : ''}} {{item.isToday ? 'is-today' : ''}}"
+          wx:for="{{weekDays}}" wx:key="key" data-key="{{item.key}}" bindtap="toggleTrain">
+          <text class="train-wd">周{{item.wd}}</text>
+          <text class="train-num">{{item.day}}</text>
+          <text class="train-mark" wx:if="{{item.checked}}">✓</text>
+          <text class="train-plan" wx:elif="{{item.isPlan}}">·</text>
+        </view>
+      </view>
+      <view class="tiny-note">
+        {{hasPlan ? '带「·」的是你在设置里定的训练日，点格子打卡。' : '还没有设置训练日，去「设置」里填「训练日」后会显示计划标记。'}}
+      </view>
+      <view class="row-actions">
+        <view class="btn-ghost btn-sm" bindtap="goSettings">⚙️ 设置训练日</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- ── 历史数据 ── -->
+  <view class="card">
+    <view class="card-head">
+      <view class="icon-chip tone-violet">📊</view>
+      <view class="card-head-title">历史数据 · {{logs.length}} 天</view>
+    </view>
+    <view class="card-body">
+      <view class="empty" wx:if="{{logs.length === 0}}">
+        <view class="empty-desc">还没有记录，从上面开始记第一条吧</view>
+      </view>
+      <block wx:else>
+        <view class="log-row" wx:for="{{logs}}" wx:key="date">
+          <text class="log-date">{{item.date}}</text>
+          <text class="hd-weight">{{item.weight}}kg</text>
+          <text class="hd-sleep">{{item.sleep}}h</text>
+          <text class="hd-steps">{{item.steps}}步</text>
+          <view class="icon-btn tone-emerald btn-mini" data-date="{{item.date}}" bindtap="startEdit">✏️</view>
+          <view class="icon-btn tone-rose btn-mini" data-date="{{item.date}}" bindtap="removeLog">🗑️</view>
+        </view>
+      </block>
+    </view>
+  </view>
+
+  <!-- ── 编辑弹层 ── -->
+  <view class="modal-mask" wx:if="{{editDate}}" bindtap="cancelEdit">
+    <view class="modal-card" catchtap="noop">
+      <view class="modal-title">编辑 {{editDate}}</view>
+      <view class="field">
+        <view class="field-label">体重 kg</view>
+        <input class="input" type="digit" value="{{eWeight}}" bindinput="onEWeight"
+          placeholder="留空=不记录" placeholder-class="input-ph" cursor-spacing="24" />
+      </view>
+      <view class="field">
+        <view class="field-label">睡眠 h</view>
+        <input class="input" type="digit" value="{{eSleep}}" bindinput="onESleep"
+          placeholder="留空=不记录" placeholder-class="input-ph" cursor-spacing="24" />
+      </view>
+      <view class="field">
+        <view class="field-label">步数</view>
+        <input class="input" type="number" value="{{eSteps}}" bindinput="onESteps"
+          placeholder="留空=不记录" placeholder-class="input-ph" cursor-spacing="24" />
+      </view>
+      <view class="row-actions mt">
+        <view class="btn-primary" bindtap="saveEdit">保存</view>
+        <view class="btn-ghost" bindtap="cancelEdit">取消</view>
+      </view>
+    </view>
+  </view>
+
+</view>

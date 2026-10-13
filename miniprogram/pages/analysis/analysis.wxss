@@ -1,0 +1,210 @@
+/* 空闲时段分析页样式 */
+
+/* ── 热力图 ───────────────────────────────────── */
+/* 12 个时段横排放不下，用 scroll-view 横向滚动 */
+.hm-scroll {
+  width: 100%;
+  white-space: nowrap;
+}
+
+.hm-table {
+  display: inline-block;
+  min-width: 100%;
+}
+
+.hm-row {
+  display: flex;
+  align-items: stretch;
+  gap: 6rpx;
+  margin-bottom: 6rpx;
+}
+
+.hm-day {
+  width: 76rpx;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  font-size: 21rpx;
+  font-weight: 600;
+  color: var(--text-3);
+}
+
+.hm-day-head { background: transparent; }
+
+.hm-cell {
+  width: 74rpx;
+  flex-shrink: 0;
+  height: 62rpx;
+  border-radius: 12rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24rpx;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 表头单元格略高，放两行文字 */
+.hm-head-cell {
+  height: auto;
+  flex-direction: column;
+  gap: 2rpx;
+  background: transparent;
+  font-weight: 400;
+  padding-bottom: 8rpx;
+}
+
+.hm-head-label {
+  font-size: 21rpx;
+  color: var(--text-3);
+  font-weight: 500;
+}
+
+.hm-head-range {
+  font-size: 17rpx;
+  color: var(--text-4);
+}
+
+/* 空闲度配色：深绿=全空 → 红=全有课 */
+.hm-cell.is-best {
+  background: #059669;
+  color: #fff;
+}
+
+.hm-cell.is-high {
+  background: rgba(16, 185, 129, 0.3);
+  color: #6ee7b7;
+}
+
+.hm-cell.is-mid {
+  background: rgba(245, 158, 11, 0.25);
+  color: #fcd34d;
+}
+
+.hm-cell.is-low {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+}
+
+.hm-cell.is-full {
+  background: rgba(244, 63, 94, 0.25);
+  color: #fda4af;
+}
+
+.hm-cell.is-none {
+  background: var(--border-1);
+  color: var(--text-3);
+}
+
+/* ── 推荐列表 ─────────────────────────────────── */
+.rec-item {
+  display: flex;
+  gap: 18rpx;
+  margin-bottom: 18rpx;
+}
+
+.rec-rank {
+  width: 48rpx;
+  height: 48rpx;
+  border-radius: 50%;
+  background: #059669;
+  color: #fff;
+  font-size: 23rpx;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 4rpx;
+}
+
+.rec-body {
+  flex: 1;
+  min-width: 0;
+  background: var(--surface-3);
+  border: 2rpx solid var(--border-2);
+  border-radius: 18rpx;
+  padding: 18rpx 22rpx;
+}
+
+.rec-desc {
+  font-size: 22rpx;
+  color: var(--text-4);
+  line-height: 1.65;
+  margin-top: 12rpx;
+}
+
+/* ── 重要事项（紧凑行） ───────────────────────── */
+.ms-mini {
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
+  background: var(--surface-3);
+  border: 2rpx solid var(--border-2);
+  border-radius: 16rpx;
+  padding: 16rpx 20rpx;
+  margin-bottom: 12rpx;
+}
+
+.ms-mini.is-urgent {
+  border-color: rgba(244, 63, 94, 0.4);
+  background: rgba(244, 63, 94, 0.08);
+}
+
+.ms-mini-emoji {
+  font-size: 28rpx;
+  flex-shrink: 0;
+}
+
+.ms-mini-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+}
+
+.ms-mini-title {
+  font-size: 24rpx;
+  font-weight: 500;
+  color: var(--text-1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ms-mini-title.is-done {
+  text-decoration: line-through;
+  color: var(--text-4);
+}
+
+.ms-mini-meta {
+  font-size: 20rpx;
+  color: var(--text-4);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ms-mini-days {
+  font-size: 21rpx;
+  color: var(--text-3);
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.ms-mini.is-urgent .ms-mini-days {
+  color: #fb7185;
+  font-weight: 600;
+}
+
+/* ── 通用 ─────────────────────────────────────── */
+.hl {
+  color: #34d399;
+  font-weight: 600;
+}
+
+.warn {
+  color: #fb7185;
+  font-weight: 500;
+}

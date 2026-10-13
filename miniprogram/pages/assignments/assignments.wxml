@@ -1,0 +1,133 @@
+<!-- 作业 DDL -->
+<view class="page-wrap stack {{themeClass}}">
+
+  <!-- 登记作业 -->
+  <view class="card">
+    <view class="card-head">
+      <view class="icon-chip tone-violet">＋</view>
+      <view class="card-head-title">登记作业</view>
+    </view>
+    <view class="card-body">
+      <view class="field-label">课程</view>
+      <picker wx:if="{{names.length > 0}}" mode="selector" range="{{names}}" bindchange="pickCourse">
+        <view class="input picker-input">{{course || '从课表选或手动输入'}}</view>
+      </picker>
+      <input
+        wx:else
+        class="input"
+        placeholder="从课表选或手动输入"
+        placeholder-class="input-ph"
+        value="{{course}}"
+        bindinput="onCourse"
+        cursor-spacing="24"
+      />
+
+      <view class="field-label" style="margin-top: 18rpx;">作业标题 *</view>
+      <input class="input" placeholder="如：第 3 章习题 1–12" placeholder-class="input-ph" value="{{title}}" bindinput="onTitle"
+        cursor-spacing="24"
+      />
+
+      <view class="form-row">
+        <view class="form-col">
+          <view class="field-label">截止日期 *</view>
+          <picker mode="date" value="{{due}}" bindchange="onDue">
+            <view class="input picker-input">{{due || '选择日期'}}</view>
+          </picker>
+        </view>
+        <view class="form-col">
+          <view class="field-label">截止时间</view>
+          <picker mode="time" value="{{dueTime}}" bindchange="onDueTime">
+            <view class="input picker-input">{{dueTime || '可选'}}</view>
+          </picker>
+        </view>
+      </view>
+
+      <view class="form-row">
+        <view class="form-col">
+          <view class="field-label">占分比重</view>
+          <input class="input" placeholder="如 20%" placeholder-class="input-ph" value="{{weight}}" bindinput="onWeight"
+        cursor-spacing="24"
+      />
+        </view>
+      </view>
+
+      <view class="field-label" style="margin-top: 18rpx;">备注</view>
+      <input class="input" placeholder="要求、提交方式等" placeholder-class="input-ph" value="{{detail}}" bindinput="onDetail"
+        cursor-spacing="24"
+      />
+
+      <view class="btn-primary {{title && due ? '' : 'is-disabled'}}" style="margin-top: 22rpx; width: 100%;" bindtap="add">＋ 添加作业</view>
+    </view>
+  </view>
+
+  <!-- 按课程统计 -->
+  <view class="card" wx:if="{{byCourse.length > 0}}">
+    <view class="card-head">
+      <view class="icon-chip tone-sky">📚</view>
+      <view class="card-head-title">按课程统计</view>
+    </view>
+    <view class="card-body">
+      <view class="course-stats">
+        <view class="course-stat" wx:for="{{byCourse}}" wx:key="name">
+          <view class="course-stat-name">{{item.name}}</view>
+          <view class="course-stat-row">
+            <text class="course-stat-prog">{{item.done}}/{{item.total}} 已完成</text>
+            <text class="chip chip-{{item.chipTone}}" wx:if="{{item.hasNext}}">{{item.chipText}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 作业列表 -->
+  <view class="card">
+    <view class="card-head">
+      <view class="icon-chip tone-amber">🕐</view>
+      <view class="card-head-title">作业列表（{{list.length}}）</view>
+    </view>
+    <view class="card-body">
+      <view class="filter-row">
+        <view
+          class="filter-pill {{filter === item.id ? 'is-active' : ''}}"
+          wx:for="{{filters}}"
+          wx:key="id"
+          data-id="{{item.id}}"
+          bindtap="setFilter"
+        >
+          {{item.label}}<text class="filter-count" wx:if="{{item.count > 0}}">{{item.count}}</text>
+        </view>
+      </view>
+
+      <view class="empty" wx:if="{{list.length === 0}}">
+        <view class="empty-icon">🎉</view>
+        <view class="empty-text">{{filter === 'done' ? '还没有完成的作业' : '没有符合条件的作业 🎉'}}</view>
+      </view>
+
+      <view class="assign-list" wx:else>
+        <view class="assign-item {{item.done ? 'is-done' : (item.overdue ? 'is-overdue' : (item.soon ? 'is-soon' : ''))}}" wx:for="{{list}}" wx:key="id">
+          <view class="tick {{item.done ? 'is-checked' : ''}}" data-id="{{item.id}}" bindtap="toggle">
+            <text wx:if="{{item.done}}">✓</text>
+          </view>
+          <view class="assign-main">
+            <view class="assign-title-row">
+              <text class="assign-title {{item.done ? 'is-struck' : ''}}">{{item.title}}</text>
+              <text class="chip chip-violet" wx:if="{{item.weight}}">{{item.weight}}</text>
+              <text class="chip chip-{{item.chipTone}}" wx:if="{{item.chipText}}">{{item.chipText}}</text>
+            </view>
+            <view class="assign-sub">
+              {{item.course}} · {{item.due}}{{item.dueTime ? ' ' + item.dueTime : ''}}{{item.remainText}}
+            </view>
+            <view class="assign-detail" wx:if="{{item.detail}}">{{item.detail}}</view>
+          </view>
+          <view class="del-btn" data-id="{{item.id}}" bindtap="remove">🗑</view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 逾期提醒 -->
+  <view class="alert alert-rose" wx:if="{{counts.overdue > 0}}">
+    ⚠️ 有 <text class="bold">{{counts.overdue}}</text> 个作业已逾期，尽快补交或联系老师。
+  </view>
+
+</view>

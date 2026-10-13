@@ -1,0 +1,158 @@
+<!-- 课表管理 -->
+<view class="page-wrap stack {{themeClass}}">
+
+  <!-- ── 课程总览 ── -->
+  <view class="card">
+    <view class="card-head">
+      <view class="icon-chip tone-sky">📋</view>
+      <view class="card-head-title">
+        课程总览 · 共 {{totalCount}} 条 · {{courseCount}} 门课{{totalCredit ? ' · ' + totalCredit + ' 学分' : ''}}
+      </view>
+    </view>
+    <view class="card-body">
+      <view class="row-actions">
+        <view class="btn-primary btn-sm" bindtap="startAdd">＋ 新增课程</view>
+        <view class="btn-ghost btn-sm" bindtap="goScan">📷 识别导入</view>
+      </view>
+
+      <view class="empty" wx:if="{{list.length === 0}}">
+        <view class="empty-icon">📋</view>
+        <view class="empty-title">课表是空的</view>
+        <view class="empty-desc">点「新增课程」手动录入，或用「识别导入」粘贴课表文字自动填充</view>
+      </view>
+
+      <view class="course-list" wx:else>
+        <view class="course-row" wx:for="{{list}}" wx:key="id">
+          <view class="course-main">
+            <view class="course-name-line">
+              <text class="course-name">{{item.name}}</text>
+              <text class="chip chip-sky" wx:if="{{item.tag}}">{{item.tag}}</text>
+            </view>
+            <view class="course-meta">
+              <text class="course-day">{{item.dayText}}</text>
+              <text class="course-time">{{item.timeText}}</text>
+              <text class="course-weeks">{{item.weeksText}}周</text>
+            </view>
+            <view class="course-sub">
+              <text wx:if="{{item.place}}">📍 {{item.place}}</text>
+              <text wx:if="{{item.teacher}}" class="ml">👤 {{item.teacher}}</text>
+              <text wx:if="{{item.creditText !== '—'}}" class="ml">🎯 {{item.creditText}} 学分</text>
+            </view>
+          </view>
+          <view class="course-ops">
+            <view class="icon-btn tone-emerald" data-id="{{item.id}}" bindtap="startEdit">✏️</view>
+            <view class="icon-btn tone-rose" data-id="{{item.id}}" bindtap="remove">🗑️</view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- ── 新增 / 编辑表单 ── -->
+  <view class="card" wx:if="{{editing}}">
+    <view class="card-head">
+      <view class="icon-chip tone-emerald">📖</view>
+      <view class="card-head-title">{{isAdd ? '新增课程' : '编辑课程'}}</view>
+    </view>
+    <view class="card-body">
+      <view class="field">
+        <view class="field-label">课程名称 *</view>
+        <input class="input" value="{{form.name}}" data-field="name" bindinput="onFormInput"
+          placeholder="如：高等数学" placeholder-class="input-ph" cursor-spacing="24" />
+      </view>
+
+      <view class="field-row">
+        <view class="field">
+          <view class="field-label">星期</view>
+          <picker mode="selector" range="{{dayOptions}}" value="{{form.dayIndex}}" bindchange="onDayChange">
+            <view class="picker">{{dayOptions[form.dayIndex]}}</view>
+          </picker>
+        </view>
+        <view class="field">
+          <view class="field-label">标签</view>
+          <input class="input" value="{{form.tag}}" data-field="tag" bindinput="onFormInput"
+            placeholder="体育课 / 晚课" placeholder-class="input-ph" cursor-spacing="24" />
+        </view>
+      </view>
+
+      <view class="field-row">
+        <view class="field">
+          <view class="field-label">开始时间</view>
+          <picker mode="time" value="{{form.start}}" bindchange="onStartTime">
+            <view class="picker">{{form.start}}</view>
+          </picker>
+        </view>
+        <view class="field">
+          <view class="field-label">结束时间</view>
+          <picker mode="time" value="{{form.end}}" bindchange="onEndTime">
+            <view class="picker">{{form.end}}</view>
+          </picker>
+        </view>
+      </view>
+
+      <view class="field">
+        <view class="field-label">上课地点</view>
+        <input class="input" value="{{form.place}}" data-field="place" bindinput="onFormInput"
+          placeholder="如：教学楼 101" placeholder-class="input-ph" cursor-spacing="24" />
+      </view>
+
+      <view class="field-row">
+        <view class="field">
+          <view class="field-label">学分</view>
+          <input class="input" type="digit" value="{{form.credit}}" data-field="credit" bindinput="onFormInput"
+            placeholder="3" placeholder-class="input-ph" cursor-spacing="24" />
+        </view>
+        <view class="field">
+          <view class="field-label">教师</view>
+          <input class="input" value="{{form.teacher}}" data-field="teacher" bindinput="onFormInput"
+            placeholder="选填" placeholder-class="input-ph" cursor-spacing="24" />
+        </view>
+      </view>
+
+      <view class="field">
+        <view class="field-label">上课周次（支持 2-16 或 2,4,6-8）</view>
+        <input class="input" value="{{weeksText}}" bindinput="onWeeksInput"
+          placeholder="1-16" placeholder-class="input-ph" cursor-spacing="24" />
+        <view class="field-hint">解析后周次：{{weeksPreview}}</view>
+      </view>
+
+      <view class="row-actions mt">
+        <view class="btn-primary" bindtap="save">保存</view>
+        <view class="btn-ghost" bindtap="cancelEdit">取消</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- ── 周课表速览 ── -->
+  <view class="card">
+    <view class="card-head">
+      <view class="icon-chip tone-violet">🗓️</view>
+      <view class="card-head-title">周课表速览 · 第 {{week}} 周</view>
+      <view class="card-head-action">
+        <view class="btn-ghost btn-xs" bindtap="prevWeek">上一周</view>
+        <view class="btn-ghost btn-xs" bindtap="nextWeek">下一周</view>
+      </view>
+    </view>
+    <view class="card-body">
+      <view class="week-grid">
+        <view class="week-col {{item.isToday ? 'is-today' : ''}}" wx:for="{{grid}}" wx:key="day">
+          <view class="week-col-head">
+            <text class="week-day">{{item.label}}</text>
+            <text class="chip chip-emerald" wx:if="{{item.isToday}}">今天</text>
+            <text class="week-count">{{item.countText}}</text>
+          </view>
+          <view class="week-none" wx:if="{{item.items.length === 0}}">本周无课</view>
+          <view class="week-item" wx:for="{{item.items}}" wx:for-item="c" wx:key="id">
+            <view class="week-item-top">
+              <text class="week-item-name">{{c.name}}</text>
+              <text class="week-item-time">{{c.start}}</text>
+            </view>
+            <view class="week-item-place" wx:if="{{c.place}}">{{c.place}}</view>
+          </view>
+        </view>
+      </view>
+      <view class="grid-hint" wx:if="{{list.length === 0}}">课表为空，先添加课程后这里会显示周视图</view>
+    </view>
+  </view>
+
+</view>

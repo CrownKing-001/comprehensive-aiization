@@ -1,0 +1,114 @@
+/* 重要事项页样式 */
+
+/* ── 事项卡片 ─────────────────────────────────── */
+.ms-item {
+  border-radius: 20rpx;
+  border: 2rpx solid var(--border-2);
+  background: var(--surface-3);
+  padding: 22rpx 24rpx;
+  margin-bottom: 16rpx;
+}
+
+.ms-item.is-done { opacity: 0.55; }
+
+.ms-top {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin-bottom: 14rpx;
+}
+
+.ms-emoji { font-size: 28rpx; flex-shrink: 0; }
+
+.ms-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 28rpx;
+  font-weight: 600;
+  color: var(--text-1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ms-item.is-done .ms-title {
+  text-decoration: line-through;
+  color: var(--text-3);
+}
+
+.ms-pin {
+  font-size: 26rpx;
+  opacity: 0.3;
+  flex-shrink: 0;
+  padding: 0 6rpx;
+}
+
+.ms-pin.is-on { opacity: 1; }
+
+.ms-meta {
+  font-size: 22rpx;
+  color: var(--text-4);
+  margin-top: 12rpx;
+  line-height: 1.6;
+}
+
+/* ── 清单 ─────────────────────────────────────── */
+.ms-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 12rpx;
+  padding: 10rpx 0;
+  border-top: 2rpx solid var(--border-1);
+  margin-top: 10rpx;
+}
+
+.ms-check-box {
+  font-size: 26rpx;
+  color: var(--text-4);
+  flex-shrink: 0;
+  line-height: 1.4;
+}
+
+.ms-check-text {
+  flex: 1;
+  min-width: 0;
+  font-size: 23rpx;
+  color: var(--text-3);
+  line-height: 1.6;
+}
+
+/* ── 编辑态清单项 ─────────────────────────────── */
+.check-item {
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
+  background: var(--surface-1);
+  border: 2rpx solid var(--border-2);
+  border-radius: 14rpx;
+  padding: 14rpx 18rpx;
+  margin-bottom: 10rpx;
+}
+
+.check-text {
+  flex: 1;
+  min-width: 0;
+  font-size: 24rpx;
+  color: var(--text-2);
+  line-height: 1.6;
+}
+
+.add-row {
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
+  margin-top: 12rpx;
+}
+
+.add-input { flex: 1; min-width: 0; }
+
+/* ── 操作按钮行 ───────────────────────────────── */
+.ms-ops {
+  margin-top: 16rpx;
+  margin-bottom: 0;
+}
+

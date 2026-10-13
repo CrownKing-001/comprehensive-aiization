@@ -1,0 +1,140 @@
+/* 设置页样式 */
+
+/* ── 提示条 ───────────────────────────────────── */
+.msg-box.is-ok {
+  background: rgba(16, 185, 129, 0.1);
+  border-color: rgba(16, 185, 129, 0.35);
+  color: #6ee7b7;
+}
+
+.msg-box.is-err {
+  background: rgba(244, 63, 94, 0.1);
+  border-color: rgba(244, 63, 94, 0.35);
+  color: #fb7185;
+}
+
+/* ── 开关行（带副标题） ───────────────────────── */
+.switch-col {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+}
+
+.switch-hint {
+  font-size: 20rpx;
+  color: var(--text-4);
+  line-height: 1.55;
+}
+
+/* ── 数据统计网格 ─────────────────────────────── */
+.count-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12rpx;
+  margin-top: 20rpx;
+}
+
+.count-item {
+  background: var(--surface-3);
+  border: 2rpx solid var(--border-2);
+  border-radius: 14rpx;
+  padding: 14rpx 6rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6rpx;
+  min-width: 0;
+}
+
+.count-num {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: var(--text-1);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.count-label {
+  font-size: 19rpx;
+  color: var(--text-4);
+}
+
+/* ── 输入区 ───────────────────────────────────── */
+.textarea {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 220rpx;
+  background: var(--surface-1);
+  border: 2rpx solid var(--border-2);
+  border-radius: 16rpx;
+  padding: 20rpx 22rpx;
+  font-size: 24rpx;
+  color: var(--text-1);
+  line-height: 1.7;
+  margin-top: 6rpx;
+}
+
+.field-hint {
+  font-size: 20rpx;
+  color: var(--text-4);
+  line-height: 1.6;
+  margin-top: 10rpx;
+}
+
+.hl {
+  color: #34d399;
+  font-weight: 600;
+}
+
+.add-row {
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
+}
+
+.add-input { flex: 1; min-width: 0; }
+
+.schedule-msg {
+  font-size: 21rpx;
+  line-height: 1.6;
+  margin-top: 12rpx;
+}
+
+.schedule-msg.is-ok { color: #34d399; }
+.schedule-msg.is-err { color: #fb7185; }
+
+/* ── 训练日点选 ───────────────────────────────── */
+.train-pick-row {
+  display: flex;
+  gap: 10rpx;
+  margin-top: 6rpx;
+}
+
+.train-pick {
+  flex: 1;
+  height: 68rpx;
+  border-radius: 14rpx;
+  border: 2rpx solid var(--border-3);
+  background: var(--surface-3);
+  color: var(--text-3);
+  font-size: 24rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.train-pick.is-on {
+  background: #059669;
+  border-color: #059669;
+  color: #fff;
+  font-weight: 600;
+}
+
+/* ── 危险按钮 ─────────────────────────────────── */
+.btn-ghost.btn-danger {
+  border-color: rgba(244, 63, 94, 0.4);
+  color: #fb7185;
+  background: rgba(244, 63, 94, 0.08);
+}

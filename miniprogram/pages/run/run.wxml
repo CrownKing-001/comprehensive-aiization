@@ -1,0 +1,156 @@
+<!-- 运动打卡 -->
+<view class="page-wrap stack {{themeClass}}">
+
+  <!-- ── 打卡进度 ── -->
+  <view class="card">
+    <view class="card-head">
+      <view class="icon-chip tone-emerald">👟</view>
+      <view class="card-head-title">打卡进度</view>
+    </view>
+    <view class="card-body">
+      <view class="big-stat">
+        <view class="big-num">{{done}}<text class="big-unit"> / {{target}} 次</text></view>
+        <view class="big-side">目标完成度 <text class="big-pct">{{percent}}</text><text class="big-pct-unit"> %</text></view>
+      </view>
+
+      <view class="bar-track">
+        <view class="bar-fill bar-emerald" style="width: {{barWidth}}%"></view>
+      </view>
+
+      <!-- 打卡按钮 -->
+      <view class="row-actions mt">
+        <block wx:if="{{types.length === 0}}">
+          <view class="inline-hint">还没有打卡类型，去「设置」里填写后这里会出现按钮。</view>
+        </block>
+        <block wx:else>
+          <view
+            class="{{index === 0 ? 'btn-primary' : 'btn-ghost btn-emerald'}}"
+            wx:for="{{types}}"
+            wx:key="*this"
+            data-type="{{item}}"
+            bindtap="add"
+          >{{item}} +1</view>
+        </block>
+        <view class="btn-ghost {{done === 0 ? 'is-disabled' : ''}}" bindtap="undo">↩ 撤销</view>
+      </view>
+
+      <!-- 状态胶囊 -->
+      <view class="chip-row">
+        <text class="chip chip-emerald">今日已打卡 {{todayCount}} 次</text>
+        <text class="chip chip-sky" wx:if="{{notStarted}}">距开始还有 {{startedDays}} 天</text>
+        <text class="chip {{done >= target ? 'chip-emerald' : 'chip-sky'}}" wx:else>
+          {{done >= target ? '已达成目标' : '还差 ' + remain + ' 次'}}
+        </text>
+        <text class="chip chip-violet" wx:if="{{pace > 0}}">剩下 {{weeksLeft}} 周，每周约 {{pace}} 次可完成目标</text>
+        <text class="chip {{daysLeft < 0 ? 'chip-slate' : (daysLeft <= 14 ? 'chip-rose' : 'chip-slate')}}" wx:if="{{daysLeft !== null}}">
+          {{daysLeft < 0 ? '已于 ' + runEnd + ' 结束' : '距结束 ' + daysLeft + ' 天（' + runEnd + '）'}}
+        </text>
+      </view>
+
+      <view class="tiny-note" wx:if="{{ended}}">设定的结束日期已过，记录仍然可以继续补录。</view>
+    </view>
+  </view>
+
+  <!-- ── 打卡设置说明 ── -->
+  <view class="card">
+    <view class="card-head">
+      <view class="icon-chip tone-sky">ℹ️</view>
+      <view class="card-head-title">打卡设置</view>
+    </view>
+    <view class="card-body">
+      <view class="bullet-note" wx:if="{{notStarted}}">
+        设定的开始日期是 {{runStart}}，还有 {{startedDays}} 天。在此之前也可以照常记录，进度不会清零。
+      </view>
+      <block wx:else>
+        <view class="bullet">
+          <text class="bullet-dot">•</text>
+          <text class="bullet-text">目标 {{target}} 次{{done >= target ? '，已经达成 🎉' : '，已完成 ' + done + ' 次'}}。</text>
+        </view>
+        <view class="bullet">
+          <text class="bullet-dot">•</text>
+          <text class="bullet-text">打卡类型：{{types.length ? types.join(' / ') : '尚未设置（去「设置」里填写）'}}。</text>
+        </view>
+        <view class="bullet" wx:if="{{hasStart || hasEnd}}">
+          <text class="bullet-dot">•</text>
+          <text class="bullet-text">统计周期：{{hasStart ? runStart : '不限'}} ~ {{hasEnd ? runEnd : '不限'}}。</text>
+        </view>
+        <view class="bullet" wx:else>
+          <text class="bullet-dot">•</text>
+          <text class="bullet-text">没有设置起止日期，按累计次数统计，不做时间限制。</text>
+        </view>
+      </block>
+
+      <view class="tip-box">
+        <text class="tip-text">
+          {{pace > 0
+            ? '🔥 还差 ' + remain + ' 次，剩下 ' + weeksLeft + ' 周，每周约 ' + pace + ' 次就能完成目标'
+            : (done >= target ? '🔥 目标已达成，保持节奏就好' : '🔥 目标次数、类型、起止日期都可以在「设置」里随时调整')}}
+        </text>
+      </view>
+      <view class="row-actions mt">
+        <view class="btn-ghost btn-sm" bindtap="goSettings">⚙️ 去设置</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- ── 打卡记录 ── -->
+  <view class="card">
+    <view class="card-head">
+      <view class="icon-chip tone-violet">✅</view>
+      <view class="card-head-title">打卡记录（{{recordCount}}）</view>
+    </view>
+    <view class="card-body">
+      <view class="filter-row">
+        <view class="filter-pill {{filter === 'all' ? 'is-active' : ''}}" data-filter="all" bindtap="setFilter">全部</view>
+        <view
+          class="filter-pill {{filter === item ? 'is-active' : ''}}"
+          wx:for="{{filterOptions}}"
+          wx:key="*this"
+          data-filter="{{item}}"
+          bindtap="setFilter"
+        >{{item}}</view>
+      </view>
+
+      <view class="empty" wx:if="{{records.length === 0}}">
+        <view class="empty-icon">💪</view>
+        <view class="empty-title">还没有记录</view>
+        <view class="empty-desc">{{types.length === 0 ? '还没有打卡类型，去「设置」里填几个再回来打卡。' : '完成第一次打卡后开始计数'}}</view>
+      </view>
+
+      <view class="log-list" wx:else>
+        <view class="log-row" wx:for="{{records}}" wx:key="key">
+          <view class="log-dot {{item.isPrimary ? 'is-primary' : ''}}"></view>
+          <text class="log-date">{{item.date}}</text>
+          <text class="log-type">{{item.type}}</text>
+          <view class="icon-btn tone-rose btn-mini" data-idx="{{item.idx}}" bindtap="removeAt">🗑️</view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- ── 每周分布 ── -->
+  <view class="card">
+    <view class="card-head">
+      <view class="icon-chip tone-amber">🔥</view>
+      <view class="card-head-title">每周分布</view>
+    </view>
+    <view class="card-body">
+      <view class="empty" wx:if="{{byWeek.length === 0}}">
+        <view class="empty-desc">暂无数据</view>
+      </view>
+      <block wx:else>
+        <view class="week-bar-row" wx:for="{{byWeek}}" wx:key="week">
+          <text class="week-bar-label {{item.isCurrent ? 'is-current' : ''}}">第{{item.week}}周</text>
+          <view class="bar-track bar-track-sm">
+            <view class="bar-fill bar-{{item.tone}}" style="width: {{item.barWidth}}%"></view>
+          </view>
+          <text class="week-bar-count">{{item.n}} 次</text>
+        </view>
+      </block>
+      <view class="tiny-note mt">
+        {{pace > 0 ? '绿条表示该周已达到「每周约 ' + pace + ' 次」的节奏。' : '条形长度按你每周的实际打卡次数绘制。'}}
+      </view>
+    </view>
+  </view>
+
+</view>

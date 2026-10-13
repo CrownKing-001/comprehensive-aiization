@@ -1,0 +1,213 @@
+/* 今日页样式。app.wxss 是全局样式，本就自动生效，无需 @import。 */
+
+/* ── 日期切换条 ───────────────────────────────── */
+.date-bar {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  background: var(--surface-1);
+  border: 2rpx solid var(--border-1);
+  border-radius: 28rpx;
+  padding: 16rpx 20rpx;
+  margin-bottom: 24rpx;
+}
+
+.date-nav {
+  width: 68rpx;
+  height: 68rpx;
+  border-radius: 20rpx;
+  background: var(--surface-3);
+  border: 2rpx solid var(--border-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 38rpx;
+  color: var(--text-3);
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.date-mid { flex: 1; text-align: center; min-width: 0; }
+
+.date-main {
+  font-size: 29rpx;
+  font-weight: 600;
+  color: var(--text-1);
+}
+
+.date-rel {
+  font-size: 22rpx;
+  font-weight: 400;
+  color: #34d399;
+  margin-left: 12rpx;
+}
+
+.date-week {
+  font-size: 21rpx;
+  color: var(--text-4);
+  margin-top: 4rpx;
+}
+
+.date-right {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  flex-shrink: 0;
+}
+
+.btn-back-today {
+  font-size: 22rpx;
+  font-weight: 500;
+  color: #34d399;
+  background: rgba(16, 185, 129, 0.15);
+  border-radius: 999rpx;
+  padding: 10rpx 22rpx;
+}
+
+.head-note { font-size: 22rpx; color: var(--text-4); }
+
+/* ── 课程列表 ─────────────────────────────────── */
+.course-list { display: flex; flex-direction: column; gap: 16rpx; }
+
+.course-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18rpx;
+  border-radius: 18rpx;
+  padding: 22rpx 26rpx;
+  background: rgba(14, 165, 233, 0.12);
+  border: 2rpx solid transparent;
+}
+
+.course-item.is-ongoing {
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.35);
+}
+
+.course-main { flex: 1; min-width: 0; }
+
+.course-name-row {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.course-name {
+  font-size: 27rpx;
+  font-weight: 500;
+  color: var(--text-1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.course-place {
+  font-size: 23rpx;
+  color: var(--text-4);
+  margin-top: 6rpx;
+}
+
+.course-time {
+  font-size: 27rpx;
+  font-weight: 600;
+  color: #38bdf8;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── 待处理 ───────────────────────────────────── */
+.sec-label {
+  font-size: 21rpx;
+  color: var(--text-4);
+  margin-bottom: 12rpx;
+}
+
+/* 小程序 WXSS 不支持 :last-child 等结构伪类，
+   改用父容器的负下边距抵消最后一项的多余间距。 */
+.todo-list-wrap { margin-bottom: -12rpx; }
+
+.todo-line {
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
+  border-radius: 16rpx;
+  background: var(--surface-3);
+  border: 2rpx solid var(--border-2);
+  padding: 18rpx 22rpx;
+  margin-bottom: 12rpx;
+}
+
+.checkbox-sm {
+  width: 32rpx;
+  height: 32rpx;
+  border-radius: 10rpx;
+  border: 3rpx solid #475569;
+  flex-shrink: 0;
+}
+
+.todo-icon { font-size: 24rpx; flex-shrink: 0; }
+
+.todo-text {
+  flex: 1;
+  font-size: 24rpx;
+  color: var(--text-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.muted { color: var(--text-4); }
+
+/* ── 时间轴 ───────────────────────────────────── */
+/* 时间轴：同样不用 :last-child，靠容器负边距收尾 */
+.tl { position: relative; margin-bottom: -18rpx; }
+
+.tl-item {
+  display: flex;
+  gap: 18rpx;
+  align-items: flex-start;
+  margin-bottom: 18rpx;
+}
+
+.tl-time {
+  width: 92rpx;
+  flex-shrink: 0;
+  font-size: 22rpx;
+  font-weight: 600;
+  color: var(--text-4);
+  padding-top: 16rpx;
+  font-variant-numeric: tabular-nums;
+}
+
+.tl-body {
+  flex: 1;
+  min-width: 0;
+  border-radius: 18rpx;
+  padding: 18rpx 22rpx;
+  background: var(--surface-2);
+  border: 2rpx solid var(--border-1);
+}
+
+.tl-body.is-ongoing {
+  background: rgba(16, 185, 129, 0.1);
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.tl-title-row { display: flex; align-items: center; gap: 12rpx; }
+
+.tl-title {
+  flex: 1;
+  font-size: 27rpx;
+  font-weight: 500;
+  color: var(--text-1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tl-min { font-size: 20rpx; color: var(--text-4); }
+
+.tl-sub { font-size: 22rpx; color: var(--text-4); margin-top: 6rpx; }
+
+.full { width: 100%; box-sizing: border-box; }
