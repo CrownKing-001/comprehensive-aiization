@@ -17,6 +17,14 @@
         从教务系统复制课表文字，或让 AI 先整理成固定格式再粘贴进来 —— 文字是确定的，比截图识别准得多。
       </view>
 
+      <view class="tip-box">
+        <view class="tip-text">💡 为什么不支持拍照识别</view>
+        <view class="bullet-note">
+          桌面版用 Windows 自带的 OCR 识图，小程序没有这个能力。好消息是课表文字通常可以直接复制：
+          在电脑教务系统里框选课表复制，用微信「文件传输助手」发给自己，再粘到下面就行。
+        </view>
+      </view>
+
       <view class="row-actions">
         <view class="btn-ghost btn-sm" bindtap="copyPrompt">📎 复制「给 AI 的指令」</view>
         <view class="btn-ghost btn-sm" bindtap="togglePrompt">{{showPrompt ? '收起指令原文' : '查看指令原文'}}</view>
