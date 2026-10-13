@@ -127,7 +127,9 @@ Page({
       if (a.due && b.due && a.due !== b.due) return a.due.localeCompare(b.due);
       if (a.due && !b.due) return -1;
       if (!a.due && b.due) return 1;
-      return rank[a.priority] - rank[b.priority];
+      // 用 ?? 兜底：数据里 priority 缺失或写了别的值时，rank 会取到 undefined，
+      // 相减得到 NaN，sort 的比较函数返回 NaN 会让排序结果不确定。
+      return (rank[a.priority] ?? 1) - (rank[b.priority] ?? 1);
     });
 
     const priorityLabel = {
@@ -139,6 +141,9 @@ Page({
     const list = sorted.map((t) => {
       const overdue = t.due && t.due < todayKey && !t.done;
       const isTodayDue = t.due === todayKey;
+      // 同上：不能直接 priorityLabel[t.priority].text，缺字段会整个页面白屏。
+      // 桌面版备份、手改过的数据都可能没有 priority。
+      const pl = priorityLabel[t.priority] || priorityLabel.normal;
       return {
         id: t.id,
         text: t.text,
@@ -148,8 +153,8 @@ Page({
         overdue,
         dueTone: overdue ? 'rose' : isTodayDue ? 'amber' : 'slate',
         dueText: t.due ? `${t.due}${overdue ? ' · 已逾期' : isTodayDue ? ' · 今天' : ''}` : '',
-        priorityText: priorityLabel[t.priority].text,
-        priorityTone: priorityLabel[t.priority].tone,
+        priorityText: pl.text,
+        priorityTone: pl.tone,
       };
     });
 

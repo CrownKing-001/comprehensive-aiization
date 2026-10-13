@@ -40,6 +40,8 @@ function urgency(dateKey, today, done) {
   if (done) return { text: '已完成', tone: 'emerald', level: 3 };
   if (!dateKey) return { text: '未定日期', tone: 'slate', level: 3 };
   const d = daysUntil(fromKey(dateKey), today);
+  // dateKey 非空但格式不认识（例如手填了「待定」）时 d 为 null
+  if (d === null) return { text: '未定日期', tone: 'slate', level: 3 };
   if (d < 0) return { text: `已过 ${-d} 天`, tone: 'slate', level: 3 };
   if (d === 0) return { text: '就是今天', tone: 'rose', level: 0 };
   if (d <= 3) return { text: `还有 ${d} 天`, tone: 'rose', level: 0 };
@@ -146,9 +148,11 @@ Page({
       };
     });
 
-    const upcoming = all.filter(
-      (m) => !m.done && m.date && daysUntil(fromKey(m.date), today) >= 0
-    );
+    const upcoming = all.filter((m) => {
+      if (m.done || !m.date) return false;
+      const d = daysUntil(fromKey(m.date), today);
+      return d !== null && d >= 0;
+    });
 
     this.setData({
       ready: true,

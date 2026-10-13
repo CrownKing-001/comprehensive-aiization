@@ -2,9 +2,22 @@
 // 把课程数组变成「今天有什么课」这类可直接渲染的数据 —— 全是纯函数。
 const { DEFAULT_SEMESTER_START, currentWeek, weekMonday } = require('./plan');
 
+/**
+ * "08:00" → 480（分钟）。缺字段返回 NaN 而不是抛错 ——
+ * 课程数据可能来自桌面版备份或手改的 JSON，不保证 start/end 存在。
+ */
 function toMin(t) {
+  if (typeof t !== 'string') return NaN;
   const [h, m] = t.split(':').map(Number);
-  return h * 60 + (m || 0);
+  if (!Number.isFinite(h)) return NaN;
+  return h * 60 + (Number.isFinite(m) ? m : 0);
+}
+
+/** 课程是否在指定周次上课。weeks 缺失时视为「每周都上」，避免整门课消失 */
+function inWeek(c, week) {
+  if (!c) return false;
+  if (!Array.isArray(c.weeks) || !c.weeks.length) return true;
+  return c.weeks.indexOf(week) >= 0;
 }
 
 const DAY_LABELS = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
@@ -29,7 +42,7 @@ function coursesOn(courses, date, semesterStart, totalWeeks) {
   const week = currentWeek(date, start);
   const day = dayNum(date);
   return (courses || [])
-    .filter((c) => c.day === day && c.weeks.includes(week))
+    .filter((c) => c.day === day && inWeek(c, week))
     .filter(() => week >= 1 && week <= weeks)
     .sort((a, b) => toMin(a.start) - toMin(b.start))
     .map((c) => Object.assign({}, c, { uid: `${c.name}|${c.start}|${day}`, date, dateKey: keyOf(date) }));
@@ -47,7 +60,7 @@ function weekGrid(courses, week, semesterStart) {
       date,
       dateKey: keyOf(date),
       items: (courses || [])
-        .filter((c) => c.day === day && c.weeks.includes(week))
+        .filter((c) => c.day === day && inWeek(c, week))
         .sort((a, b) => toMin(a.start) - toMin(b.start)),
     });
   }
@@ -110,7 +123,7 @@ function buildTimeline(courseItems, sessions, now) {
 
 /** 本周还剩下几节课 */
 function countWeekCourses(courses, week) {
-  return (courses || []).filter((c) => c.weeks.includes(week)).length;
+  return (courses || []).filter((c) => inWeek(c, week)).length;
 }
 
 module.exports = {

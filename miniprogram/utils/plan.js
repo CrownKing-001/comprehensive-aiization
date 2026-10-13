@@ -65,9 +65,16 @@ const TIME_SLOTS = [
   { label: '晚上', from: 18, to: 21 },
 ];
 
+/**
+ * "08:00" → 8（小时，带小数）。
+ * 缺字段时返回 NaN 而不是抛错 —— 课程数据可能来自桌面版备份或手改的 JSON，
+ * 不保证 start/end 一定存在。调用方用比较运算，NaN 会自然为 false。
+ */
 function toHour(t) {
+  if (typeof t !== 'string') return NaN;
   const [h, m] = t.split(':').map(Number);
-  return h + m / 60;
+  if (!Number.isFinite(h)) return NaN;
+  return h + (Number.isFinite(m) ? m / 60 : 0);
 }
 
 /**
@@ -75,14 +82,22 @@ function toHour(t) {
  * 返回 [day 1-7][slot 0-3] = 空闲周数（等于传入周数 = 该时段全空）。
  */
 function freeMatrix(courses, weeks) {
+  const list = Array.isArray(courses) ? courses : [];
+  const ws = Array.isArray(weeks) ? weeks : [];
   const matrix = [];
   for (let day = 1; day <= 7; day++) {
     const row = [];
     for (const slot of TIME_SLOTS) {
       let free = 0;
-      for (const w of weeks) {
-        const busy = courses.some(
-          (c) => c.day === day && c.weeks.includes(w) && toHour(c.start) < slot.to && toHour(c.end) > slot.from
+      for (const w of ws) {
+        const busy = list.some(
+          (c) =>
+            c &&
+            c.day === day &&
+            Array.isArray(c.weeks) &&
+            c.weeks.indexOf(w) >= 0 &&
+            toHour(c.start) < slot.to &&
+            toHour(c.end) > slot.from
         );
         if (!busy) free++;
       }

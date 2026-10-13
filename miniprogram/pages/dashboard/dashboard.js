@@ -62,8 +62,9 @@ Page({
     const dueSoon = s.assignments
       .filter((a) => !a.done)
       .map((a) => Object.assign({}, a, { days: daysUntil(fromKey(a.due), today) }))
-      .sort((a, b) => a.days - b.days);
-    const overdue = dueSoon.filter((a) => a.days < 0);
+      // days 可能是 null（没填截止日期），排到最后而不是参与 NaN 比较
+      .sort((a, b) => (a.days === null ? 1 : b.days === null ? -1 : a.days - b.days));
+    const overdue = dueSoon.filter((a) => a.days !== null && a.days < 0);
     const dueTodayCount = openTodos.filter((t) => t.due && t.due <= todayKey).length;
 
     const runDone = s.run.length;
@@ -133,7 +134,7 @@ Page({
       .sort((a, b) => a.date.localeCompare(b.date))
       .map((m) => {
         const d = daysUntil(fromKey(m.date), today);
-        return { id: m.id, label: m.title, date: m.date, days: d, done: d < 0 };
+        return { id: m.id, label: m.title, date: m.date, days: d, done: d !== null && d < 0 };
       });
     const compact = pinned.length > 4;
 

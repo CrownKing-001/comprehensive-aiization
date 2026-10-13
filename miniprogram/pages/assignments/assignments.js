@@ -105,7 +105,10 @@ Page({
     const assignments = store.shape.assignments;
     const filter = this.data.filter;
 
-    const withDays = assignments.map((a) => Object.assign({}, a, { days: daysUntil(fromKey(a.due), today) }));
+    // days 为 null 表示这条作业没写截止日期（due 字段非必填）
+    const withDays = assignments.map((a) =>
+      Object.assign({}, a, { days: daysUntil(fromKey(a.due), today) })
+    );
 
     let filtered;
     switch (filter) {
@@ -116,22 +119,26 @@ Page({
     }
     filtered.sort((a, b) => {
       if (a.done !== b.done) return a.done ? 1 : -1;
-      return a.due.localeCompare(b.due);
+      // 没有截止日期的排在最后（String() 兜底，due 非必填）
+      const ad = a.due || '9999-99-99';
+      const bd = b.due || '9999-99-99';
+      return String(ad).localeCompare(String(bd));
     });
 
     const list = filtered.map((a) => {
-      const overdue = a.days < 0 && !a.done;
+      const overdue = a.days !== null && a.days < 0 && !a.done;
       return {
         id: a.id,
         title: a.title,
         course: a.course,
-        due: a.due,
+        due: a.due || '',
         dueTime: a.dueTime || '',
         detail: a.detail || '',
         weight: a.weight || '',
         done: a.done,
         overdue,
-        soon: !a.done && !overdue && a.days <= 2,
+        // 注意 a.days 可能是 null（没填日期），null <= 2 会算 true，必须显式判 null
+        soon: !a.done && !overdue && a.days !== null && a.days <= 2,
         chipTone: overdue ? 'rose' : a.days === 0 || a.days === 1 ? 'amber' : 'slate',
         chipText: overdue
           ? `逾期 ${-a.days} 天`

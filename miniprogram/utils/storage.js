@@ -72,18 +72,29 @@ function toKey(d) {
   return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`;
 }
 
+/**
+ * "2026-10-13" → Date。
+ * 传进来的可能是 undefined / '' / '待定' —— 作业和事项的 due 字段并非必填，
+ * 之前直接 key.split 会让整个页面白屏。取不到有效日期时返回 null，
+ * 调用方（daysUntil）会把它当成「没有日期」处理。
+ */
 function fromKey(key) {
-  const [y, m, d] = key.split('-').map(Number);
-  return new Date(y, m - 1, d);
+  if (typeof key !== 'string') return null;
+  const m = /^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(key.trim());
+  if (!m) return null;
+  const d = new Date(+m[1], +m[2] - 1, +m[3]);
+  return Number.isNaN(d.getTime()) ? null : d;
 }
 
 function addDays(d, n) {
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+  const base = d instanceof Date && !Number.isNaN(d.getTime()) ? d : new Date();
+  return new Date(base.getFullYear(), base.getMonth(), base.getDate() + n);
 }
 
-/** 距今天数：正数=还有几天，0=今天，负数=已过几天 */
+/** 距今天数：正数=还有几天，0=今天，负数=已过几天。无法解析时返回 null */
 function daysUntil(target, from) {
-  const f = from || new Date();
+  if (!(target instanceof Date) || Number.isNaN(target.getTime())) return null;
+  const f = from instanceof Date && !Number.isNaN(from.getTime()) ? from : new Date();
   const a = new Date(target.getFullYear(), target.getMonth(), target.getDate());
   const b = new Date(f.getFullYear(), f.getMonth(), f.getDate());
   return Math.round((a.getTime() - b.getTime()) / 86400000);

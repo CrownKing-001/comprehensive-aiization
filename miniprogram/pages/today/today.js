@@ -91,7 +91,13 @@ Page({
       .map((t) => ({ id: t.id, text: t.text, overdue: t.due < viewKey }));
 
     const dayAssign = s.assignments
-      .filter((a) => !a.done && daysUntil(fromKey(a.due), view) <= 0)
+      // daysUntil 对没填截止日期的作业返回 null，而 null <= 0 是 true ——
+      // 必须显式排除，否则「没有 DDL 的作业」会被当成今天截止显示出来
+      .filter((a) => {
+        if (a.done) return false;
+        const d = daysUntil(fromKey(a.due), view);
+        return d !== null && d <= 0;
+      })
       .slice(0, 6)
       .map((a) => {
         const d = daysUntil(fromKey(a.due), view);
