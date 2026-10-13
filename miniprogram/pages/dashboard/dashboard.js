@@ -81,6 +81,7 @@ Page({
         unit: '节待上',
         sub: todayCourses.length ? `共 ${todayCourses.length} 节` : '今天没课',
         url: '/pages/today/today',
+        isTab: true,
       },
       {
         key: 'todos',
@@ -90,7 +91,9 @@ Page({
         value: String(openTodos.length),
         unit: '项',
         sub: dueTodayCount ? `${dueTodayCount} 项今天到期` : '暂无到期',
-        url: '/pages/todos/todos',
+        url: '/pages/tasks/tasks',
+        seg: 'todos',
+        isTab: true,
       },
       {
         key: 'assign',
@@ -100,7 +103,9 @@ Page({
         value: String(week7),
         unit: '个',
         sub: overdue.length ? `${overdue.length} 个已逾期` : '7 天内截止',
-        url: '/pages/assignments/assignments',
+        url: '/pages/tasks/tasks',
+        seg: 'assignments',
+        isTab: true,
       },
     ];
     if (s.settings.runEnabled) {
@@ -112,7 +117,9 @@ Page({
         value: String(runDone),
         unit: `/ ${s.settings.runTarget} 次`,
         sub: runDone >= s.settings.runTarget ? '已达标 🎉' : `还差 ${s.settings.runTarget - runDone} 次`,
-        url: '',
+        url: '/pages/healthhub/healthhub',
+        seg: 'run',
+        isTab: true,
       });
     } else {
       const undone = s.milestones.filter((m) => !m.done).length;
@@ -124,7 +131,8 @@ Page({
         value: String(undone),
         unit: '项',
         sub: undone ? '待处理' : '还没有待办事项',
-        url: '',
+        url: '/pages/milestones/milestones',
+        isTab: false,
       });
     }
 
@@ -202,13 +210,47 @@ Page({
     });
   },
 
+  /**
+   * 跳到 tabBar 页面。
+   * 注意：wx.switchTab 的 url 不能带 query（带了会跳转失败），
+   * 所以「跳到健康页并停在某个子项」只能先 switchTab、再把要显示的
+   * 分段记到全局，由目标页在 onShow 里取走。
+   */
   goTab(e) {
-    const url = e.currentTarget.dataset.url;
+    const ds = e.currentTarget.dataset;
+    const url = ds.url;
     if (!url) return;
+    if (ds.seg) {
+      const app = getApp();
+      if (app) {
+        app.globalData = app.globalData || {};
+        app.globalData.pendingSeg = { url, seg: ds.seg };
+      }
+    }
     wx.switchTab({ url });
   },
 
-  /** 非 tabBar 页面的入口（饮食 / 运动 / 分析 / 事项 / 设置） */
+  /**
+   * 指标卡点击。
+   * 卡片的 url 可能是 tabBar 页面也可能是普通页面，用 isTab 区分 ——
+   * switchTab 打不开普通页面、navigateTo 打不开 tabBar 页面，弄反就没反应。
+   */
+  goStat(e) {
+    const ds = e.currentTarget.dataset;
+    const url = ds.url;
+    if (!url) return;
+    if (ds.seg) {
+      const app = getApp();
+      if (app) {
+        app.globalData = app.globalData || {};
+        app.globalData.pendingSeg = { url, seg: ds.seg };
+      }
+    }
+    if (ds.isTab) wx.switchTab({ url });
+    else wx.navigateTo({ url });
+  },
+
+  /** 非 tabBar 页面的入口（分析 / 周计划 / 事项 / 识别 / 设置） */
   goPage(e) {
     const url = e.currentTarget.dataset.url;
     if (!url) return;

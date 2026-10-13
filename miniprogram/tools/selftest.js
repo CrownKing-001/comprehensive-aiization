@@ -253,6 +253,151 @@ section('[11] 脏数据不白屏');
   store.resetAll();
 }
 
+// ══ 12. 合并页（tabHost 组合） ══
+// 待办+作业、饮食+运动+体重 这两组页面是「把已有的 Page 定义拼起来」实现的
+// （见 utils/tabHost.js），机制比普通页面复杂，单独测。
+section('[12] 合并页');
+{
+  const { buildHost } = require(path.join(MP, 'utils/tabHost.js'));
+
+  // 造一个和真机 Page 实例行为一致的替身
+  function mount(def) {
+    return Object.assign({}, def, {
+      data: JSON.parse(JSON.stringify(def.data || {})),
+      setData(patch, cb) {
+        for (const k of Object.keys(patch)) {
+          if (k.includes('.')) {
+            const q = k.split('.');
+            let t = this.data;
+            for (let i = 0; i < q.length - 1; i++) t = t[q[i]];
+            if (t) t[q[q.length - 1]] = patch[k];
+            continue;
+          }
+          this.data[k] = patch[k];
+        }
+        if (typeof cb === 'function') cb();
+      },
+    });
+  }
+
+  // 载入合并页定义（页面用 Page() 注册，不 export，所以用收集器截获）
+  function defOfPage(file) {
+    let d = null;
+    const saved = global.Page;
+    global.Page = (x) => { d = x; };
+    delete require.cache[require.resolve(file)];
+    require(file);
+    global.Page = saved;
+    return d;
+  }
+
+  store.resetAll();
+  const tasks = mount(defOfPage(path.join(MP, 'pages/tasks/tasks.js')));
+  tasks.onLoad();
+
+  T('待办·作业页 加载', tasks.data.ready === true);
+  T('  默认停在待办', tasks.data.seg === 'todos');
+  T('  两个模块的 data 都并入', Object.keys(tasks.data).some((k) => k.startsWith('todos_'))
+    && Object.keys(tasks.data).some((k) => k.startsWith('assignments_')));
+
+  // 两个模块的同名方法不能串台 —— 这是组合机制最容易错的地方
+  T('  同名方法各自存在', typeof tasks.todos_add === 'function' && typeof tasks.assignments_add === 'function');
+  tasks.setData({ todos_text: '交实验报告', todos_due: '2026-10-20' });
+  tasks.todos_add.call(tasks);
+  T('  待办新增生效', store.shape.todos.length === 1 && store.shape.todos[0].text === '交实验报告');
+  tasks.setData({ assignments_title: '写论文', assignments_due: '2026-11-01' });
+  tasks.assignments_add.call(tasks);
+  T('  作业新增生效', store.shape.assignments.length === 1 && store.shape.assignments[0].title === '写论文');
+  T('  互不干扰', store.shape.todos.length === 1 && store.shape.assignments.length === 1);
+  T('  列表各自刷新', (tasks.data.todos_list || []).length === 1 && (tasks.data.assignments_list || []).length === 1);
+
+  tasks.switchSeg(ev({ id: 'assignments' }));
+  T('  分段切换到作业', tasks.data.seg === 'assignments');
+  tasks.onUnload();
+
+  store.resetAll();
+  const hub = mount(defOfPage(path.join(MP, 'pages/healthhub/healthhub.js')));
+  hub.onLoad();
+  T('健康页 加载', hub.data.ready === true);
+  T('  默认停在饮食', hub.data.seg === 'diet');
+  T('  三个模块都并入',
+    ['diet_', 'run_', 'health_'].every((p) => Object.keys(hub.data).some((k) => k.startsWith(p))));
+  // 三个模块都有 refresh / save 之类的同名方法
+  T('  同名方法各自存在',
+    typeof hub.diet_refresh === 'function' && typeof hub.run_refresh === 'function' && typeof hub.health_refresh === 'function');
+  hub.switchSeg(ev({ id: 'run' }));
+  T('  切到运动', hub.data.seg === 'run');
+  hub.switchSeg(ev({ id: 'health' }));
+  T('  切到体重', hub.data.seg === 'health');
+  hub.onUnload();
+  store.resetAll();
+}
+
+// ══ 13. 导航完整性 ══
+// tabBar 上限 5 项，所以「待办+作业」「饮食+运动+体重」做了合并页。
+// 这里固定检查：菜单项数没超限、每项都有图标、所有页面要么在 tabBar
+// 里、要么能从某处跳过去（否则用户永远进不去）。
+section('[13] 导航完整性');
+{
+  const fs = require('fs');
+  const appJson = JSON.parse(fs.readFileSync(path.join(MP, 'app.json'), 'utf8'));
+  const tab = appJson.tabBar.list;
+  const tabPaths = tab.map((t) => t.pagePath);
+
+  T('tabBar 不超过 5 项', tab.length <= 5, tab.length + ' 项');
+  T('  5 项都配了图标', tab.every((t) => t.iconPath && t.selectedIconPath));
+  T('  图标文件都存在', tab.every((t) =>
+    fs.existsSync(path.join(MP, t.iconPath)) && fs.existsSync(path.join(MP, t.selectedIconPath))));
+
+  // 收集所有跳转目标：js 里的 navigateTo/switchTab + wxml 里的 data-url
+  const targets = new Set();
+  const scan = (dir, ext) => {
+    for (const f of fs.readdirSync(dir, { withFileTypes: true })) {
+      const p = path.join(dir, f.name);
+      if (f.isDirectory()) { scan(p, ext); continue; }
+      if (!f.name.endsWith(ext)) continue;
+      const c = fs.readFileSync(p, 'utf8');
+      for (const m of c.matchAll(/url:\s*'(\/pages\/[^']+)'/g)) targets.add(m[1].slice(1));
+      for (const m of c.matchAll(/data-url="(\/pages\/[^"]+)"/g)) targets.add(m[1].slice(1));
+    }
+  };
+  scan(path.join(MP, 'pages'), '.js');
+  scan(path.join(MP, 'pages'), '.wxml');
+
+  // 这几个页面已经被合并进「待办·作业」和「健康」，不再有独立入口。
+  // 它们仍然注册在 app.json 里（旧链接/「最近使用」可能直接打开），
+  // 所以「没有入站跳转」是符合预期的，这里显式列出来，
+  // 避免以后真的加了入口却被这条检查漏掉。
+  const MERGED = new Set([
+    'pages/todos/todos', 'pages/assignments/assignments',
+    'pages/run/run', 'pages/diet/diet', 'pages/health/health',
+  ]);
+  const unreachable = appJson.pages.filter(
+    (p) => !tabPaths.includes(p) && !targets.has(p) && !MERGED.has(p)
+  );
+  T('所有页面都能到达', unreachable.length === 0, unreachable.join(', '));
+  T('  5 个合并子页仅作为子模块存在', [...MERGED].every((p) => appJson.pages.includes(p)));
+
+  // 合并页必须能取到全部子模块定义（文件末尾的 module.exports = DEFINITION）
+  const { buildHost } = require(path.join(MP, 'utils', 'tabHost.js'));
+  const check = (name, expect) => {
+    const defs = {};
+    for (const id of expect) {
+      const f = path.join(MP, 'pages', id, id + '.js');
+      const saved = global.Page;
+      let d = null;
+      global.Page = (x) => { d = x; };
+      delete require.cache[require.resolve(f)];
+      const ex = require(f);
+      global.Page = saved;
+      defs[id] = ex && ex.data ? ex : d;
+    }
+    T(`  ${name} 的子模块都导出了定义`, expect.every((id) => defs[id] && defs[id].data));
+  };
+  check('待办·作业', ['todos', 'assignments']);
+  check('健康', ['diet', 'run', 'health']);
+}
+
 console.log('\n══════════════════════════════');
 console.log(`  验收: ${ok} 通过 / ${bad} 失败`);
 process.exit(bad ? 1 : 0);

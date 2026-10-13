@@ -10,6 +10,7 @@ body{display:flex;justify-content:center;padding:20px 10px;}
 .screen{flex:1;}
 .tabbar{height:48px;background:#0d1117;border-top:1px solid #232a34;flex-shrink:0;
   display:flex;align-items:center;justify-content:space-around;color:#64748b;font-size:10px;}
+.tabbar .on{color:#10b981;}
 *{box-sizing:border-box;}
 .ph-inline{display:inline-block;background:#1e242e;border:1px solid #2b333f;border-radius:6px;
   padding:5px 10px;color:#475569;font-size:12px;}
@@ -1199,6 +1200,7 @@ page {
     <div class="card-head">
       <div class="icon-chip tone-rose">💗</div>
       <div class="card-head-title">身体数据</div>
+      <div class="head-link">记录 →</div>
     </div>
     <div class="card-body">
       <div class="two-col">
@@ -1212,10 +1214,14 @@ page {
         </div>
       </div>
       <div class="bar">
-        <div class="bar-fill bar-emerald"></div>
+        <div class="bar-fill bar-emerald" style="width: ··%"></div>
       </div>
-      <div class="mini-sub">
+      <div class="mini-sub" style="margin-top: 14rpx;">
         ··
+      </div>
+      <div class="row-actions mt">
+        <div class="btn-ghost btn-emerald">⚖️ 体重作息</div>
+        <div class="btn-ghost">🍽️ 饮食记录</div>
       </div>
     </div>
   </div>
@@ -1225,14 +1231,18 @@ page {
     <div class="card-head">
       <div class="icon-chip tone-emerald">👟</div>
       <div class="card-head-title">运动打卡</div>
+      <div class="head-link">去打卡 →</div>
     </div>
     <div class="card-body">
       <div class="big-num">··<span class="big-sub"> / ··</span></div>
       <div class="bar">
-        <div class="bar-fill bar-emerald"></div>
+        <div class="bar-fill bar-emerald" style="width: ··%"></div>
       </div>
-      <div class="mini-sub">
+      <div class="mini-sub" style="margin-top: 14rpx;">
         ··
+      </div>
+      <div class="row-actions mt">
+        <div class="btn-ghost btn-emerald">🏃 打开运动打卡</div>
       </div>
     </div>
   </div>
@@ -1243,14 +1253,18 @@ page {
       <div class="icon-chip tone-amber">🍚</div>
       <div class="card-head-title">今日饮食</div>
       <span class="chip chip-amber">·· 笔</span>
+      <div class="head-link">去记录 →</div>
     </div>
     <div class="card-body">
       <div class="big-num">··<span class="big-sub"> kcal</span></div>
       <div class="bar">
-        <div class="bar-fill bar-amber"></div>
+        <div class="bar-fill bar-amber" style="width: ··%"></div>
       </div>
-      <div class="mini-sub">
+      <div class="mini-sub" style="margin-top: 14rpx;">
         ··
+      </div>
+      <div class="row-actions mt">
+        <div class="btn-ghost btn-emerald">🍽️ 打开饮食记录</div>
       </div>
     </div>
   </div>
@@ -1263,5 +1277,5 @@ page {
 </div>
 
 </div>
-<div class="tabbar"><span>总览</span><span>今日</span><span>课表</span><span>待办</span><span>作业</span></div>
+<div class="tabbar"><span class="">总览</span><span class="">今日</span><span class="">课表</span><span class="">待办·作业</span><span class="">健康</span></div>
 </div></body></html>

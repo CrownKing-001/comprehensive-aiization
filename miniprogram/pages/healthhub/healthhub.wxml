@@ -1,0 +1,555 @@
+<!-- 健康（合并页）：饮食 / 运动 / 体重作息 -->
+<!--
+  三个模块的模板拼在同一个文件里，用 seg 控制显示哪一个。
+  数据引用和事件绑定都带模块前缀（diet_ / run_ / health_），
+  与 utils/tabHost.js 的前缀机制对应。
+  各段内容由 tools/prefix-wxml.js 从原页面模板自动加前缀生成。
+-->
+<view class="page-wrap stack {{themeClass}}">
+
+  <!-- 顶部分段切换 -->
+  <view class="seg-bar">
+    <view
+      class="seg-item {{seg === item.id ? 'is-active' : ''}}"
+      wx:for="{{segments}}"
+      wx:key="id"
+      data-id="{{item.id}}"
+      bindtap="switchSeg"
+    >
+      <text class="seg-icon">{{item.icon}}</text>
+      <text class="seg-label">{{item.label}}</text>
+    </view>
+  </view>
+
+  <!-- ══════════ 饮食 ══════════ -->
+  <block wx:if="{{seg === 'diet'}}">
+  <!-- ── 今日汇总 ── -->
+    <view class="card">
+      <view class="card-head">
+        <view class="icon-chip tone-emerald">🍽️</view>
+        <view class="card-head-title">今日摄入</view>
+      </view>
+      <view class="card-body">
+        <view class="nutri-row">
+          <view class="nutri-col">
+            <view class="nutri-num">{{diet_todayProtein}}<text class="nutri-unit"> / {{diet_proteinTarget}} g</text></view>
+            <view class="nutri-label">蛋白质</view>
+            <view class="bar-track"><view class="bar-fill bar-emerald" style="width: {{diet_proteinBar}}%"></view></view>
+          </view>
+          <view class="nutri-col">
+            <view class="nutri-num">{{diet_todayCalories}}<text class="nutri-unit"> / {{diet_calorieTarget}}</text></view>
+            <view class="nutri-label">热量 kcal</view>
+            <view class="bar-track"><view class="bar-fill bar-amber" style="width: {{diet_calorieBar}}%"></view></view>
+          </view>
+        </view>
+  
+        <view class="chip-row">
+          <text class="chip chip-sky" wx:if="{{diet_latestWeight}}">按体重 {{diet_latestWeight}}kg 估算目标</text>
+          <text class="chip chip-slate" wx:else>还没记体重，用默认目标</text>
+          <text class="chip chip-emerald" bindtap="diet_goHealth">去记体重 ›</text>
+        </view>
+  
+        <!-- 今日明细按餐次 -->
+        <view class="meal-group" wx:for="{{diet_meals}}" wx:key="meal">
+          <view class="meal-head">
+            <text class="meal-name">{{item.diet_meal}}</text>
+            <text class="meal-sum">{{item.protein}}g / {{item.calories}}kcal</text>
+          </view>
+          <view class="meal-item" wx:for="{{item.items}}" wx:for-item="it" wx:key="idx">
+            <text class="meal-item-text">{{it.text}}</text>
+            <text class="meal-item-num">{{it.protein}}g</text>
+            <view class="icon-btn tone-rose btn-mini" data-idx="{{it.idx}}" bindtap="diet_removeLog">🗑️</view>
+          </view>
+        </view>
+  
+        <view class="empty" wx:if="{{diet_meals.length === 0}}">
+          <view class="empty-icon">🥗</view>
+          <view class="empty-title">今天还没记录</view>
+          <view class="empty-desc">下面点食物库，或写一句「2个鸡蛋 一碗粥」自动识别</view>
+        </view>
+      </view>
+    </view>
+  
+    <!-- ── 快速记录 ── -->
+    <view class="card">
+      <view class="card-head">
+        <view class="icon-chip tone-sky">✍️</view>
+        <view class="card-head-title">记一笔</view>
+      </view>
+      <view class="card-body">
+  
+        <!-- 餐次 -->
+        <view class="field">
+          <view class="field-label">餐次</view>
+          <view class="filter-row">
+            <view class="filter-pill {{diet_meal === item ? 'is-active' : ''}}" wx:for="{{diet_mealOptions}}" wx:key="*this"
+              data-meal="{{item}}" bindtap="diet_setMealTap">{{item}}</view>
+          </view>
+        </view>
+  
+        <view class="msg-box" wx:if="{{diet_msg}}">{{diet_msg}}</view>
+  
+        <!-- 已选清单 -->
+        <block wx:if="{{diet_picked.length > 0}}">
+          <view class="field-label">已选 {{diet_picked.length}} 项 · 合计 {{diet_pickedProtein}}g 蛋白 / {{diet_pickedCalories}} kcal</view>
+          <view class="picked-item" wx:for="{{diet_picked}}" wx:key="foodId">
+            <text class="picked-name">{{item.name}}</text>
+            <view class="qty-group">
+              <view class="qty-btn" data-idx="{{index}}" data-delta="-0.5" bindtap="diet_changeQty">−</view>
+              <text class="qty-num">{{item.qty}}</text>
+              <view class="qty-btn" data-idx="{{index}}" data-delta="0.5" bindtap="diet_changeQty">＋</view>
+            </view>
+            <text class="picked-num">{{item.protein}}g</text>
+            <view class="icon-btn tone-rose btn-mini" data-idx="{{index}}" bindtap="diet_removePicked">✕</view>
+          </view>
+          <view class="row-actions">
+            <view class="btn-primary btn-sm" bindtap="diet_save">保存到{{diet_meal}}</view>
+            <view class="btn-ghost btn-sm" bindtap="diet_clearPicked">清空</view>
+          </view>
+        </block>
+  
+        <!-- 文字识别 -->
+        <view class="field">
+          <view class="field-label">或用一句话描述（自动识别）</view>
+          <input class="input" value="{{diet_text}}" bindinput="diet_onTextInput"
+            placeholder="如：2个鸡蛋 一碗粥 一杯牛奶" placeholder-class="input-ph" cursor-spacing="24" />
+        </view>
+        <view class="row-actions">
+          <view class="btn-ghost btn-sm" bindtap="diet_recognizeText">🔍 识别</view>
+          <view class="btn-ghost btn-sm" wx:if="{{diet_picked.length === 0}}" bindtap="diet_save">直接保存</view>
+        </view>
+  
+        <!-- 手动记账 -->
+        <view class="divider"></view>
+        <view class="field-label">手动记账（识别不出时的兜底）</view>
+        <view class="field">
+          <input class="input" value="{{diet_mText}}" bindinput="diet_onMText"
+            placeholder="吃了什么" placeholder-class="input-ph" cursor-spacing="24" />
+        </view>
+        <view class="field-row">
+          <view class="field">
+            <view class="field-label">蛋白 g</view>
+            <input class="input" type="digit" value="{{diet_mProtein}}" bindinput="diet_onMProtein"
+              placeholder="留空=自动算" placeholder-class="input-ph" cursor-spacing="24" />
+          </view>
+          <view class="field">
+            <view class="field-label">热量 kcal</view>
+            <input class="input" type="digit" value="{{diet_mCalories}}" bindinput="diet_onMCalories"
+              placeholder="留空=自动算" placeholder-class="input-ph" cursor-spacing="24" />
+          </view>
+        </view>
+        <view class="row-actions">
+          <view class="btn-ghost btn-sm" bindtap="diet_addManual">＋ 手动记一笔</view>
+        </view>
+      </view>
+    </view>
+  
+    <!-- ── 套餐模板 ── -->
+    <view class="card">
+      <view class="card-head">
+        <view class="icon-chip tone-violet">⚡</view>
+        <view class="card-head-title">常用套餐（一键加入清单）</view>
+      </view>
+      <view class="card-body">
+        <view class="tpl-grid">
+          <view class="tpl-card" wx:for="{{diet_templates}}" wx:key="id" data-id="{{item.id}}" bindtap="diet_applyTemplate">
+            <view class="tpl-name">{{item.name}}</view>
+            <view class="tpl-sum">{{item.summary}}</view>
+            <view class="tpl-num">{{item.protein}}g 蛋白 · {{item.diet_meal}}</view>
+          </view>
+        </view>
+      </view>
+    </view>
+  
+    <!-- ── 食物库 ── -->
+    <view class="card">
+      <view class="card-head">
+        <view class="icon-chip tone-amber">🥩</view>
+        <view class="card-head-title">食物库 · {{diet_library.length}} 种</view>
+      </view>
+      <view class="card-body">
+        <input class="input" value="{{diet_q}}" bindinput="diet_onSearch"
+          placeholder="搜索食物名或别名…" placeholder-class="input-ph" cursor-spacing="24" />
+  
+        <view class="filter-row" style="margin-top: 18rpx;">
+          <picker mode="selector" range="{{diet_catOptions}}" value="{{diet_catIndex}}" bindchange="diet_onCatChange">
+            <view class="filter-pill is-active">分类：{{diet_cat}} ▾</view>
+          </picker>
+        </view>
+  
+        <view class="food-grid">
+          <view class="food-card" wx:for="{{diet_libraryShown}}" wx:key="id" data-id="{{item.id}}" bindtap="diet_addFood">
+            <view class="food-name">{{item.name}}</view>
+            <view class="food-unit">{{item.unit}}</view>
+            <view class="food-num">{{item.protein}}g / {{item.calories}}kcal</view>
+          </view>
+        </view>
+  
+        <view class="row-actions mt" wx:if="{{diet_libraryShown.length < diet_library.length}}">
+          <view class="btn-ghost btn-sm" bindtap="diet_showMoreLibrary">显示更多（还有 {{diet_library.length - diet_libraryShown.length}} 种）</view>
+        </view>
+  
+        <view class="empty" wx:if="{{diet_library.length === 0}}">
+          <view class="empty-desc">没有匹配的食物，换个词试试</view>
+        </view>
+      </view>
+    </view>
+  
+    <!-- ── 近 7 天趋势 ── -->
+    <view class="card">
+      <view class="card-head">
+        <view class="icon-chip tone-sky">📈</view>
+        <view class="card-head-title">近 7 天蛋白摄入</view>
+      </view>
+      <view class="card-body">
+        <view class="week-bar-row" wx:for="{{diet_trend}}" wx:key="date">
+          <text class="week-bar-label">{{item.label}}</text>
+          <view class="bar-track bar-track-sm">
+            <view class="bar-fill {{item.hit ? 'bar-emerald' : 'bar-sky'}}" style="width: {{item.barWidth}}%"></view>
+          </view>
+          <text class="week-bar-count">{{item.protein}}g</text>
+        </view>
+        <view class="tiny-note">绿条 = 当天达标（目标 {{diet_proteinTarget}}g）</view>
+      </view>
+    </view>
+  
+    <!-- ── 历史 ── -->
+    <view class="card">
+      <view class="card-head">
+        <view class="icon-chip tone-slate">📚</view>
+        <view class="card-head-title">历史记录 · {{historyTotal}} 天</view>
+      </view>
+      <view class="card-body">
+        <view class="empty" wx:if="{{diet_historyDays.length === 0}}">
+          <view class="empty-desc">还没有历史记录</view>
+        </view>
+        <block wx:else>
+          <view class="hist-day" wx:for="{{diet_historyDays}}" wx:key="date">
+            <view class="hist-head">
+              <text class="hist-date">{{item.date}}</text>
+              <text class="hist-sum">{{item.protein}}g / {{item.calories}}kcal · {{item.count}} 笔</text>
+            </view>
+            <view class="hist-item" wx:for="{{item.items}}" wx:for-item="it" wx:key="idx">
+              <text class="hist-meal">{{it.meal}}</text>
+              <text class="hist-text">{{it.text}}</text>
+              <text class="hist-num">{{it.protein}}g</text>
+              <view class="icon-btn tone-rose btn-mini" data-idx="{{it.idx}}" bindtap="diet_removeLog">🗑️</view>
+            </view>
+          </view>
+          <view class="row-actions mt">
+            <view class="btn-ghost btn-sm" bindtap="diet_toggleHistory">{{diet_showAllHistory ? '只看最近 7 天' : '展开全部'}}</view>
+          </view>
+        </block>
+      </view>
+    </view>
+  </block>
+
+  <!-- ══════════ 运动 ══════════ -->
+  <block wx:if="{{seg === 'run'}}">
+  <!-- ── 打卡进度 ── -->
+    <view class="card">
+      <view class="card-head">
+        <view class="icon-chip tone-emerald">👟</view>
+        <view class="card-head-title">打卡进度</view>
+      </view>
+      <view class="card-body">
+        <view class="big-stat">
+          <view class="big-num">{{run_done}}<text class="big-unit"> / {{run_target}} 次</text></view>
+          <view class="big-side">目标完成度 <text class="big-pct">{{run_percent}}</text><text class="big-pct-unit"> %</text></view>
+        </view>
+  
+        <view class="bar-track">
+          <view class="bar-fill bar-emerald" style="width: {{run_barWidth}}%"></view>
+        </view>
+  
+        <!-- 打卡按钮 -->
+        <view class="row-actions mt">
+          <block wx:if="{{run_types.length === 0}}">
+            <view class="inline-hint">还没有打卡类型，去「设置」里填写后这里会出现按钮。</view>
+          </block>
+          <block wx:else>
+            <view
+              class="{{index === 0 ? 'btn-primary' : 'btn-ghost btn-emerald'}}"
+              wx:for="{{run_types}}"
+              wx:key="*this"
+              data-type="{{item}}"
+              bindtap="run_add"
+            >{{item}} +1</view>
+          </block>
+          <view class="btn-ghost {{run_done === 0 ? 'is-disabled' : ''}}" bindtap="run_undo">↩ 撤销</view>
+        </view>
+  
+        <!-- 状态胶囊 -->
+        <view class="chip-row">
+          <text class="chip chip-emerald">今日已打卡 {{run_todayCount}} 次</text>
+          <text class="chip chip-sky" wx:if="{{run_notStarted}}">距开始还有 {{run_startedDays}} 天</text>
+          <text class="chip {{run_done >= run_target ? 'chip-emerald' : 'chip-sky'}}" wx:else>
+            {{run_done >= run_target ? '已达成目标' : '还差 ' + run_remain + ' 次'}}
+          </text>
+          <text class="chip chip-violet" wx:if="{{run_pace > 0}}">剩下 {{run_weeksLeft}} 周，每周约 {{run_pace}} 次可完成目标</text>
+          <text class="chip {{run_daysLeft < 0 ? 'chip-slate' : (run_daysLeft <= 14 ? 'chip-rose' : 'chip-slate')}}" wx:if="{{run_daysLeft !== null}}">
+            {{run_daysLeft < 0 ? '已于 ' + run_runEnd + ' 结束' : '距结束 ' + run_daysLeft + ' 天（' + run_runEnd + '）'}}
+          </text>
+        </view>
+  
+        <view class="tiny-note" wx:if="{{run_ended}}">设定的结束日期已过，记录仍然可以继续补录。</view>
+      </view>
+    </view>
+  
+    <!-- ── 打卡设置说明 ── -->
+    <view class="card">
+      <view class="card-head">
+        <view class="icon-chip tone-sky">ℹ️</view>
+        <view class="card-head-title">打卡设置</view>
+      </view>
+      <view class="card-body">
+        <view class="bullet-note" wx:if="{{run_notStarted}}">
+          设定的开始日期是 {{run_runStart}}，还有 {{run_startedDays}} 天。在此之前也可以照常记录，进度不会清零。
+        </view>
+        <block wx:else>
+          <view class="bullet">
+            <text class="bullet-dot">•</text>
+            <text class="bullet-text">目标 {{run_target}} 次{{run_done >= run_target ? '，已经达成 🎉' : '，已完成 ' + run_done + ' 次'}}。</text>
+          </view>
+          <view class="bullet">
+            <text class="bullet-dot">•</text>
+            <text class="bullet-text">打卡类型：{{run_types.length ? run_types.join(' / ') : '尚未设置（去「设置」里填写）'}}。</text>
+          </view>
+          <view class="bullet" wx:if="{{run_hasStart || run_hasEnd}}">
+            <text class="bullet-dot">•</text>
+            <text class="bullet-text">统计周期：{{run_hasStart ? run_runStart : '不限'}} ~ {{run_hasEnd ? run_runEnd : '不限'}}。</text>
+          </view>
+          <view class="bullet" wx:else>
+            <text class="bullet-dot">•</text>
+            <text class="bullet-text">没有设置起止日期，按累计次数统计，不做时间限制。</text>
+          </view>
+        </block>
+  
+        <view class="tip-box">
+          <text class="tip-text">
+            {{run_pace > 0
+              ? '🔥 还差 ' + run_remain + ' 次，剩下 ' + run_weeksLeft + ' 周，每周约 ' + run_pace + ' 次就能完成目标'
+              : (run_done >= run_target ? '🔥 目标已达成，保持节奏就好' : '🔥 目标次数、类型、起止日期都可以在「设置」里随时调整')}}
+          </text>
+        </view>
+        <view class="row-actions mt">
+          <view class="btn-ghost btn-sm" bindtap="run_goSettings">⚙️ 去设置</view>
+        </view>
+      </view>
+    </view>
+  
+    <!-- ── 打卡记录 ── -->
+    <view class="card">
+      <view class="card-head">
+        <view class="icon-chip tone-violet">✅</view>
+        <view class="card-head-title">打卡记录（{{run_recordCount}}）</view>
+      </view>
+      <view class="card-body">
+        <view class="filter-row">
+          <view class="filter-pill {{run_filter === 'all' ? 'is-active' : ''}}" data-filter="all" bindtap="run_setFilter">全部</view>
+          <view
+            class="filter-pill {{run_filter === item ? 'is-active' : ''}}"
+            wx:for="{{run_filterOptions}}"
+            wx:key="*this"
+            data-filter="{{item}}"
+            bindtap="run_setFilter"
+          >{{item}}</view>
+        </view>
+  
+        <view class="empty" wx:if="{{run_records.length === 0}}">
+          <view class="empty-icon">💪</view>
+          <view class="empty-title">还没有记录</view>
+          <view class="empty-desc">{{run_types.length === 0 ? '还没有打卡类型，去「设置」里填几个再回来打卡。' : '完成第一次打卡后开始计数'}}</view>
+        </view>
+  
+        <view class="log-list" wx:else>
+          <view class="log-row" wx:for="{{run_records}}" wx:key="key">
+            <view class="log-dot {{item.isPrimary ? 'is-primary' : ''}}"></view>
+            <text class="log-date">{{item.date}}</text>
+            <text class="log-type">{{item.type}}</text>
+            <view class="icon-btn tone-rose btn-mini" data-idx="{{item.idx}}" bindtap="run_removeAt">🗑️</view>
+          </view>
+        </view>
+      </view>
+    </view>
+  
+    <!-- ── 每周分布 ── -->
+    <view class="card">
+      <view class="card-head">
+        <view class="icon-chip tone-amber">🔥</view>
+        <view class="card-head-title">每周分布</view>
+      </view>
+      <view class="card-body">
+        <view class="empty" wx:if="{{run_byWeek.length === 0}}">
+          <view class="empty-desc">暂无数据</view>
+        </view>
+        <block wx:else>
+          <view class="week-bar-row" wx:for="{{run_byWeek}}" wx:key="week">
+            <text class="week-bar-label {{item.isCurrent ? 'is-current' : ''}}">第{{item.run_week}}周</text>
+            <view class="bar-track bar-track-sm">
+              <view class="bar-fill bar-{{item.tone}}" style="width: {{item.run_barWidth}}%"></view>
+            </view>
+            <text class="week-bar-count">{{item.n}} 次</text>
+          </view>
+        </block>
+        <view class="tiny-note mt">
+          {{run_pace > 0 ? '绿条表示该周已达到「每周约 ' + run_pace + ' 次」的节奏。' : '条形长度按你每周的实际打卡次数绘制。'}}
+        </view>
+      </view>
+    </view>
+  </block>
+
+  <!-- ══════════ 体重 ══════════ -->
+  <block wx:if="{{seg === 'health'}}">
+  <!-- ── 概览卡 ── -->
+    <view class="stat-grid">
+      <view class="stat-card" wx:for="{{health_stats}}" wx:key="label">
+        <view class="stat-top">
+          <view class="icon-chip tone-{{item.tone}}">{{item.icon}}</view>
+          <view class="stat-label">{{item.label}}</view>
+        </view>
+        <view class="stat-value"><text class="stat-num-sm">{{item.value}}</text></view>
+        <view class="stat-sub">{{item.sub}}</view>
+      </view>
+    </view>
+  
+    <!-- ── 今日录入 ── -->
+    <view class="card">
+      <view class="card-head">
+        <view class="icon-chip tone-emerald">📝</view>
+        <view class="card-head-title">记录今天的身体数据</view>
+      </view>
+      <view class="card-body">
+        <view class="field-row">
+          <view class="field">
+            <view class="field-label">体重 kg</view>
+            <input class="input" type="digit" value="{{health_weight}}" bindinput="health_onWeight"
+              placeholder="如 68.5" placeholder-class="input-ph" cursor-spacing="24" />
+          </view>
+          <view class="field">
+            <view class="field-label">睡眠 h</view>
+            <input class="input" type="digit" value="{{health_sleep}}" bindinput="health_onSleep"
+              placeholder="如 7.5" placeholder-class="input-ph" cursor-spacing="24" />
+          </view>
+          <view class="field">
+            <view class="field-label">步数</view>
+            <input class="input" type="number" value="{{health_steps}}" bindinput="health_onSteps"
+              placeholder="选填" placeholder-class="input-ph" cursor-spacing="24" />
+          </view>
+        </view>
+        <view class="row-actions">
+          <view class="btn-primary" bindtap="health_save">保存今天</view>
+        </view>
+        <view class="tiny-note">同一天重复保存会覆盖，不会产生多条记录。</view>
+      </view>
+    </view>
+  
+    <!-- ── 体重曲线 ── -->
+    <view class="card">
+      <view class="card-head">
+        <view class="icon-chip tone-emerald">⚖️</view>
+        <view class="card-head-title">体重曲线（最近 {{health_weightPoints.length}} 次）</view>
+      </view>
+      <view class="card-body">
+        <view class="empty" wx:if="{{health_weightPoints.length < 2}}">
+          <view class="empty-desc">至少记录 2 天体重后，这里会出现体重曲线</view>
+        </view>
+        <canvas wx:else type="2d" id="weightCanvas" class="chart-canvas"></canvas>
+      </view>
+    </view>
+  
+    <!-- ── 睡眠曲线 ── -->
+    <view class="card">
+      <view class="card-head">
+        <view class="icon-chip tone-sky">🌙</view>
+        <view class="card-head-title">睡眠曲线（最近 {{health_sleepPoints.length}} 次）</view>
+      </view>
+      <view class="card-body">
+        <view class="empty" wx:if="{{health_sleepPoints.length < 2}}">
+          <view class="empty-desc">至少记录 2 天睡眠后，这里会出现睡眠曲线</view>
+        </view>
+        <block wx:else>
+          <canvas type="2d" id="sleepCanvas" class="chart-canvas"></canvas>
+          <view class="chart-note {{health_sleepSummary.ok ? 'is-ok' : 'is-warn'}}" wx:if="{{health_sleepSummary}}">
+            {{health_sleepSummary.text}} · 达标 {{health_sleepSummary.hit}}/{{health_sleepSummary.total}} 天
+          </view>
+        </block>
+      </view>
+    </view>
+  
+    <!-- ── 训练打卡 ── -->
+    <view class="card">
+      <view class="card-head">
+        <view class="icon-chip tone-amber">🏋️</view>
+        <view class="card-head-title">本周训练打卡 · 第 {{health_week}} 周 · {{health_doneCount}}/7 天</view>
+      </view>
+      <view class="card-body">
+        <view class="train-grid">
+          <view class="train-day {{item.checked ? 'is-done' : ''}} {{item.isToday ? 'is-today' : ''}}"
+            wx:for="{{health_weekDays}}" wx:key="key" data-key="{{item.key}}" bindtap="health_toggleTrain">
+            <text class="train-wd">周{{item.wd}}</text>
+            <text class="train-num">{{item.day}}</text>
+            <text class="train-mark" wx:if="{{item.checked}}">✓</text>
+            <text class="train-plan" wx:elif="{{item.isPlan}}">·</text>
+          </view>
+        </view>
+        <view class="tiny-note">
+          {{health_hasPlan ? '带「·」的是你在设置里定的训练日，点格子打卡。' : '还没有设置训练日，去「设置」里填「训练日」后会显示计划标记。'}}
+        </view>
+        <view class="row-actions">
+          <view class="btn-ghost btn-sm" bindtap="health_goSettings">⚙️ 设置训练日</view>
+        </view>
+      </view>
+    </view>
+  
+    <!-- ── 历史数据 ── -->
+    <view class="card">
+      <view class="card-head">
+        <view class="icon-chip tone-violet">📊</view>
+        <view class="card-head-title">历史数据 · {{health_logs.length}} 天</view>
+      </view>
+      <view class="card-body">
+        <view class="empty" wx:if="{{health_logs.length === 0}}">
+          <view class="empty-desc">还没有记录，从上面开始记第一条吧</view>
+        </view>
+        <block wx:else>
+          <view class="log-row" wx:for="{{health_logs}}" wx:key="date">
+            <text class="log-date">{{item.date}}</text>
+            <text class="hd-weight">{{item.health_weight}}kg</text>
+            <text class="hd-sleep">{{item.health_sleep}}h</text>
+            <text class="hd-steps">{{item.health_steps}}步</text>
+            <view class="icon-btn tone-emerald btn-mini" data-date="{{item.date}}" bindtap="health_startEdit">✏️</view>
+            <view class="icon-btn tone-rose btn-mini" data-date="{{item.date}}" bindtap="health_removeLog">🗑️</view>
+          </view>
+        </block>
+      </view>
+    </view>
+  
+    <!-- ── 编辑弹层 ── -->
+    <view class="modal-mask" wx:if="{{health_editDate}}" bindtap="health_cancelEdit">
+      <view class="modal-card" catchtap="health_noop">
+        <view class="modal-title">编辑 {{health_editDate}}</view>
+        <view class="field">
+          <view class="field-label">体重 kg</view>
+          <input class="input" type="digit" value="{{health_eWeight}}" bindinput="health_onEWeight"
+            placeholder="留空=不记录" placeholder-class="input-ph" cursor-spacing="24" />
+        </view>
+        <view class="field">
+          <view class="field-label">睡眠 h</view>
+          <input class="input" type="digit" value="{{health_eSleep}}" bindinput="health_onESleep"
+            placeholder="留空=不记录" placeholder-class="input-ph" cursor-spacing="24" />
+        </view>
+        <view class="field">
+          <view class="field-label">步数</view>
+          <input class="input" type="number" value="{{health_eSteps}}" bindinput="health_onESteps"
+            placeholder="留空=不记录" placeholder-class="input-ph" cursor-spacing="24" />
+        </view>
+        <view class="row-actions mt">
+          <view class="btn-primary" bindtap="health_saveEdit">保存</view>
+          <view class="btn-ghost" bindtap="health_cancelEdit">取消</view>
+        </view>
+      </view>
+    </view>
+  </block>
+
+</view>

@@ -24,7 +24,7 @@ const mealOrder = (m) => {
   return i < 0 ? 99 : i;
 };
 
-Page({
+const DEFINITION = {
   data: {
     ready: false,
     themeClass: '',
@@ -511,7 +511,23 @@ Page({
     this.setData({ showAllHistory: !this.data.showAllHistory }, () => this.refresh());
   },
 
+  /**
+   * 跳到体重作息。
+   * 在「健康」合并页里，饮食和体重是同一个页面的两个分段，
+   * 这时应该切分段而不是 navigateTo（否则会压一个新页面上去）。
+   * 宿主的 switchSeg 在 this 上（子模块的 this 就是宿主实例的视图）。
+   */
   goHealth() {
+    if (typeof this.switchSeg === 'function') {
+      this.switchSeg({ currentTarget: { dataset: { id: 'health' } } });
+      return;
+    }
     wx.navigateTo({ url: '/pages/health/health' });
   },
-});
+};
+
+Page(DEFINITION);
+
+// 这个页面同时被合并页当作子模块使用（见 utils/tabHost.js）。
+// 小程序页面模块不 export 定义，这里显式导出一份供 tabHost 取用。
+module.exports = DEFINITION;

@@ -36,7 +36,8 @@ function dropElseBlocks(s) {
   return out;
 }
 
-function convert(wxml) {
+function convert(wxml, opts) {
+  opts = opts || {};
   let h = wxml;
   h = h.replace(/\{\{([\s\S]*?)\}\}/g, (_, e) => {
     const m = /^'([^']*)'$/.exec(e.trim());
@@ -49,12 +50,25 @@ function convert(wxml) {
   h = h.replace(/<canvas\b[^>]*?><\/canvas>/g, '<div class="ph-canvas">［Canvas 图表］</div>');
   h = h.replace(/<canvas\b[^>]*?\/>/g, '<div class="ph-canvas">［Canvas 图表］</div>');
   h = dropElseBlocks(h);
+  // 合并页（tasks / healthhub）用 <block wx:if="{{seg === 'xxx'}}"> 切换分段。
+  // 静态预览只渲染 keepSeg 指定的那一段，否则三段会叠在一起看不清。
+  if (opts.keepSeg) {
+    h = h.replace(/<block\s+wx:if="\{\{\s*seg\s*===\s*'([^']+)'\s*\}\}"\s*>/g, (all, name) =>
+      name === opts.keepSeg ? '<block>' : '<block style="display:none">');
+    // 上面保留了 wx:else（体重那段），若不在预览范围内也藏起来
+    h = h.replace(/<block\s+style="display:none">/g, '<block style="display:none">');
+  }
   h = h.replace(/<(view|text|block|scroll-view|picker)\b([^<>]*)>/g, (_, raw, attrs) => {
     const tag = { view:'div', 'scroll-view':'div', picker:'div', text:'span', block:'' }[raw] ?? 'div';
     if (!tag) return '';
     const cm = /class\s*=\s*"([^"]*)"/.exec(attrs);
+    const sm = /style\s*=\s*"([^"]*)"/.exec(attrs);
     const cls = cm ? cm[1].replace(/\u00a7/g, '').trim() : '';
-    return cls ? `<${tag} class="${cls}">` : `<${tag}>`;
+    const sty = sm ? sm[1].trim() : '';
+    const a = [];
+    if (cls) a.push(`class="${cls}"`);
+    if (sty) a.push(`style="${sty}"`);
+    return a.length ? `<${tag} ${a.join(' ')}>` : `<${tag}>`;
   });
   h = h.replace(/<\/view>/g, '</div>').replace(/<\/text>/g, '</span>')
        .replace(/<\/scroll-view>/g, '</div>').replace(/<\/picker>/g, '</div>').replace(/<\/block>/g, '');
@@ -64,14 +78,35 @@ function convert(wxml) {
 const appCss = rpx(fs.readFileSync(path.join(MP, 'app.wxss'), 'utf8'));
 const dirs = fs.readdirSync(path.join(MP, 'pages')).filter(d => fs.statSync(path.join(MP, 'pages', d)).isDirectory());
 fs.mkdirSync(OUT, { recursive: true });
+
+// 合并页要分段预览，否则三段叠在一起看不清
+const SEG_OF = {
+  tasks: ['todos', 'assignments'],
+  healthhub: ['diet', 'run', 'health'],
+};
+
+// tabBar 文案从 app.json 读，避免和真实配置不一致
+let TAB = ['总览', '今日', '课表', '待办·作业', '健康'];
+try {
+  const aj = JSON.parse(fs.readFileSync(path.join(MP, 'app.json'), 'utf8'));
+  if (aj.tabBar && Array.isArray(aj.tabBar.list) && aj.tabBar.list.length) {
+    TAB = aj.tabBar.list.map((t) => t.text);
+  }
+} catch (e) { /* 读不到就用默认 */ }
+
 let n = 0;
 for (const name of dirs) {
   const wp = path.join(MP, 'pages', name, name + '.wxml');
   const sp = path.join(MP, 'pages', name, name + '.wxss');
   if (!fs.existsSync(wp)) continue;
-  const body = convert(fs.readFileSync(wp, 'utf8'));
+  const raw = fs.readFileSync(wp, 'utf8');
   const pageCss = fs.existsSync(sp) ? rpx(fs.readFileSync(sp, 'utf8')) : '';
-  const html = `<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><title>${name} 预览</title><style>
+  const segs = SEG_OF[name] || [null];
+
+  for (const seg of segs) {
+    const body = convert(raw, { keepSeg: seg });
+    const title = seg ? `${name} · ${seg}` : name;
+    const html = `<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><title>${title} 预览</title><style>
 html,body{margin:0;padding:0;background:#0b0e13;}
 body{display:flex;justify-content:center;padding:20px 10px;}
 .phone{width:375px;background:#12161d;border-radius:18px;overflow:hidden;
@@ -83,6 +118,7 @@ body{display:flex;justify-content:center;padding:20px 10px;}
 .screen{flex:1;}
 .tabbar{height:48px;background:#0d1117;border-top:1px solid #232a34;flex-shrink:0;
   display:flex;align-items:center;justify-content:space-around;color:#64748b;font-size:10px;}
+.tabbar .on{color:#10b981;}
 *{box-sizing:border-box;}
 .ph-inline{display:inline-block;background:#1e242e;border:1px solid #2b333f;border-radius:6px;
   padding:5px 10px;color:#475569;font-size:12px;}
@@ -95,13 +131,15 @@ ${appCss}
 ${pageCss}
 </style></head><body><div class="phone">
 <div class="statusbar">9:41</div>
-<div class="navbar">大学日程 · ${name}</div>
+<div class="navbar">大学日程 · ${title}</div>
 <div class="screen">
 ${body}
 </div>
-<div class="tabbar"><span>总览</span><span>今日</span><span>课表</span><span>待办</span><span>作业</span></div>
+<div class="tabbar">${TAB.map((t, i) => `<span class="${i === 3 && name === 'tasks' || i === 4 && name === 'healthhub' ? 'on' : ''}">${t}</span>`).join('')}</div>
 </div></body></html>`;
-  fs.writeFileSync(path.join(OUT, name + '.html'), html, 'utf8');
-  n++;
+    const fname = seg ? `${name}-${seg}` : name;
+    fs.writeFileSync(path.join(OUT, fname + '.html'), html, 'utf8');
+    n++;
+  }
 }
 console.log('生成 ' + n + ' 个页面预览 → ' + OUT);

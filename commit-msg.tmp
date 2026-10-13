@@ -1,8 +1,50 @@
-fix(miniprogram): 解析警告文字加换行兜底
+feat(miniprogram): 底部菜单改版 —— 待办·作业合并、新增健康，总览加跳转
 
-警告文案里会带上出错的整行原文（例如「1-2节 高等数学 A101 1-16周」），
-在窄屏上可能把卡片撑破。给 .notice-text / .warn-text 补上
-word-break: break-all 与 overflow-wrap: anywhere，
-并把 .warn-text 显式设为 block（text 是内联元素，换行行为不稳定）。
+用户要求：菜单栏加「健康」（含饮食/作息体重）和「重要事项」「设置」，
+待办和作业合并，总览里的饮食等加跳转按钮。
 
-验证：自测 49/49，编译 0 错误（260.1 KB），无未定义 CSS 类，0 BOM。
+一、tabBar 只能放 5 项，位置不够，做了取舍
+
+  总览 | 今日 | 课表 | 待办·作业 | 健康
+
+  「重要事项」和「设置」挤不进去，从总览 →「全部功能」进（本来就有入口）。
+
+二、合并页怎么做的
+
+  没有把几百行逻辑复制进一个大文件（改一处要改两处，已验证的逻辑会分叉），
+  而是让子模块保持原样，用 utils/tabHost.js 把两个 Page 定义挂到同一实例：
+
+    · data 键加前缀并入宿主（list → todos_list）
+    · 子模块的 this.data / this.setData 走 Proxy 自动加前缀
+    · 方法一律带模块前缀，子模块内部 this.add() 经 Proxy 解析到本模块版本
+
+  带前缀是必须的：todos 和 assignments 都有 add/remove/toggle，
+  留裸名字会让其中一个的内部调用串到另一个模块去，这类 bug 很难查。
+  自测里专门锁了「同名方法不串台」这条。
+
+三、5 个原页面保留不删
+
+  todos/assignments/diet/run/health 仍注册在 app.json，单独打开也正常。
+  保留是为了不让旧链接变死链（已发布版本、最近使用、写死的路径）。
+  它们同时是合并页的子模块来源：文件末尾有 module.exports = DEFINITION，
+  tabHost 靠它取定义 —— 删了文件合并页会直接报错，这点写进文档了。
+
+四、总览跳转
+
+  · 指标卡新增 goStat：按 isTab 区分 switchTab / navigateTo（弄反就没反应）
+  · 「全部功能」的饮食/运动/体重三项改为跳合并页对应分段
+  · 身体数据、运动打卡、今日饮食三张卡片补上跳转按钮和「去记录 →」
+  · 顺手修掉 analysis.goCourses 用 navigateTo 跳课表的 bug
+    （课表是 tabBar 页，navigateTo 会静默失败）
+
+  switchTab 的 url 不能带 query，所以分段信息走 app.globalData.pendingSeg，
+  由目标页 onShow 取走并清除。
+
+五、tabBar 图标
+
+  新增 tools/make-tab-icons.py 生成 10 张 PNG（5 组 × 普通/选中态）。
+  微信 tabBar 不支持字体图标或 SVG，必须用图片文件。
+
+验证：自测 71/71（新增合并页 15 项 + 导航完整性 6 项）
+      编译 0 错误（328.5 KB），JS/JSON/WXML/BOM/未定义 CSS 类 全过
+      5 个合并子页单独打开仍正常

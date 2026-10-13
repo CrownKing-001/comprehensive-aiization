@@ -1,0 +1,234 @@
+<!-- 待办 · 作业（合并页） -->
+<!--
+  两个模块的模板拼在同一个文件里，用 seg 控制显示哪一个。
+  所有数据引用和事件绑定都带模块前缀（todos_ / assignments_），
+  和 utils/tabHost.js 的前缀机制对应。
+-->
+<view class="page-wrap stack {{themeClass}}">
+
+  <!-- 顶部分段切换 -->
+  <view class="seg-bar">
+    <view
+      class="seg-item {{seg === item.id ? 'is-active' : ''}}"
+      wx:for="{{segments}}"
+      wx:key="id"
+      data-id="{{item.id}}"
+      bindtap="switchSeg"
+    >
+      <text class="seg-icon">{{item.icon}}</text>
+      <text class="seg-label">{{item.label}}</text>
+      <text class="seg-badge" wx:if="{{item.id === 'todos' && todos_counts.all > 0}}">{{todos_counts.all}}</text>
+      <text class="seg-badge" wx:if="{{item.id === 'assignments' && assignments_counts.all > 0}}">{{assignments_counts.all}}</text>
+    </view>
+  </view>
+
+  <!-- ══════════ 待办 ══════════ -->
+  <block wx:if="{{seg === 'todos'}}">
+
+    <view class="card">
+      <view class="card-head">
+        <view class="icon-chip tone-emerald">＋</view>
+        <view class="card-head-title">新建待办</view>
+      </view>
+      <view class="card-body">
+        <input
+          class="input"
+          placeholder="要做什么？"
+          placeholder-class="input-ph"
+          value="{{todos_text}}"
+          bindinput="todos_onText"
+          confirm-type="done"
+          bindconfirm="todos_add"
+          cursor-spacing="24"
+        />
+
+        <view class="form-row">
+          <view class="form-col">
+            <view class="field-label">截止日期</view>
+            <picker mode="date" value="{{todos_due}}" bindchange="todos_onDue">
+              <view class="input picker-input">{{todos_due || '选择日期'}}</view>
+            </picker>
+          </view>
+          <view class="form-col">
+            <view class="field-label">优先级</view>
+            <picker mode="selector" range="{{todos_priorityOptions}}" range-key="label" value="{{todos_priorityIndex}}" bindchange="todos_onPriority">
+              <view class="input picker-input">{{todos_priorityOptions[todos_priorityIndex].label}}</view>
+            </picker>
+          </view>
+        </view>
+
+        <view class="field-label" style="margin-top: 18rpx;">标签</view>
+        <input class="input" placeholder="可选，如 复习" placeholder-class="input-ph" value="{{todos_tag}}" bindinput="todos_onTag"
+          cursor-spacing="24"
+        />
+
+        <view class="quick-row">
+          <text class="quick-label">快捷日期：</text>
+          <view class="quick-pill" wx:for="{{todos_quickDates}}" wx:key="label" data-value="{{item.value}}" bindtap="todos_pickQuickDate">{{item.label}}</view>
+          <view class="quick-clear" wx:if="{{todos_due}}" bindtap="todos_clearDue">清除日期</view>
+        </view>
+
+        <view class="btn-primary {{todos_text ? '' : 'is-disabled'}}" style="margin-top: 22rpx; width: 100%;" bindtap="todos_add">＋ 添加</view>
+      </view>
+    </view>
+
+    <view class="card">
+      <view class="card-head">
+        <view class="icon-chip tone-sky">☰</view>
+        <view class="card-head-title">待办列表（{{todos_list.length}}）</view>
+        <view class="head-link" wx:if="{{todos_counts.done > 0}}" bindtap="todos_clearDone">清除已完成 ({{todos_counts.done}})</view>
+      </view>
+      <view class="card-body">
+        <view class="filter-row">
+          <view
+            class="filter-pill {{todos_filter === item.id ? 'is-active' : ''}}"
+            wx:for="{{todos_filters}}"
+            wx:key="id"
+            data-id="{{item.id}}"
+            bindtap="todos_setFilter"
+          >
+            {{item.label}}<text class="filter-count" wx:if="{{item.count > 0}}">{{item.count}}</text>
+          </view>
+        </view>
+
+        <view class="empty" wx:if="{{todos_list.length === 0}}">
+          <view class="empty-icon">✨</view>
+          <view class="empty-text">{{todos_filter === 'done' ? '还没有完成的事项' : '这里空空的，享受一下吧 ✨'}}</view>
+        </view>
+
+        <view class="todo-list" wx:else>
+          <view class="todo-item {{item.done ? 'is-done' : (item.overdue ? 'is-overdue' : '')}}" wx:for="{{todos_list}}" wx:key="id">
+            <view class="tick {{item.done ? 'is-checked' : ''}}" data-id="{{item.id}}" bindtap="todos_toggle">
+              <text wx:if="{{item.done}}">✓</text>
+            </view>
+            <view class="todo-main">
+              <view class="todo-text {{item.done ? 'is-struck' : ''}}">{{item.text}}</view>
+              <view class="todo-meta">
+                <text class="chip chip-{{item.priorityTone}}">⚑ {{item.priorityText}}</text>
+                <text class="todo-due is-{{item.dueTone}}" wx:if="{{item.due}}">📅 {{item.dueText}}</text>
+                <text class="chip chip-sky" wx:if="{{item.tag}}">{{item.tag}}</text>
+              </view>
+            </view>
+            <view class="del-btn" data-id="{{item.id}}" bindtap="todos_remove">🗑</view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="alert alert-amber" wx:if="{{todos_counts.overdue > 0}}">
+      有 <text class="bold">{{todos_counts.overdue}}</text> 项待办已经超过截止日期，建议重新排一下优先级。
+    </view>
+
+  </block>
+
+  <!-- ══════════ 作业 ══════════ -->
+  <block wx:else>
+
+    <view class="card">
+      <view class="card-head">
+        <view class="icon-chip tone-violet">＋</view>
+        <view class="card-head-title">新建作业</view>
+      </view>
+      <view class="card-body">
+        <view class="field-label">课程</view>
+        <picker wx:if="{{assignments_names.length > 0}}" mode="selector" range="{{assignments_names}}" bindchange="assignments_pickCourse">
+          <view class="input picker-input">{{assignments_course || '从课表选或手动输入'}}</view>
+        </picker>
+        <input
+          wx:else
+          class="input"
+          placeholder="从课表选或手动输入"
+          placeholder-class="input-ph"
+          value="{{assignments_course}}"
+          bindinput="assignments_onCourse"
+          cursor-spacing="24"
+        />
+
+        <view class="field-label" style="margin-top: 18rpx;">作业标题 *</view>
+        <input class="input" placeholder="如：第 3 章习题 1–12" placeholder-class="input-ph" value="{{assignments_title}}" bindinput="assignments_onTitle"
+          cursor-spacing="24"
+        />
+
+        <view class="form-row">
+          <view class="form-col">
+            <view class="field-label">截止日期 *</view>
+            <picker mode="date" value="{{assignments_due}}" bindchange="assignments_onDue">
+              <view class="input picker-input">{{assignments_due || '选择日期'}}</view>
+            </picker>
+          </view>
+          <view class="form-col">
+            <view class="field-label">截止时间</view>
+            <picker mode="time" value="{{assignments_dueTime}}" bindchange="assignments_onDueTime">
+              <view class="input picker-input">{{assignments_dueTime || '可选'}}</view>
+            </picker>
+          </view>
+        </view>
+
+        <view class="field-label" style="margin-top: 18rpx;">分值 / 占比</view>
+        <input class="input" placeholder="可选，如 20%" placeholder-class="input-ph" value="{{assignments_weight}}" bindinput="assignments_onWeight"
+          cursor-spacing="24"
+        />
+
+        <view class="field-label" style="margin-top: 18rpx;">备注</view>
+        <input class="input" placeholder="可选，如 第三章习题" placeholder-class="input-ph" value="{{assignments_detail}}" bindinput="assignments_onDetail"
+          cursor-spacing="24"
+        />
+
+        <view class="btn-primary {{assignments_title ? '' : 'is-disabled'}}" style="margin-top: 22rpx; width: 100%;" bindtap="assignments_add">＋ 添加</view>
+      </view>
+    </view>
+
+    <view class="card">
+      <view class="card-head">
+        <view class="icon-chip tone-sky">☰</view>
+        <view class="card-head-title">作业列表（{{assignments_list.length}}）</view>
+      </view>
+      <view class="card-body">
+        <view class="filter-row">
+          <view
+            class="filter-pill {{assignments_filter === item.id ? 'is-active' : ''}}"
+            wx:for="{{assignments_filters}}"
+            wx:key="id"
+            data-id="{{item.id}}"
+            bindtap="assignments_setFilter"
+          >
+            {{item.label}}<text class="filter-count" wx:if="{{item.count > 0}}">{{item.count}}</text>
+          </view>
+        </view>
+
+        <view class="empty" wx:if="{{assignments_list.length === 0}}">
+          <view class="empty-icon">🎉</view>
+          <view class="empty-text">{{assignments_filter === 'done' ? '还没有完成的作业' : '没有符合条件的作业 🎉'}}</view>
+        </view>
+
+        <view class="assign-list" wx:else>
+          <view class="assign-item {{item.done ? 'is-done' : (item.overdue ? 'is-overdue' : (item.soon ? 'is-soon' : ''))}}" wx:for="{{assignments_list}}" wx:key="id">
+            <view class="tick {{item.done ? 'is-checked' : ''}}" data-id="{{item.id}}" bindtap="assignments_toggle">
+              <text wx:if="{{item.done}}">✓</text>
+            </view>
+            <view class="assign-main">
+              <view class="assign-title-row">
+                <text class="assign-title {{item.done ? 'is-struck' : ''}}">{{item.title}}</text>
+                <text class="chip chip-violet" wx:if="{{item.weight}}">{{item.weight}}</text>
+                <text class="chip chip-{{item.chipTone}}" wx:if="{{item.chipText}}">{{item.chipText}}</text>
+              </view>
+              <view class="assign-sub">
+                {{item.course}} · {{item.due}}{{item.dueTime ? ' ' + item.dueTime : ''}}{{item.remainText}}
+              </view>
+              <view class="assign-detail" wx:if="{{item.detail}}">{{item.detail}}</view>
+            </view>
+            <view class="del-btn" data-id="{{item.id}}" bindtap="assignments_remove">🗑</view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="alert alert-rose" wx:if="{{assignments_counts.overdue > 0}}">
+      ⚠️ 有 <text class="bold">{{assignments_counts.overdue}}</text> 个作业已逾期，尽快补交或联系老师。
+    </view>
+
+  </block>
+
+  <view class="footnote">✅ 数据保存在本机，关掉小程序也不会丢</view>
+
+</view>

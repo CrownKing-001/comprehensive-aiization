@@ -10,7 +10,7 @@ const FILTERS = [
   { id: 'done', label: '已完成' },
 ];
 
-Page({
+const DEFINITION = {
   data: {
     ready: false,
     filter: 'pending',
@@ -195,4 +195,10 @@ Page({
       themeClass: store.shape.settings.theme === 'light' ? 'theme-light' : '',
     });
   },
-});
+};
+
+Page(DEFINITION);
+
+// 这个页面同时被合并页当作子模块使用（见 utils/tabHost.js）。
+// 小程序页面模块不 export 定义，这里显式导出一份供 tabHost 取用。
+module.exports = DEFINITION;

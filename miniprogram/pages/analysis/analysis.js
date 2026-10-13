@@ -213,7 +213,8 @@ Page({
   },
 
   goCourses() {
-    wx.navigateTo({ url: '/pages/courses/courses' });
+    // 课表是 tabBar 页面，只能用 switchTab；用 navigateTo 会静默失败
+    wx.switchTab({ url: '/pages/courses/courses' });
   },
 
   goScan() {

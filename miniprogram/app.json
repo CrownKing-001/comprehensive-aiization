@@ -3,8 +3,8 @@
     "pages/dashboard/dashboard",
     "pages/today/today",
     "pages/courses/courses",
-    "pages/todos/todos",
-    "pages/assignments/assignments",
+    "pages/tasks/tasks",
+    "pages/healthhub/healthhub",
     "pages/week/week",
     "pages/coursescan/coursescan",
     "pages/calendaracademic/calendaracademic",
@@ -13,7 +13,9 @@
     "pages/health/health",
     "pages/milestones/milestones",
     "pages/analysis/analysis",
-    "pages/settings/settings"
+    "pages/settings/settings",
+    "pages/todos/todos",
+    "pages/assignments/assignments"
   ],
   "window": {
     "backgroundTextStyle": "light",
@@ -32,23 +34,33 @@
     "list": [
       {
         "pagePath": "pages/dashboard/dashboard",
-        "text": "总览"
+        "text": "总览",
+        "iconPath": "images/tab/dashboard.png",
+        "selectedIconPath": "images/tab/dashboard-on.png"
       },
       {
         "pagePath": "pages/today/today",
-        "text": "今日"
+        "text": "今日",
+        "iconPath": "images/tab/today.png",
+        "selectedIconPath": "images/tab/today-on.png"
       },
       {
         "pagePath": "pages/courses/courses",
-        "text": "课表"
+        "text": "课表",
+        "iconPath": "images/tab/courses.png",
+        "selectedIconPath": "images/tab/courses-on.png"
       },
       {
-        "pagePath": "pages/todos/todos",
-        "text": "待办"
+        "pagePath": "pages/tasks/tasks",
+        "text": "待办·作业",
+        "iconPath": "images/tab/tasks.png",
+        "selectedIconPath": "images/tab/tasks-on.png"
       },
       {
-        "pagePath": "pages/assignments/assignments",
-        "text": "作业"
+        "pagePath": "pages/healthhub/healthhub",
+        "text": "健康",
+        "iconPath": "images/tab/health.png",
+        "selectedIconPath": "images/tab/health-on.png"
       }
     ]
   },

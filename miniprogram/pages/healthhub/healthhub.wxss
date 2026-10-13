@@ -1,0 +1,477 @@
+/* 健康（合并页）样式。
+   三段分别来自原 diet.wxss / run.wxss / health.wxss，同名的类只保留第一次出现的那份。 */
+
+.seg-bar {
+  display: flex;
+  gap: 12rpx;
+  padding: 10rpx;
+  border-radius: 22rpx;
+  background: var(--chip-bg);
+  border: 2rpx solid var(--border);
+}
+.seg-item {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8rpx;
+  min-width: 0;
+  padding: 18rpx 10rpx;
+  border-radius: 16rpx;
+  font-size: 26rpx;
+  color: var(--text-3);
+  transition: background 0.15s, color 0.15s;
+}
+.seg-item.is-active {
+  background: rgba(16, 185, 129, 0.16);
+  color: #34d399;
+  font-weight: 600;
+}
+.seg-icon { font-size: 26rpx; }
+.seg-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ── 来自 diet.wxss ── */
+/* 饮食记录页样式 */
+
+/* ── 今日营养双列 ─────────────────────────────── */
+.nutri-row {
+  display: flex;
+  gap: 20rpx;
+  margin-bottom: 8rpx;
+}
+
+.nutri-col {
+  flex: 1;
+  min-width: 0;
+}
+
+.nutri-num {
+  font-size: 38rpx;
+  font-weight: 800;
+  color: var(--text-1);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+
+.nutri-unit {
+  font-size: 21rpx;
+  font-weight: 500;
+  color: var(--text-4);
+}
+
+.nutri-label {
+  font-size: 22rpx;
+  color: var(--text-4);
+  margin: 4rpx 0 8rpx;
+}
+
+/* ── 餐次分组 ─────────────────────────────────── */
+.meal-group {
+  margin-top: 22rpx;
+  border-top: 2rpx solid var(--border-1);
+  padding-top: 18rpx;
+}
+
+.meal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  margin-bottom: 12rpx;
+}
+
+.meal-name {
+  font-size: 25rpx;
+  font-weight: 600;
+  color: var(--text-2);
+}
+
+.meal-sum {
+  font-size: 21rpx;
+  color: var(--text-4);
+  font-variant-numeric: tabular-nums;
+}
+
+.meal-item {
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
+  background: var(--surface-3);
+  border-radius: 14rpx;
+  padding: 16rpx 18rpx;
+  margin-bottom: 10rpx;
+}
+
+.meal-item-text {
+  flex: 1;
+  min-width: 0;
+  font-size: 23rpx;
+  color: var(--text-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.meal-item-num {
+  font-size: 21rpx;
+  color: var(--text-4);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+/* ── 已选清单 ─────────────────────────────────── */
+.picked-item {
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
+  background: rgba(16, 185, 129, 0.08);
+  border: 2rpx solid rgba(16, 185, 129, 0.25);
+  border-radius: 14rpx;
+  padding: 14rpx 18rpx;
+  margin-bottom: 10rpx;
+}
+
+.picked-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 24rpx;
+  color: var(--text-1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.qty-group {
+  display: flex;
+  align-items: center;
+  gap: 4rpx;
+  flex-shrink: 0;
+}
+
+.qty-btn {
+  width: 48rpx;
+  height: 48rpx;
+  border-radius: 12rpx;
+  background: var(--surface-4);
+  border: 2rpx solid var(--border-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26rpx;
+  color: var(--text-2);
+}
+
+.qty-num {
+  min-width: 56rpx;
+  text-align: center;
+  font-size: 23rpx;
+  color: var(--text-1);
+  font-variant-numeric: tabular-nums;
+}
+
+.picked-num {
+  font-size: 21rpx;
+  color: #34d399;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+/* ── 分隔线 ───────────────────────────────────── */
+.divider {
+  height: 2rpx;
+  background: var(--border-1);
+  margin: 26rpx 0 20rpx;
+}
+
+/* ── 套餐网格 ─────────────────────────────────── */
+.tpl-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16rpx;
+}
+
+.tpl-card {
+  border-radius: 18rpx;
+  border: 2rpx solid var(--border-2);
+  background: var(--surface-3);
+  padding: 18rpx 20rpx;
+  min-width: 0;
+}
+
+.tpl-name {
+  font-size: 24rpx;
+  font-weight: 600;
+  color: var(--text-1);
+  margin-bottom: 8rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tpl-sum {
+  font-size: 20rpx;
+  color: var(--text-4);
+  line-height: 1.5;
+  margin-bottom: 8rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.tpl-num {
+  font-size: 20rpx;
+  color: #a78bfa;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── 食物库网格 ───────────────────────────────── */
+.food-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14rpx;
+  margin-top: 4rpx;
+}
+
+.food-card {
+  border-radius: 16rpx;
+  border: 2rpx solid var(--border-2);
+  background: var(--surface-3);
+  padding: 16rpx 18rpx;
+  min-width: 0;
+}
+
+.food-name {
+  font-size: 24rpx;
+  font-weight: 500;
+  color: var(--text-1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.food-unit {
+  font-size: 19rpx;
+  color: var(--text-4);
+  margin: 6rpx 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.food-num {
+  font-size: 20rpx;
+  color: #34d399;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── 历史 ─────────────────────────────────────── */
+.hist-day {
+  border-radius: 18rpx;
+  border: 2rpx solid var(--border-2);
+  background: var(--surface-3);
+  padding: 18rpx 20rpx;
+  margin-bottom: 16rpx;
+}
+
+.hist-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  margin-bottom: 12rpx;
+}
+
+.hist-date {
+  font-size: 24rpx;
+  font-weight: 600;
+  color: var(--text-1);
+  font-variant-numeric: tabular-nums;
+}
+
+.hist-sum {
+  font-size: 20rpx;
+  color: var(--text-4);
+  font-variant-numeric: tabular-nums;
+}
+
+.hist-item {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  padding: 10rpx 0;
+}
+
+.hist-meal {
+  font-size: 20rpx;
+  color: #38bdf8;
+  background: rgba(14, 165, 233, 0.12);
+  border-radius: 6rpx;
+  padding: 2rpx 10rpx;
+  flex-shrink: 0;
+}
+
+.hist-text {
+  flex: 1;
+  min-width: 0;
+  font-size: 22rpx;
+  color: var(--text-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hist-num {
+  font-size: 20rpx;
+  color: var(--text-4);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+/* ── 来自 run.wxss ── */
+/* 运动打卡页 —— 大部分样式已提到 app.wxss 的通用组件类，
+   这里只放本页特有的微调。 */
+
+/* 记录列表限高，避免长列表把页面撑得很难滚 */
+.log-list {
+  max-height: 880rpx;
+  overflow-y: auto;
+}
+
+/* 打卡按钮在窄屏换行时保持等宽观感 */
+.row-actions .btn-primary,
+.row-actions .btn-ghost {
+  flex: 0 0 auto;
+}
+
+/* ── 来自 health.wxss ── */
+/* 体重作息页样式 */
+
+/* ── 概览卡（复用 dashboard 的 stat-grid 结构） ── */
+.stat-sub {
+  font-size: 20rpx;
+  color: var(--text-4);
+  margin-top: 8rpx;
+  line-height: 1.5;
+}
+
+.stat-num-sm {
+  font-size: 38rpx;
+  font-weight: 800;
+  color: var(--text-1);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── 图表 ─────────────────────────────────────── */
+.chart-canvas {
+  width: 100%;
+  height: 280rpx;
+}
+
+.chart-note {
+  font-size: 21rpx;
+  margin-top: 12rpx;
+  line-height: 1.6;
+}
+
+.chart-note.is-ok { color: #34d399; }
+.chart-note.is-warn { color: #fbbf24; }
+
+/* ── 训练打卡 7 格 ───────────────────────────── */
+.train-grid {
+  display: flex;
+  gap: 10rpx;
+}
+
+.train-day {
+  flex: 1;
+  min-width: 0;
+  border-radius: 16rpx;
+  border: 2rpx solid var(--border-2);
+  background: var(--surface-3);
+  padding: 14rpx 0 12rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4rpx;
+}
+
+.train-day.is-today {
+  border-color: rgba(16, 185, 129, 0.5);
+}
+
+.train-day.is-done {
+  background: rgba(16, 185, 129, 0.16);
+  border-color: #059669;
+}
+
+.train-wd {
+  font-size: 19rpx;
+  color: var(--text-4);
+}
+
+.train-num {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.train-mark {
+  font-size: 20rpx;
+  color: #34d399;
+  line-height: 1;
+}
+
+.train-plan {
+  font-size: 22rpx;
+  color: var(--text-4);
+  line-height: 1;
+}
+
+/* ── 历史行 ───────────────────────────────────── */
+.hd-weight,
+.hd-sleep,
+.hd-steps {
+  font-size: 21rpx;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+.hd-weight { color: #34d399; }
+.hd-sleep { color: #38bdf8; }
+
+/* ── 弹层 ─────────────────────────────────────── */
+.modal-mask {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48rpx;
+  z-index: 100;
+}
+
+.modal-card {
+  width: 100%;
+  max-width: 620rpx;
+  max-height: 80%;
+  overflow-y: auto;
+  background: var(--surface-1);
+  border: 2rpx solid var(--border-2);
+  border-radius: 28rpx;
+  padding: 34rpx 32rpx;
+  box-sizing: border-box;
+}
+
+.modal-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: var(--text-1);
+  margin-bottom: 26rpx;
+}

@@ -12,7 +12,7 @@ function parseTypes(raw) {
   return [...new Set(String(raw || '').split(/[,，]/).map((s) => s.trim()).filter(Boolean))];
 }
 
-Page({
+const DEFINITION = {
   data: {
     ready: false,
     themeClass: '',
@@ -201,4 +201,10 @@ Page({
   goSettings() {
     wx.navigateTo({ url: '/pages/settings/settings' });
   },
-});
+};
+
+Page(DEFINITION);
+
+// 这个页面同时被合并页当作子模块使用（见 utils/tabHost.js）。
+// 小程序页面模块不 export 定义，这里显式导出一份供 tabHost 取用。
+module.exports = DEFINITION;

@@ -10,6 +10,7 @@ body{display:flex;justify-content:center;padding:20px 10px;}
 .screen{flex:1;}
 .tabbar{height:48px;background:#0d1117;border-top:1px solid #232a34;flex-shrink:0;
   display:flex;align-items:center;justify-content:space-around;color:#64748b;font-size:10px;}
+.tabbar .on{color:#10b981;}
 *{box-sizing:border-box;}
 .ph-inline{display:inline-block;background:#1e242e;border:1px solid #2b333f;border-radius:6px;
   padding:5px 10px;color:#475569;font-size:12px;}
@@ -744,9 +745,13 @@ page {
 }
 
 .warn-text {
+  display: block;
   font-size: 11.5px;
   line-height: 1.65;
   color: #fcd34d;
+  /* 警告里会带上下文（例如整行原文），可能很长，防止撑破卡片 */
+  word-break: break-all;
+  overflow-wrap: anywhere;
 }
 
 /* ── 输入区 ───────────────────────────────────── */
@@ -1055,5 +1060,5 @@ page {
 </div>
 
 </div>
-<div class="tabbar"><span>总览</span><span>今日</span><span>课表</span><span>待办</span><span>作业</span></div>
+<div class="tabbar"><span class="">总览</span><span class="">今日</span><span class="">课表</span><span class="">待办·作业</span><span class="">健康</span></div>
 </div></body></html>

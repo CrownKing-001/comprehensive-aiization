@@ -30,7 +30,9 @@
       wx:for="{{stats}}"
       wx:key="key"
       data-url="{{item.url}}"
-      bindtap="goTab"
+      data-seg="{{item.seg}}"
+      data-is-tab="{{item.isTab}}"
+      bindtap="goStat"
     >
       <view class="stat-top">
         <view class="icon-chip tone-{{item.tone}}">{{item.icon}}</view>
@@ -52,17 +54,17 @@
     </view>
     <view class="card-body">
       <view class="nav-grid">
-        <view class="nav-item" data-url="/pages/diet/diet" bindtap="goPage">
+        <view class="nav-item" data-url="/pages/healthhub/healthhub" data-seg="diet" bindtap="goTab">
           <view class="nav-icon tone-emerald">🍽️</view>
           <view class="nav-name">饮食记录</view>
           <view class="nav-sub">{{todayProtein}}/{{proteinTarget}}g</view>
         </view>
-        <view class="nav-item" data-url="/pages/run/run" bindtap="goPage" wx:if="{{runEnabled}}">
+        <view class="nav-item" data-url="/pages/healthhub/healthhub" data-seg="run" bindtap="goTab" wx:if="{{runEnabled}}">
           <view class="nav-icon tone-amber">🏃</view>
           <view class="nav-name">运动打卡</view>
           <view class="nav-sub">{{runDone}}/{{runTarget}} 次</view>
         </view>
-        <view class="nav-item" data-url="/pages/health/health" bindtap="goPage">
+        <view class="nav-item" data-url="/pages/healthhub/healthhub" data-seg="health" bindtap="goTab">
           <view class="nav-icon tone-sky">⚖️</view>
           <view class="nav-name">体重作息</view>
           <view class="nav-sub">{{latestWeight ? latestWeight + ' kg' : '未记录'}}</view>
@@ -134,7 +136,7 @@
     <view class="card-head">
       <view class="icon-chip tone-emerald">✅</view>
       <view class="card-head-title">待办速览</view>
-      <view class="head-link" data-url="/pages/todos/todos" bindtap="goTab">全部 →</view>
+      <view class="head-link" data-url="/pages/tasks/tasks" data-seg="todos" bindtap="goTab">全部 →</view>
     </view>
     <view class="card-body">
       <view class="empty" wx:if="{{openTodos.length === 0}}">
@@ -156,7 +158,7 @@
     <view class="card-head">
       <view class="icon-chip tone-violet">📖</view>
       <view class="card-head-title">作业倒计时</view>
-      <view class="head-link" data-url="/pages/assignments/assignments" bindtap="goTab">全部 →</view>
+      <view class="head-link" data-url="/pages/tasks/tasks" data-seg="assignments" bindtap="goTab">全部 →</view>
     </view>
     <view class="card-body">
       <view class="empty" wx:if="{{dueSoon.length === 0}}">
@@ -180,6 +182,7 @@
     <view class="card-head">
       <view class="icon-chip tone-rose">💗</view>
       <view class="card-head-title">身体数据</view>
+      <view class="head-link" data-url="/pages/healthhub/healthhub" data-seg="health" bindtap="goTab">记录 →</view>
     </view>
     <view class="card-body">
       <view class="two-col">
@@ -198,6 +201,10 @@
       <view class="mini-sub" style="margin-top: 14rpx;">
         {{todayProtein >= proteinTarget ? '今日蛋白已达标 ✅' : '还差 ' + (proteinTarget - todayProtein) + 'g，继续加餐'}}
       </view>
+      <view class="row-actions mt">
+        <view class="btn-ghost btn-emerald" data-url="/pages/healthhub/healthhub" data-seg="health" bindtap="goTab">⚖️ 体重作息</view>
+        <view class="btn-ghost" data-url="/pages/healthhub/healthhub" data-seg="diet" bindtap="goTab">🍽️ 饮食记录</view>
+      </view>
     </view>
   </view>
 
@@ -206,6 +213,7 @@
     <view class="card-head">
       <view class="icon-chip tone-emerald">👟</view>
       <view class="card-head-title">运动打卡</view>
+      <view class="head-link" data-url="/pages/healthhub/healthhub" data-seg="run" bindtap="goTab">去打卡 →</view>
     </view>
     <view class="card-body">
       <view class="big-num">{{runDone}}<text class="big-sub"> / {{runTarget}}</text></view>
@@ -214,6 +222,9 @@
       </view>
       <view class="mini-sub" style="margin-top: 14rpx;">
         {{runDone >= runTarget ? '已达成目标次数，保持住就行' : '继续加油 💪'}}
+      </view>
+      <view class="row-actions mt">
+        <view class="btn-ghost btn-emerald" data-url="/pages/healthhub/healthhub" data-seg="run" bindtap="goTab">🏃 打开运动打卡</view>
       </view>
     </view>
   </view>
@@ -224,6 +235,7 @@
       <view class="icon-chip tone-amber">🍚</view>
       <view class="card-head-title">今日饮食</view>
       <text class="chip chip-amber">{{todayDietCount}} 笔</text>
+      <view class="head-link" data-url="/pages/healthhub/healthhub" data-seg="diet" bindtap="goTab">去记录 →</view>
     </view>
     <view class="card-body">
       <view class="big-num">{{todayCalories}}<text class="big-sub"> kcal</text></view>
@@ -232,6 +244,9 @@
       </view>
       <view class="mini-sub" style="margin-top: 14rpx;">
         {{todayDietCount ? '已记 ' + todayDietCount + ' 笔，' + todayProtein + 'g 蛋白' : '今天还没记饮食'}}
+      </view>
+      <view class="row-actions mt">
+        <view class="btn-ghost btn-emerald" data-url="/pages/healthhub/healthhub" data-seg="diet" bindtap="goTab">🍽️ 打开饮食记录</view>
       </view>
     </view>
   </view>

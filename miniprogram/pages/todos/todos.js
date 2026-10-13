@@ -16,7 +16,7 @@ const PRIORITY = [
   { value: 'low', label: '次要' },
 ];
 
-Page({
+const DEFINITION = {
   data: {
     ready: false,
     filter: 'all',
@@ -183,4 +183,12 @@ Page({
       themeClass: store.shape.settings.theme === 'light' ? 'theme-light' : '',
     });
   },
-});
+};
+
+Page(DEFINITION);
+
+// 这个页面同时被「待办 · 作业」合并页（pages/tasks）当作子模块使用。
+// tabHost 需要拿到页面定义才能把它的 data / 方法挂到宿主实例上；
+// 小程序页面模块不 export 定义，所以这里显式导出一份
+// （tabHost 拿不到时还有截获 Page() 的回退方案）。
+module.exports = DEFINITION;

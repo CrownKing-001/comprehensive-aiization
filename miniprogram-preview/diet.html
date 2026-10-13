@@ -10,6 +10,7 @@ body{display:flex;justify-content:center;padding:20px 10px;}
 .screen{flex:1;}
 .tabbar{height:48px;background:#0d1117;border-top:1px solid #232a34;flex-shrink:0;
   display:flex;align-items:center;justify-content:space-around;color:#64748b;font-size:10px;}
+.tabbar .on{color:#10b981;}
 *{box-sizing:border-box;}
 .ph-inline{display:inline-block;background:#1e242e;border:1px solid #2b333f;border-radius:6px;
   padding:5px 10px;color:#475569;font-size:12px;}
@@ -1016,12 +1017,12 @@ page {
         <div class="nutri-col">
           <div class="nutri-num">··<span class="nutri-unit"> / ·· g</span></div>
           <div class="nutri-label">蛋白质</div>
-          <div class="bar-track"><div class="bar-fill bar-emerald"></div></div>
+          <div class="bar-track"><div class="bar-fill bar-emerald" style="width: ··%"></div></div>
         </div>
         <div class="nutri-col">
           <div class="nutri-num">··<span class="nutri-unit"> / ··</span></div>
           <div class="nutri-label">热量 kcal</div>
-          <div class="bar-track"><div class="bar-fill bar-amber"></div></div>
+          <div class="bar-track"><div class="bar-fill bar-amber" style="width: ··%"></div></div>
         </div>
       </div>
 
@@ -1147,7 +1148,7 @@ page {
     <div class="card-body">
       <span class="ph-inline">［输入框］</span>
 
-      <div class="filter-row">
+      <div class="filter-row" style="margin-top: 18rpx;">
         <div>
           <div class="filter-pill is-active">分类：·· ▾</div>
         </div>
@@ -1181,7 +1182,7 @@ page {
       <div class="week-bar-row">
         <span class="week-bar-label">··</span>
         <div class="bar-track bar-track-sm">
-          <div class="bar-fill ··"></div>
+          <div class="bar-fill ··" style="width: ··%"></div>
         </div>
         <span class="week-bar-count">··g</span>
       </div>
@@ -1206,5 +1207,5 @@ page {
 </div>
 
 </div>
-<div class="tabbar"><span>总览</span><span>今日</span><span>课表</span><span>待办</span><span>作业</span></div>
+<div class="tabbar"><span class="">总览</span><span class="">今日</span><span class="">课表</span><span class="">待办·作业</span><span class="">健康</span></div>
 </div></body></html>
