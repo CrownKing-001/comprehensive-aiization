@@ -41,7 +41,12 @@
   },
   "simulatorPluginLibVersion": {},
   "packOptions": {
-    "ignore": [],
+    "ignore": [
+      {
+        "type": "folder",
+        "value": "tools"
+      }
+    ],
     "include": []
   },
   "editorSetting": {}

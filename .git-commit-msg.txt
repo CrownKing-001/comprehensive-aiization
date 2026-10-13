@@ -1,0 +1,21 @@
+chore(miniprogram): 加入页面预览工具，用于无法截取模拟器时核对布局
+
+微信开发者工具的自动化截图需要一个 token，该 token 只能在 IDE 的
+「设置 → 安全设置 → 服务端口」里手动开启并复制，Agent 拿不到。
+实测：cli auto --trust-project 返回 √ auto，但调试输出是
+"ws connect 58807 ... without token"，WebSocket 升级握手能成功、
+服务端随即回 close frame(op=8)；CLI 也没有 screenshot/capture 子命令。
+
+因此补一个 tools/preview-pages.js：把 WXML/WXSS 静态转成 HTML，
+再用无头 Edge 渲染成 PNG，用来目视核对间距与遮挡。
+
+README 里逐条写明了近似项（{{}} 变占位符、wx:for 不展开、
+wx:if 只留主分支、rpx 按 750=375 折算等），避免把预览当成真实渲染。
+
+这个工具自己制造过两个假象，都已记进 README：
+  · wx:if 表达式里的尖括号让属性清理漏掉一截，渲染出 0)]">
+  · wx:else 分支没丢弃，analysis 页看起来有两张同标题卡片
+两次都回到源码确认过，源码本身是干净的。
+
+同时把 tools/ 加进 project.config.json 的 packOptions.ignore，
+确认编译体积不变（257.1 KB）。

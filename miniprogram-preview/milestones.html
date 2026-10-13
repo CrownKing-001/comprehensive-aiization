@@ -1,0 +1,986 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><title>milestones 预览</title><style>
+html,body{margin:0;padding:0;background:#0b0e13;}
+body{display:flex;justify-content:center;padding:20px 10px;}
+.phone{width:375px;background:#12161d;border-radius:18px;overflow:hidden;
+  box-shadow:0 12px 48px rgba(0,0,0,.6);display:flex;flex-direction:column;}
+.statusbar{height:24px;background:#151a21;color:#64748b;font-size:11px;display:flex;
+  align-items:center;justify-content:center;flex-shrink:0;}
+.navbar{height:40px;background:#151a21;color:#e2e8f0;font-size:14px;font-weight:500;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;border-bottom:1px solid #232a34;}
+.screen{flex:1;}
+.tabbar{height:48px;background:#0d1117;border-top:1px solid #232a34;flex-shrink:0;
+  display:flex;align-items:center;justify-content:space-around;color:#64748b;font-size:10px;}
+*{box-sizing:border-box;}
+.ph-inline{display:inline-block;background:#1e242e;border:1px solid #2b333f;border-radius:6px;
+  padding:5px 10px;color:#475569;font-size:12px;}
+.ph-box{background:#1e242e;border:1px solid #2b333f;border-radius:8px;padding:14px;color:#475569;font-size:12px;}
+.ph-switch{display:inline-block;width:40px;height:22px;background:#2b333f;border-radius:11px;
+  text-align:center;color:#64748b;font-size:11px;line-height:22px;}
+.ph-canvas{height:140px;background:#1a1f28;border:1px dashed #333c49;border-radius:8px;
+  display:flex;align-items:center;justify-content:center;color:#475569;font-size:12px;}
+/* 全局样式。移植自桌面版 src/index.css 的语义色变量。
+   变量定义在 .page-wrap 上而不是 page 上 —— 每个页面的根节点都带这个类，
+   切浅色主题时只需给它加 .theme-light，变量会被所有子元素继承。
+   （变量若挂在 page 上，子元素的类名改不动 page 自身。） */
+
+page {
+  background: #12161d;
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  /* .page-wrap 用的是 min-height:100%，需要一个有确定高度的父级才生效；
+     内容很短的页面（例如空的待办列表）否则撑不满屏，下方会露出系统底色。
+     这里不能写 100vh —— vh 把 tabBar 也算进视口高度，反而会把内容顶出屏幕。 */
+  min-height: 100%;
+}
+
+.page-wrap {
+  /* ── 深色主题（默认）───────────────────────────── */
+  --surface-0: #12161d; /* 应用底色 */
+  --surface-1: #1a1f28; /* 卡片 */
+  --surface-2: #171c24; /* 卡片次档 */
+  --surface-3: #1e242e; /* 内层 / 输入框底 */
+  --surface-4: #262d38; /* hover 底 */
+  --surface-5: #333c49; /* 更深边框 */
+  --border-1: #232a34;
+  --border-2: #2b333f;
+  --border-3: #333c49;
+  --text-1: #e2e8f0; /* 主文字 */
+  --text-2: #cbd5e1; /* 正文 */
+  --text-3: #94a3b8; /* 次要 */
+  --text-4: #64748b; /* 弱化 */
+  --hairline: rgba(255, 255, 255, 0.06);
+  --chip-bg: rgba(255, 255, 255, 0.06);
+  --panel-head: linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0));
+
+  /* 布局：容器自带底色。
+     注意不用 min-height:100vh —— 小程序的 vh 把 tabBar 也算进视口高度，
+     会导致页面底部内容被 tabBar 压住。改用 min-height:100% 让内容自然撑开，
+     底部留出安全距离（padding-bottom）。 */
+  min-height: 100%;
+  box-sizing: border-box;
+  padding: 12px 12px calc(24px + env(safe-area-inset-bottom));
+  background: var(--surface-0);
+  color: var(--text-1);
+}
+
+/* ── 浅色主题 ─────────────────────────────────── */
+.page-wrap.theme-light {
+  --surface-0: #f8fafc;
+  --surface-1: #ffffff;
+  --surface-2: #f8fafc;
+  --surface-3: #f1f5f9;
+  --surface-4: #e2e8f0;
+  --surface-5: #cbd5e1;
+  --border-1: #e2e8f0;
+  --border-2: #cbd5e1;
+  --border-3: #cbd5e1;
+  --text-1: #0f172a;
+  --text-2: #1e293b;
+  --text-3: #475569;
+  --text-4: #64748b;
+  --hairline: rgba(15, 23, 42, 0.05);
+  --chip-bg: rgba(15, 23, 42, 0.045);
+  --panel-head: linear-gradient(180deg, rgba(15, 23, 42, 0.018), rgba(15, 23, 42, 0));
+}
+
+/* ── 布局 ─────────────────────────────────────── */
+.stack > .card + .card {
+  margin-top: 12px;
+}
+
+/* ── 卡片 ─────────────────────────────────────── */
+/* 不用 overflow:hidden —— 卡片里常放横向滚动的统计行或下拉，
+   一旦裁剪就表现为「内容被切掉」。圆角改由子元素各自处理。 */
+.card {
+  background: var(--surface-1);
+  border-radius: 14px;
+  border: 1px solid var(--border-1);
+}
+
+.card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 13px 15px 10px;
+  border-bottom: 1px solid var(--border-1);
+  background-image: var(--panel-head);
+}
+
+.card-head-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-1);
+  letter-spacing: -0.1px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 卡头右侧操作区（按钮等） */
+.card-head-action {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.card-body {
+  padding: 13px 15px;
+}
+
+/* 标题左侧的图标底座，用色相区分区块 */
+.icon-chip {
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.tone-emerald { background: rgba(16, 185, 129, 0.12); color: #34d399; }
+.tone-sky     { background: rgba(14, 165, 233, 0.12); color: #38bdf8; }
+.tone-amber   { background: rgba(245, 158, 11, 0.12); color: #fbbf24; }
+.tone-rose    { background: rgba(244, 63, 94, 0.12);  color: #fb7185; }
+.tone-violet  { background: rgba(139, 92, 246, 0.12); color: #a78bfa; }
+.tone-slate   { background: var(--chip-bg); color: var(--text-3); }
+
+/* ── 徽标 ─────────────────────────────────────── */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  border-radius: 499.5px;
+  padding: 1.5px 7px;
+  font-size: 10px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.chip-slate   { background: var(--chip-bg); color: var(--text-3); }
+.chip-emerald { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+.chip-amber   { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+.chip-rose    { background: rgba(244, 63, 94, 0.15);  color: #fb7185; }
+.chip-sky     { background: rgba(14, 165, 233, 0.15); color: #38bdf8; }
+.chip-violet  { background: rgba(139, 92, 246, 0.15); color: #a78bfa; }
+
+/* ── 按钮 ─────────────────────────────────────── */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: 38px;
+  border-radius: 9px;
+  background: #059669;
+  color: #fff;
+  font-size: 13.5px;
+  font-weight: 500;
+  padding: 0 15px;
+  line-height: 1;
+}
+
+.btn-primary.is-disabled { opacity: 0.4; }
+
+/* 小尺寸按钮变体 */
+.btn-sm { height: 32px; font-size: 12px; padding: 0 11px; border-radius: 8px; }
+.btn-xs { height: 26px; font-size: 11px; padding: 0 9px; border-radius: 7px; }
+
+/* 按钮行：自动换行，避免窄屏挤压 */
+.row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-bottom: 10px;
+}
+
+.row-actions.mt { margin-top: 12px; margin-bottom: 0; }
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: 38px;
+  border-radius: 9px;
+  border: 1px solid var(--border-3);
+  background: var(--surface-3);
+  color: var(--text-2);
+  font-size: 13.5px;
+  font-weight: 500;
+  padding: 0 15px;
+  line-height: 1;
+}
+
+/* ── 输入 ─────────────────────────────────────── */
+.input {
+  width: 100%;
+  height: 38px;
+  border-radius: 9px;
+  border: 1px solid var(--border-3);
+  background: var(--surface-3);
+  padding: 0 11px;
+  font-size: 13.5px;
+  color: var(--text-1);
+  box-sizing: border-box;
+}
+
+.input-ph { color: #64748b; }
+
+/* ── 表单字段 ─────────────────────────────────── */
+.field { margin-bottom: 10px; }
+
+/* 两列并排；小程序不支持 subgrid，用 flex + min-width:0 防溢出 */
+.field-row {
+  display: flex;
+  gap: 9px;
+}
+
+.field-row .field {
+  flex: 1;
+  min-width: 0;
+}
+
+.field-label {
+  display: block;
+  font-size: 11px;
+  color: var(--text-3);
+  margin-bottom: 4px;
+}
+
+.field-hint {
+  font-size: 10.5px;
+  color: var(--text-4);
+  margin-top: 4px;
+}
+
+/* picker 的显示区，外观与 .input 一致 */
+.picker {
+  height: 38px;
+  line-height: 38px;
+  border-radius: 9px;
+  border: 1px solid var(--border-3);
+  background: var(--surface-3);
+  padding: 0 11px;
+  font-size: 13.5px;
+  color: var(--text-1);
+  box-sizing: border-box;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* ── 空状态 ───────────────────────────────────── */
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 28px 0;
+  text-align: center;
+}
+
+.empty-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+  background: var(--chip-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+}
+
+.empty-title {
+  font-size: 13.5px;
+  color: var(--text-3);
+  font-weight: 500;
+}
+
+.empty-desc {
+  font-size: 11.5px;
+  color: var(--text-4);
+  line-height: 1.6;
+  max-width: 230px;
+}
+
+.empty-text {
+  font-size: 12px;
+  color: var(--text-4);
+  line-height: 1.6;
+  max-width: 230px;
+}
+
+/* ── 过滤胶囊行 ───────────────────────────────── */
+.filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 11px;
+}
+
+.filter-pill {
+  border-radius: 499.5px;
+  padding: 4.5px 12px;
+  font-size: 11.5px;
+  font-weight: 500;
+  border: 1px solid var(--border-2);
+  background: var(--surface-3);
+  color: var(--text-3);
+}
+
+.filter-pill.is-active {
+  background: #059669;
+  border-color: #059669;
+  color: #fff;
+}
+
+.filter-count { margin-left: 4px; opacity: 0.75; }
+
+/* ── 进度条 ───────────────────────────────────── */
+.bar-track {
+  height: 8px;
+  border-radius: 499.5px;
+  background: var(--surface-4);
+  overflow: hidden;
+  margin-top: 6px;
+}
+
+.bar-track-sm { margin-top: 0; height: 7px; }
+
+.bar-fill {
+  height: 100%;
+  border-radius: 499.5px;
+  background: #059669;
+  transition: width 0.25s ease;
+}
+
+.bar-emerald { background: #10b981; }
+.bar-amber   { background: #f59e0b; }
+.bar-sky     { background: #0ea5e9; }
+.bar-rose    { background: #f43f5e; }
+.bar-violet  { background: #8b5cf6; }
+
+/* ── 大数字统计 ───────────────────────────────── */
+.big-stat {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.big-num {
+  font-size: 33px;
+  font-weight: 800;
+  color: var(--text-1);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.big-unit {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-4);
+}
+
+.big-side {
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.big-pct {
+  font-size: 16px;
+  font-weight: 700;
+  color: #34d399;
+}
+
+.big-pct-unit { font-size: 11px; color: var(--text-4); }
+
+/* ── 胶囊行 ───────────────────────────────────── */
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+/* ── 说明条目 ─────────────────────────────────── */
+.bullet {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 7px;
+}
+
+.bullet-dot {
+  color: #10b981;
+  font-size: 13px;
+  line-height: 1.5;
+  flex-shrink: 0;
+}
+
+.bullet-text {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--text-2);
+  line-height: 1.7;
+}
+
+.bullet-note {
+  font-size: 12px;
+  color: var(--text-3);
+  line-height: 1.8;
+}
+
+.tip-box {
+  margin-top: 9px;
+  border-radius: 8px;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.28);
+  padding: 9px 11px;
+}
+
+.tip-text {
+  font-size: 11px;
+  color: #6ee7b7;
+  line-height: 1.7;
+}
+
+.inline-hint {
+  font-size: 11.5px;
+  color: var(--text-4);
+  line-height: 1.7;
+}
+
+.tiny-note {
+  font-size: 10.5px;
+  color: var(--text-4);
+  line-height: 1.7;
+  margin-top: 7px;
+}
+
+.tiny-note.mt { margin-top: 9px; }
+
+/* ── 通用记录列表 ─────────────────────────────── */
+.log-list { margin-top: 2px; }
+
+.log-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface-3);
+  border-radius: 8px;
+  padding: 9px 11px;
+  margin-bottom: 6px;
+}
+
+.log-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #f59e0b;
+  flex-shrink: 0;
+}
+
+.log-dot.is-primary { background: #10b981; }
+
+.log-date {
+  font-size: 11.5px;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+.log-type {
+  flex: 1;
+  min-width: 0;
+  font-size: 11.5px;
+  color: var(--text-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.btn-mini {
+  width: 26px;
+  height: 26px;
+  font-size: 11px;
+  border-radius: 6px;
+}
+
+/* ── 每周分布 ─────────────────────────────────── */
+.week-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 9px;
+}
+
+.week-bar-label {
+  width: 55px;
+  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.week-bar-label.is-current {
+  color: #34d399;
+  font-weight: 600;
+}
+
+.week-bar-row .bar-track { flex: 1; min-width: 0; }
+
+.week-bar-count {
+  width: 40px;
+  flex-shrink: 0;
+  text-align: right;
+  font-size: 10.5px;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 强调色幽灵按钮 */
+.btn-ghost.btn-emerald {
+  border-color: rgba(16, 185, 129, 0.4);
+  color: #6ee7b7;
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.btn-ghost.is-disabled { opacity: 0.4; }
+
+/* ── 指标卡网格（总览 / 体重作息共用） ─────────── */
+/* 用 grid 而不是 flex-wrap + calc：小程序里 flex 的百分比宽度
+   在 gap 参与计算时容易溢出或被挤压，grid 更稳。 */
+.stat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+  margin-bottom: 12px;
+}
+
+.stat-card {
+  box-sizing: border-box;
+  background: var(--surface-1);
+  border: 1px solid var(--border-1);
+  border-radius: 12px;
+  padding: 12px 12px 11px;
+  min-width: 0; /* 允许内部文字省略号生效，避免撑破格子 */
+}
+
+.stat-top {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.stat-label {
+  flex: 1;
+  font-size: 11px;
+  color: var(--text-4);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stat-value {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.stat-num {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--text-1);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-unit { font-size: 11px; color: var(--text-4); }
+
+.stat-card .chip { margin-top: 8px; }
+
+/* ── 勾选框（多个页面共用） ───────────────────── */
+.checkbox {
+  width: 21px;
+  height: 21px;
+  border-radius: 5px;
+  border: 1px solid var(--border-3);
+  background: var(--surface-1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.checkbox.is-on {
+  background: #059669;
+  border-color: #059669;
+}
+
+/* ── 开关行（标签 + switch） ──────────────────── */
+.switch-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 0 10px;
+}
+
+.switch-row:last-of-type { padding-bottom: 0; }
+
+.switch-label {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+/* ── 信息提示条 ───────────────────────────────── */
+.msg-box {
+  background: rgba(14, 165, 233, 0.1);
+  border: 1px solid rgba(14, 165, 233, 0.3);
+  border-radius: 8px;
+  padding: 9px 11px;
+  font-size: 11.5px;
+  color: #7dd3fc;
+  line-height: 1.7;
+  margin-bottom: 9px;
+}
+
+/* ── 小图标按钮（列表行内的编辑 / 删除） ──────── */
+/* 之前只有 .icon-chip（比这个大一圈，带浅色底），
+   行内用的 .icon-btn 一直没定义，导致 emoji 失去尺寸和间距、挤在一起。 */
+.icon-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  line-height: 1;
+  flex-shrink: 0;
+  background: var(--chip-bg);
+  border: 1px solid var(--border-2);
+}
+
+/* 需要强调的（删除等）用 tone-* 上色，尺寸不变 */
+.icon-btn.tone-rose {
+  background: rgba(244, 63, 94, 0.14);
+  border-color: rgba(244, 63, 94, 0.3);
+}
+
+.icon-btn.tone-emerald {
+  background: rgba(16, 185, 129, 0.14);
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+/* 更小的变体：和历史行、清单行一起用 */
+.icon-btn.btn-mini {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  font-size: 11px;
+}
+
+/* ── 行内强调文字（分析 / 设置共用） ───────────── */
+.hl {
+  color: #34d399;
+  font-weight: 600;
+}
+/* 重要事项页样式 */
+
+/* ── 事项卡片 ─────────────────────────────────── */
+.ms-item {
+  border-radius: 10px;
+  border: 1px solid var(--border-2);
+  background: var(--surface-3);
+  padding: 11px 12px;
+  margin-bottom: 8px;
+}
+
+.ms-item.is-done { opacity: 0.55; }
+
+.ms-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 7px;
+}
+
+.ms-emoji { font-size: 14px; flex-shrink: 0; }
+
+.ms-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ms-item.is-done .ms-title {
+  text-decoration: line-through;
+  color: var(--text-3);
+}
+
+.ms-pin {
+  font-size: 13px;
+  opacity: 0.3;
+  flex-shrink: 0;
+  padding: 0 3px;
+}
+
+.ms-pin.is-on { opacity: 1; }
+
+.ms-meta {
+  font-size: 11px;
+  color: var(--text-4);
+  margin-top: 6px;
+  line-height: 1.6;
+}
+
+/* ── 清单 ─────────────────────────────────────── */
+.ms-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 5px 0;
+  border-top: 1px solid var(--border-1);
+  margin-top: 5px;
+}
+
+.ms-check-box {
+  font-size: 13px;
+  color: var(--text-4);
+  flex-shrink: 0;
+  line-height: 1.4;
+}
+
+.ms-check-text {
+  flex: 1;
+  min-width: 0;
+  font-size: 11.5px;
+  color: var(--text-3);
+  line-height: 1.6;
+}
+
+/* ── 编辑态清单项 ─────────────────────────────── */
+.check-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--surface-1);
+  border: 1px solid var(--border-2);
+  border-radius: 7px;
+  padding: 7px 9px;
+  margin-bottom: 5px;
+}
+
+.check-text {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--text-2);
+  line-height: 1.6;
+}
+
+.add-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 6px;
+}
+
+.add-input { flex: 1; min-width: 0; }
+
+/* ── 操作按钮行 ───────────────────────────────── */
+.ms-ops {
+  margin-top: 8px;
+  margin-bottom: 0;
+}
+
+
+</style></head><body><div class="phone">
+<div class="statusbar">9:41</div>
+<div class="navbar">大学日程 · milestones</div>
+<div class="screen">
+
+<div class="page-wrap stack ··">
+
+  
+  <div class="card">
+    <div class="card-head">
+      <div class="icon-chip tone-violet">⭐</div>
+      <div class="card-head-title">重要事项 · ·· 条 · 待办 ·· 个</div>
+    </div>
+    <div class="card-body">
+      <div class="bullet-note">
+        期末考试、竞赛、证书报名……都记在这里。距离近的会标红，钉住后会出现在总览的倒计时条上。
+      </div>
+      <div class="row-actions mt">
+        <div class="btn-primary">＋ 新建事项</div>
+      </div>
+    </div>
+  </div>
+
+  
+  <div class="msg-box">··</div>
+
+  
+  <div class="card">
+    <div class="card-head">
+      <div class="icon-chip tone-emerald">✨</div>
+      <div class="card-head-title">··</div>
+    </div>
+    <div class="card-body">
+
+      
+      
+        <div class="field-label">快捷模板</div>
+        <div class="filter-row">
+          <div class="filter-pill">·· ··</div>
+        </div>
+      
+
+      <div class="field">
+        <div class="field-label">名称 *</div>
+        <span class="ph-inline">［输入框］</span>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <div class="field-label">分类</div>
+          <div>
+            <div class="picker">··</div>
+          </div>
+        </div>
+        <div class="field">
+          <div class="field-label">图标</div>
+          <span class="ph-inline">［输入框］</span>
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <div class="field-label">日期</div>
+          <div>
+            <div class="picker">··</div>
+          </div>
+        </div>
+        <div class="field">
+          <div class="field-label">时间（可选）</div>
+          <div>
+            <div class="picker">··</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="field">
+        <div class="field-label">地点（可选）</div>
+        <span class="ph-inline">［输入框］</span>
+      </div>
+
+      <div class="field">
+        <div class="field-label">备注（可选）</div>
+        <span class="ph-inline">［输入框］</span>
+      </div>
+
+      
+      <div class="field">
+        <div class="field-label">准备清单（·· 项）</div>
+        <div class="check-item">
+          <span class="check-text">··</span>
+          <div class="icon-btn tone-rose btn-mini">✕</div>
+        </div>
+        <div class="add-row">
+          <span class="ph-inline">［输入框］</span>
+          <div class="btn-ghost btn-sm">添加</div>
+        </div>
+      </div>
+
+      <div class="row-actions mt">
+        <div class="btn-primary">保存</div>
+        <div class="btn-ghost">取消</div>
+      </div>
+    </div>
+  </div>
+
+  
+  <div class="card">
+    <div class="card-body">
+      <div class="filter-row">
+        <div class="filter-pill ··">··</div>
+      </div>
+      <div class="switch-row">
+        <span class="switch-label">显示已完成的事项</span>
+        <span class="ph-switch">◯</span>
+      </div>
+    </div>
+  </div>
+
+  
+  <div class="card">
+    <div class="card-head">
+      <div class="icon-chip tone-sky">📌</div>
+      <div class="card-head-title">事项列表（··）</div>
+    </div>
+    <div class="card-body">
+      <div class="empty">
+        <div class="empty-icon">⭐</div>
+        <div class="empty-title">还没有事项</div>
+        <div class="empty-desc">点上面「新建事项」，或先用快捷模板生成一份</div>
+      </div>
+
+      <div class="ms-item ··">
+        <div class="ms-top">
+          <div class="checkbox ··">
+            <span>✓</span>
+          </div>
+          <span class="ms-emoji">··</span>
+          <span class="ms-title">··</span>
+          <span class="ms-pin ··">📌</span>
+        </div>
+
+        <div class="chip-row">
+          <span class="chip chip-slate">··</span>
+          <span class="chip chip-··">··</span>
+          <span class="chip chip-violet">清单 ·· 项</span>
+        </div>
+
+        <div class="ms-meta">··</div>
+
+        
+        <div class="ms-check">
+          <span class="ms-check-box">☐</span>
+          <span class="ms-check-text">··</span>
+        </div>
+
+        <div class="row-actions ms-ops">
+          <div class="btn-ghost btn-xs">✏️ 编辑</div>
+          <div class="btn-ghost btn-xs">📋 复制</div>
+          <div class="btn-ghost btn-xs">🗑️ 删除</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</div>
+<div class="tabbar"><span>总览</span><span>今日</span><span>课表</span><span>待办</span><span>作业</span></div>
+</div></body></html>
