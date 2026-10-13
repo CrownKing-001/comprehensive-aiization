@@ -479,6 +479,19 @@ section('[14] 合并页分段延迟初始化');
   wx.createSelectorQuery = savedQuery;
   global.getApp = savedGetApp;
   store.resetAll();
+
+  // 子模块定义的生命周期钩子必须都被宿主转发。
+  // 漏一个就是「某段功能静默失效」—— onReady 漏转发导致图表不画，
+  // 就是这么来的。这里做成通用检查，以后加钩子不会再漏。
+  const HOOKS = ['onLoad', 'onReady', 'onShow', 'onHide', 'onUnload',
+    'onPullDownRefresh', 'onReachBottom', 'onPageScroll', 'onResize', 'onTabItemTap'];
+  const tabSrc = fs.readFileSync(path.join(MP, 'utils', 'tabHost.js'), 'utf8');
+  for (const id of ['todos', 'assignments', 'diet', 'run', 'health']) {
+    const src = fs.readFileSync(path.join(MP, 'pages', id, id + '.js'), 'utf8');
+    const defined = HOOKS.filter((h) => new RegExp('^\\s{2}' + h + '\\s*\\(', 'm').test(src));
+    const dropped = defined.filter((h) => !new RegExp('^\\s{4}' + h + '\\s*\\(', 'm').test(tabSrc));
+    T(`${id} 的生命周期都被转发`, dropped.length === 0, '未转发: ' + dropped.join(', '));
+  }
 }
 
 console.log('\n══════════════════════════════');
