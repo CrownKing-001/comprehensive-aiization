@@ -31,6 +31,11 @@ function loadPageDef(file) {
   const saved = g.Page;
   let captured = null;
   g.Page = (def) => { captured = def; };
+  // 告诉子模块「你正在被 tabHost 加载，不要自己注册 Page」——
+  // 宿主页面（如 dashboard）自己也要参与合并时，self-require 会重入，
+  // 不设这个标志就会把宿主的 Page 定义再注册一遍。
+  const savedFlag = g.__TABHOST_LOADING__;
+  g.__TABHOST_LOADING__ = true;
 
   let exported = null;
   try {
@@ -39,6 +44,7 @@ function loadPageDef(file) {
     exported = require(file);
   } finally {
     g.Page = saved;
+    g.__TABHOST_LOADING__ = savedFlag;
   }
 
   // 导出的是页面定义本身（有 data / onLoad）才用它
@@ -136,6 +142,14 @@ function buildHost(opts) {
       continue;
     }
     modules[id] = { def, label: spec.label || id };
+  }
+
+  // 宿主自己的定义也能作为一个分段参与（如「总览 / 今日」里的总览）。
+  // 这时不需要 path —— 定义直接由调用方传进来，省掉一次自 require。
+  // selfId 不传时默认用第一个分段。
+  const selfId = opts.selfId || ids[0];
+  if (opts.selfDef && !modules[selfId]) {
+    modules[selfId] = { def: opts.selfDef, label: opts.selfLabel || selfId };
   }
 
   // 前缀用「模块名 + 下划线」，例如 todos_list

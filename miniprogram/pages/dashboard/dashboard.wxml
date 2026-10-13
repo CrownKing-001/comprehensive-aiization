@@ -1,22 +1,40 @@
-<!-- 总览 -->
+<!-- 总览 —— 「总览 / 今日」合并页。
+     微信 tabBar 硬上限 5 格，为了让「设置」进菜单，把「今日」并进总览。
+     两段各自的模板由 tools/prefix-wxml.js 从原页面生成（根标识符加模块前缀），
+     外层只负责画分段控件。机制见 utils/tabHost.js。 -->
 <view class="page-wrap stack {{themeClass}}">
 
-  <!-- 欢迎条 -->
-  <view class="hero">
-    <view class="hero-week">🔥 第 {{week}} 教学周</view>
-    <view class="hero-date">
-      {{dateText}}<text class="hero-wd">{{weekdayText}}</text>
+  <!-- 分段切换 -->
+  <view class="seg-bar">
+    <view
+      class="seg-item {{seg === item.id ? 'is-active' : ''}}"
+      wx:for="{{segments}}"
+      wx:key="id"
+      data-id="{{item.id}}"
+      bindtap="switchSeg"
+    >
+      <text class="seg-icon">{{item.icon}}</text>
+      <text class="seg-label">{{item.label}}</text>
     </view>
-    <view class="hero-greet">{{greet}}</view>
+  </view>
+
+  <!-- ── 总览 ── -->
+  <block wx:if="{{seg === 'dashboard'}}"><!-- 欢迎条 -->
+  <view class="hero">
+    <view class="hero-week">🔥 第 {{dashboard_week}} 教学周</view>
+    <view class="hero-date">
+      {{dashboard_dateText}}<text class="hero-wd">{{dashboard_weekdayText}}</text>
+    </view>
+    <view class="hero-greet">{{dashboard_greet}}</view>
 
     <!-- 钉到总览的倒计时 -->
     <view class="pin-row">
-      <view class="pin-card {{compact ? 'is-compact' : ''}}" wx:for="{{pinned}}" wx:key="id">
+      <view class="pin-card {{dashboard_compact ? 'is-compact' : ''}}" wx:for="{{dashboard_pinned}}" wx:key="id">
         <view class="pin-label">距 {{item.label}}</view>
         <view class="pin-days">{{item.done ? '✓' : item.days}}</view>
         <view class="pin-unit">{{item.done ? '已完成' : '天'}}</view>
       </view>
-      <view class="pin-add" wx:if="{{pinned.length === 0}}" data-url="/pages/milestones/milestones" bindtap="goPage">
+      <view class="pin-add" wx:if="{{dashboard_pinned.length === 0}}" data-url="/pages/milestones/milestones" bindtap="dashboard_goPage">
         <view class="pin-add-plus">＋</view>
         <view class="pin-add-text">添加倒计时</view>
       </view>
@@ -27,12 +45,12 @@
   <view class="stat-grid">
     <view
       class="stat-card"
-      wx:for="{{stats}}"
+      wx:for="{{dashboard_stats}}"
       wx:key="key"
       data-url="{{item.url}}"
       data-seg="{{item.seg}}"
       data-is-tab="{{item.isTab}}"
-      bindtap="goStat"
+      bindtap="dashboard_goStat"
     >
       <view class="stat-top">
         <view class="icon-chip tone-{{item.tone}}">{{item.icon}}</view>
@@ -54,50 +72,45 @@
     </view>
     <view class="card-body">
       <view class="nav-grid">
-        <view class="nav-item" data-url="/pages/healthhub/healthhub" data-seg="diet" bindtap="goTab">
+        <view class="nav-item" data-url="/pages/healthhub/healthhub" data-seg="diet" bindtap="dashboard_goTab">
           <view class="nav-icon tone-emerald">🍽️</view>
           <view class="nav-name">饮食记录</view>
-          <view class="nav-sub">{{todayProtein}}/{{proteinTarget}}g</view>
+          <view class="nav-sub">{{dashboard_todayProtein}}/{{dashboard_proteinTarget}}g</view>
         </view>
-        <view class="nav-item" data-url="/pages/healthhub/healthhub" data-seg="run" bindtap="goTab" wx:if="{{runEnabled}}">
+        <view class="nav-item" data-url="/pages/healthhub/healthhub" data-seg="run" bindtap="dashboard_goTab" wx:if="{{dashboard_runEnabled}}">
           <view class="nav-icon tone-amber">🏃</view>
           <view class="nav-name">运动打卡</view>
-          <view class="nav-sub">{{runDone}}/{{runTarget}} 次</view>
+          <view class="nav-sub">{{dashboard_runDone}}/{{dashboard_runTarget}} 次</view>
         </view>
-        <view class="nav-item" data-url="/pages/healthhub/healthhub" data-seg="health" bindtap="goTab">
+        <view class="nav-item" data-url="/pages/healthhub/healthhub" data-seg="health" bindtap="dashboard_goTab">
           <view class="nav-icon tone-sky">⚖️</view>
           <view class="nav-name">体重作息</view>
-          <view class="nav-sub">{{latestWeight ? latestWeight + ' kg' : '未记录'}}</view>
+          <view class="nav-sub">{{dashboard_latestWeight ? dashboard_latestWeight + ' kg' : '未记录'}}</view>
         </view>
-        <view class="nav-item" data-url="/pages/analysis/analysis" bindtap="goPage">
+        <view class="nav-item" data-url="/pages/analysis/analysis" bindtap="dashboard_goPage">
           <view class="nav-icon tone-violet">📊</view>
           <view class="nav-name">智能分析</view>
           <view class="nav-sub">空闲时段</view>
         </view>
-        <view class="nav-item" data-url="/pages/week/week" bindtap="goPage">
+        <view class="nav-item" data-url="/pages/week/week" bindtap="dashboard_goPage">
           <view class="nav-icon tone-emerald">🗓️</view>
           <view class="nav-name">周计划</view>
           <view class="nav-sub">按周看课</view>
         </view>
-        <view class="nav-item" data-url="/pages/milestones/milestones" bindtap="goPage">
+        <view class="nav-item" data-url="/pages/milestones/milestones" bindtap="dashboard_goPage">
           <view class="nav-icon tone-rose">⭐</view>
           <view class="nav-name">重要事项</view>
           <view class="nav-sub">考试 / DDL</view>
         </view>
-        <view class="nav-item" data-url="/pages/coursescan/coursescan" bindtap="goPage">
+        <view class="nav-item" data-url="/pages/coursescan/coursescan" bindtap="dashboard_goPage">
           <view class="nav-icon tone-sky">📷</view>
           <view class="nav-name">课表识别</view>
           <view class="nav-sub">粘贴导入</view>
         </view>
-        <view class="nav-item" data-url="/pages/calendaracademic/calendaracademic" bindtap="goPage">
+        <view class="nav-item" data-url="/pages/calendaracademic/calendaracademic" bindtap="dashboard_goPage">
           <view class="nav-icon tone-amber">🎓</view>
           <view class="nav-name">校历识别</view>
           <view class="nav-sub">关键日期</view>
-        </view>
-        <view class="nav-item" data-url="/pages/settings/settings" bindtap="goPage">
-          <view class="nav-icon tone-slate">⚙️</view>
-          <view class="nav-name">设置</view>
-          <view class="nav-sub">备份 / 学期</view>
         </view>
       </view>
     </view>
@@ -108,15 +121,15 @@
     <view class="card-head">
       <view class="icon-chip tone-sky">🕐</view>
       <view class="card-head-title">今日时间轴</view>
-      <view class="head-link" data-url="/pages/today/today" bindtap="goTab">查看详情 →</view>
+      <view class="head-link" data-url="/pages/today/today" bindtap="dashboard_goTab">查看详情 →</view>
     </view>
     <view class="card-body">
-      <view class="empty" wx:if="{{timeline.length === 0}}">
+      <view class="empty" wx:if="{{dashboard_timeline.length === 0}}">
         <view class="empty-icon">🕐</view>
         <view class="empty-text">今天没有课程安排，好好休息 🎉</view>
       </view>
       <view class="tl" wx:else>
-        <view class="tl-item" wx:for="{{timeline}}" wx:key="id">
+        <view class="tl-item" wx:for="{{dashboard_timeline}}" wx:key="id">
           <view class="tl-time">{{item.time}}</view>
           <view class="tl-body {{item.ongoing ? 'is-ongoing' : ''}} {{item.done ? 'is-done' : ''}}">
             <view class="tl-title-row">
@@ -136,15 +149,15 @@
     <view class="card-head">
       <view class="icon-chip tone-emerald">✅</view>
       <view class="card-head-title">待办速览</view>
-      <view class="head-link" data-url="/pages/tasks/tasks" data-seg="todos" bindtap="goTab">全部 →</view>
+      <view class="head-link" data-url="/pages/tasks/tasks" data-seg="todos" bindtap="dashboard_goTab">全部 →</view>
     </view>
     <view class="card-body">
-      <view class="empty" wx:if="{{openTodos.length === 0}}">
+      <view class="empty" wx:if="{{dashboard_openTodos.length === 0}}">
         <view class="empty-icon">✅</view>
         <view class="empty-text">没有待办，清爽 ✨</view>
       </view>
       <view class="mini-list" wx:else>
-        <view class="mini-row" wx:for="{{openTodos}}" wx:key="id">
+        <view class="mini-row" wx:for="{{dashboard_openTodos}}" wx:key="id">
           <view class="dot dot-{{item.dot}}"></view>
           <view class="mini-text">{{item.text}}</view>
           <text class="chip chip-{{item.chipTone}}" wx:if="{{item.chipText}}">{{item.chipText}}</text>
@@ -158,15 +171,15 @@
     <view class="card-head">
       <view class="icon-chip tone-violet">📖</view>
       <view class="card-head-title">作业倒计时</view>
-      <view class="head-link" data-url="/pages/tasks/tasks" data-seg="assignments" bindtap="goTab">全部 →</view>
+      <view class="head-link" data-url="/pages/tasks/tasks" data-seg="assignments" bindtap="dashboard_goTab">全部 →</view>
     </view>
     <view class="card-body">
-      <view class="empty" wx:if="{{dueSoon.length === 0}}">
+      <view class="empty" wx:if="{{dashboard_dueSoon.length === 0}}">
         <view class="empty-icon">📖</view>
         <view class="empty-text">没有未完成作业 🎉</view>
       </view>
       <view class="mini-list" wx:else>
-        <view class="mini-row is-block" wx:for="{{dueSoon}}" wx:key="id">
+        <view class="mini-row is-block" wx:for="{{dashboard_dueSoon}}" wx:key="id">
           <view class="mini-row-top">
             <text class="mini-title">{{item.title}}</text>
             <text class="chip chip-{{item.chipTone}}">{{item.chipText}}</text>
@@ -182,49 +195,49 @@
     <view class="card-head">
       <view class="icon-chip tone-rose">💗</view>
       <view class="card-head-title">身体数据</view>
-      <view class="head-link" data-url="/pages/healthhub/healthhub" data-seg="health" bindtap="goTab">记录 →</view>
+      <view class="head-link" data-url="/pages/healthhub/healthhub" data-seg="health" bindtap="dashboard_goTab">记录 →</view>
     </view>
     <view class="card-body">
       <view class="two-col">
         <view>
           <view class="mini-sub">最新体重</view>
-          <view class="big-num">{{latestWeight ? latestWeight + ' kg' : '--'}}</view>
+          <view class="big-num">{{dashboard_latestWeight ? dashboard_latestWeight + ' kg' : '--'}}</view>
         </view>
         <view>
           <view class="mini-sub">今日蛋白</view>
-          <view class="big-num">{{todayProtein}} g</view>
+          <view class="big-num">{{dashboard_todayProtein}} g</view>
         </view>
       </view>
       <view class="bar">
-        <view class="bar-fill bar-emerald" style="width: {{todayProtein >= proteinTarget ? 100 : (proteinTarget > 0 ? todayProtein * 100 / proteinTarget : 0)}}%"></view>
+        <view class="bar-fill bar-emerald" style="width: {{dashboard_todayProtein >= dashboard_proteinTarget ? 100 : (dashboard_proteinTarget > 0 ? dashboard_todayProtein * 100 / dashboard_proteinTarget : 0)}}%"></view>
       </view>
       <view class="mini-sub" style="margin-top: 14rpx;">
-        {{todayProtein >= proteinTarget ? '今日蛋白已达标 ✅' : '还差 ' + (proteinTarget - todayProtein) + 'g，继续加餐'}}
+        {{dashboard_todayProtein >= dashboard_proteinTarget ? '今日蛋白已达标 ✅' : '还差 ' + (dashboard_proteinTarget - dashboard_todayProtein) + 'g，继续加餐'}}
       </view>
       <view class="row-actions mt">
-        <view class="btn-ghost btn-emerald" data-url="/pages/healthhub/healthhub" data-seg="health" bindtap="goTab">⚖️ 体重作息</view>
-        <view class="btn-ghost" data-url="/pages/healthhub/healthhub" data-seg="diet" bindtap="goTab">🍽️ 饮食记录</view>
+        <view class="btn-ghost btn-emerald" data-url="/pages/healthhub/healthhub" data-seg="health" bindtap="dashboard_goTab">⚖️ 体重作息</view>
+        <view class="btn-ghost" data-url="/pages/healthhub/healthhub" data-seg="diet" bindtap="dashboard_goTab">🍽️ 饮食记录</view>
       </view>
     </view>
   </view>
 
   <!-- 运动打卡 -->
-  <view class="card" wx:if="{{runEnabled}}">
+  <view class="card" wx:if="{{dashboard_runEnabled}}">
     <view class="card-head">
       <view class="icon-chip tone-emerald">👟</view>
       <view class="card-head-title">运动打卡</view>
-      <view class="head-link" data-url="/pages/healthhub/healthhub" data-seg="run" bindtap="goTab">去打卡 →</view>
+      <view class="head-link" data-url="/pages/healthhub/healthhub" data-seg="run" bindtap="dashboard_goTab">去打卡 →</view>
     </view>
     <view class="card-body">
-      <view class="big-num">{{runDone}}<text class="big-sub"> / {{runTarget}}</text></view>
+      <view class="big-num">{{dashboard_runDone}}<text class="big-sub"> / {{dashboard_runTarget}}</text></view>
       <view class="bar">
-        <view class="bar-fill bar-emerald" style="width: {{runDone >= runTarget ? 100 : runDone * 100 / runTarget}}%"></view>
+        <view class="bar-fill bar-emerald" style="width: {{dashboard_runDone >= dashboard_runTarget ? 100 : dashboard_runDone * 100 / dashboard_runTarget}}%"></view>
       </view>
       <view class="mini-sub" style="margin-top: 14rpx;">
-        {{runDone >= runTarget ? '已达成目标次数，保持住就行' : '继续加油 💪'}}
+        {{dashboard_runDone >= dashboard_runTarget ? '已达成目标次数，保持住就行' : '继续加油 💪'}}
       </view>
       <view class="row-actions mt">
-        <view class="btn-ghost btn-emerald" data-url="/pages/healthhub/healthhub" data-seg="run" bindtap="goTab">🏃 打开运动打卡</view>
+        <view class="btn-ghost btn-emerald" data-url="/pages/healthhub/healthhub" data-seg="run" bindtap="dashboard_goTab">🏃 打开运动打卡</view>
       </view>
     </view>
   </view>
@@ -234,26 +247,144 @@
     <view class="card-head">
       <view class="icon-chip tone-amber">🍚</view>
       <view class="card-head-title">今日饮食</view>
-      <text class="chip chip-amber">{{todayDietCount}} 笔</text>
-      <view class="head-link" data-url="/pages/healthhub/healthhub" data-seg="diet" bindtap="goTab">去记录 →</view>
+      <text class="chip chip-amber">{{dashboard_todayDietCount}} 笔</text>
+      <view class="head-link" data-url="/pages/healthhub/healthhub" data-seg="diet" bindtap="dashboard_goTab">去记录 →</view>
     </view>
     <view class="card-body">
-      <view class="big-num">{{todayCalories}}<text class="big-sub"> kcal</text></view>
+      <view class="big-num">{{dashboard_todayCalories}}<text class="big-sub"> kcal</text></view>
       <view class="bar">
-        <view class="bar-fill bar-amber" style="width: {{todayCalories >= 2400 ? 100 : todayCalories * 100 / 2400}}%"></view>
+        <view class="bar-fill bar-amber" style="width: {{dashboard_todayCalories >= 2400 ? 100 : dashboard_todayCalories * 100 / 2400}}%"></view>
       </view>
       <view class="mini-sub" style="margin-top: 14rpx;">
-        {{todayDietCount ? '已记 ' + todayDietCount + ' 笔，' + todayProtein + 'g 蛋白' : '今天还没记饮食'}}
+        {{dashboard_todayDietCount ? '已记 ' + dashboard_todayDietCount + ' 笔，' + dashboard_todayProtein + 'g 蛋白' : '今天还没记饮食'}}
       </view>
       <view class="row-actions mt">
-        <view class="btn-ghost btn-emerald" data-url="/pages/healthhub/healthhub" data-seg="diet" bindtap="goTab">🍽️ 打开饮食记录</view>
+        <view class="btn-ghost btn-emerald" data-url="/pages/healthhub/healthhub" data-seg="diet" bindtap="dashboard_goTab">🍽️ 打开饮食记录</view>
       </view>
     </view>
   </view>
 
   <!-- 逾期警示 -->
-  <view class="alert alert-rose" wx:if="{{overdue.length > 0}}">
-    <text>⚠️ 有 <text class="bold">{{overdue.length}}</text> 个作业已经逾期：{{overdueTitles}}{{overdue.length > 3 ? ' 等' : ''}}</text>
+  <view class="alert alert-rose" wx:if="{{dashboard_overdue.length > 0}}">
+    <text>⚠️ 有 <text class="bold">{{dashboard_overdue.length}}</text> 个作业已经逾期：{{dashboard_overdueTitles}}{{dashboard_overdue.length > 3 ? ' 等' : ''}}</text>
   </view>
+
+  </block>
+
+  <!-- ── 今日 ── -->
+  <block wx:else><!-- 日期切换 -->
+  <view class="date-bar">
+    <view class="date-nav" bindtap="today_prevDay">‹</view>
+    <view class="date-mid">
+      <view class="date-main">
+        {{today_dateStr}} · {{today_weekdayStr}}
+        <text class="date-rel">{{today_relLabel}}</text>
+      </view>
+      <view class="date-week">第 {{today_week}} 教学周</view>
+    </view>
+    <view class="date-right">
+      <view class="btn-back-today" wx:if="{{!today_isToday}}" bindtap="today_backToday">回到今天</view>
+      <view class="date-nav" bindtap="today_nextDay">›</view>
+    </view>
+  </view>
+
+  <!-- 课程 -->
+  <view class="card">
+    <view class="card-head">
+      <view class="icon-chip tone-sky">📘</view>
+      <view class="card-head-title">
+        {{today_isToday ? '今日' : '当日'}}课程（{{today_isToday ? '还有 ' + today_shown.length : today_shown.length}} 节）
+      </view>
+      <view class="head-note" wx:if="{{today_finished > 0}}">✓ 已上完 {{today_finished}} 节</view>
+    </view>
+    <view class="card-body">
+      <view class="empty" wx:if="{{today_shown.length === 0}}">
+        <view class="empty-icon">🎉</view>
+        <view class="empty-text">
+          {{today_isToday && today_finished > 0 ? '今天的课都上完了 🎉' : '这一天没有课，时间都是你的 🎉'}}
+        </view>
+      </view>
+      <view class="course-list" wx:else>
+        <view class="course-item {{item.ongoing ? 'is-ongoing' : ''}}" wx:for="{{today_shown}}" wx:key="uid">
+          <view class="course-main">
+            <view class="course-name-row">
+              <text class="course-name">{{item.name}}</text>
+              <text class="chip chip-sky" wx:if="{{item.tag}}">{{item.tag}}</text>
+              <text class="chip chip-emerald" wx:if="{{item.ongoing}}">进行中</text>
+            </view>
+            <view class="course-place">{{item.place}}</view>
+          </view>
+          <view class="course-time">{{item.start}}–{{item.end}}</view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 当天要处理的事 -->
+  <view class="card">
+    <view class="card-head">
+      <view class="icon-chip tone-emerald">✅</view>
+      <view class="card-head-title">当天要处理的事</view>
+    </view>
+    <view class="card-body">
+      <view class="empty" wx:if="{{today_dayTodos.length === 0 && today_dayAssign.length === 0}}">
+        <view class="empty-icon">🎉</view>
+        <view class="empty-text">没有到期的待办和作业 🎉</view>
+      </view>
+      <view wx:else>
+        <view wx:if="{{today_dayTodos.length > 0}}">
+          <view class="sec-label">待办</view>
+          <view class="todo-list-wrap">
+            <view class="todo-line" wx:for="{{today_dayTodos}}" wx:key="id">
+              <view class="checkbox-sm" data-id="{{item.id}}" bindtap="today_toggleTodo"></view>
+              <view class="todo-text">{{item.text}}</view>
+              <text class="chip chip-rose" wx:if="{{item.overdue}}">逾期</text>
+            </view>
+          </view>
+        </view>
+        <view wx:if="{{today_dayAssign.length > 0}}" style="margin-top: 20rpx;">
+          <view class="sec-label">作业</view>
+          <view class="todo-list-wrap">
+            <view class="todo-line" wx:for="{{today_dayAssign}}" wx:key="id">
+              <view class="todo-icon">📖</view>
+              <view class="todo-text"><text class="muted">{{item.course}} · </text>{{item.title}}</view>
+              <text class="chip chip-{{item.chipTone}}">{{item.chipText}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 完整时间轴 -->
+  <view class="card">
+    <view class="card-head">
+      <view class="icon-chip tone-violet">🕐</view>
+      <view class="card-head-title">当日完整时间轴</view>
+    </view>
+    <view class="card-body">
+      <view class="empty" wx:if="{{today_timeline.length === 0}}">
+        <view class="empty-icon">🕐</view>
+        <view class="empty-text">这一天没有任何安排</view>
+      </view>
+      <view class="tl" wx:else>
+        <view class="tl-item" wx:for="{{today_timeline}}" wx:key="id">
+          <view class="tl-time">{{item.time}}</view>
+          <view class="tl-body {{item.ongoing ? 'is-ongoing' : ''}}">
+            <view class="tl-title-row">
+              <text class="tl-title">{{item.title}}</text>
+              <text class="chip chip-emerald" wx:if="{{item.ongoing}}">进行中</text>
+              <text class="tl-min" wx:if="{{item.minutes > 0}}">{{item.minutes}} 分钟</text>
+            </view>
+            <view class="tl-sub" wx:if="{{item.sub}}">{{item.sub}}</view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="btn-ghost full" wx:if="{{!today_isToday}}" bindtap="today_backToday">回到今天</view>
+
+  </block>
 
 </view>

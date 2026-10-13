@@ -1,3 +1,50 @@
+/* 总览 · 今日 合并页样式：分段控件 + 两份原样式（重名的只保留 dashboard 那份）*/
+
+/* ── 顶部分段切换 ── */
+.seg-bar {
+  display: flex;
+  gap: 12rpx;
+  padding: 10rpx;
+  border-radius: 22rpx;
+  background: var(--chip-bg);
+  border: 2rpx solid var(--border);
+}
+.seg-item {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8rpx;
+  min-width: 0;
+  padding: 18rpx 10rpx;
+  border-radius: 16rpx;
+  font-size: 26rpx;
+  color: var(--text-3);
+  transition: background 0.15s, color 0.15s;
+}
+.seg-item.is-active {
+  background: rgba(16, 185, 129, 0.16);
+  color: #34d399;
+  font-weight: 600;
+}
+.seg-icon { font-size: 26rpx; }
+.seg-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.seg-badge {
+  min-width: 32rpx;
+  padding: 0 8rpx;
+  border-radius: 999rpx;
+  background: rgba(148, 163, 184, 0.22);
+  color: var(--text-3);
+  font-size: 20rpx;
+  line-height: 32rpx;
+  text-align: center;
+}
+.seg-item.is-active .seg-badge {
+  background: rgba(16, 185, 129, 0.25);
+  color: #34d399;
+}
+
+/* ── 总览部分（原 dashboard.wxss） ── */
 /* 总览页样式。app.wxss 是全局样式，本就自动生效，无需 @import。 */
 
 /* ── 欢迎条 ───────────────────────────────────── */
@@ -317,3 +364,177 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* ── 今日部分（原 today.wxss） ── */
+/* 今日页样式。app.wxss 是全局样式，本就自动生效，无需 @import。 */
+
+/* ── 日期切换条 ───────────────────────────────── */
+.date-bar {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  background: var(--surface-1);
+  border: 2rpx solid var(--border-1);
+  border-radius: 28rpx;
+  padding: 16rpx 20rpx;
+  margin-bottom: 24rpx;
+}
+
+.date-nav {
+  width: 68rpx;
+  height: 68rpx;
+  border-radius: 20rpx;
+  background: var(--surface-3);
+  border: 2rpx solid var(--border-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 38rpx;
+  color: var(--text-3);
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.date-mid { flex: 1; text-align: center; min-width: 0; }
+
+.date-main {
+  font-size: 29rpx;
+  font-weight: 600;
+  color: var(--text-1);
+}
+
+.date-rel {
+  font-size: 22rpx;
+  font-weight: 400;
+  color: #34d399;
+  margin-left: 12rpx;
+}
+
+.date-week {
+  font-size: 21rpx;
+  color: var(--text-4);
+  margin-top: 4rpx;
+}
+
+.date-right {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  flex-shrink: 0;
+}
+
+.btn-back-today {
+  font-size: 22rpx;
+  font-weight: 500;
+  color: #34d399;
+  background: rgba(16, 185, 129, 0.15);
+  border-radius: 999rpx;
+  padding: 10rpx 22rpx;
+}
+
+.head-note { font-size: 22rpx; color: var(--text-4); }
+
+/* ── 课程列表 ─────────────────────────────────── */
+.course-list { display: flex; flex-direction: column; gap: 16rpx; }
+
+.course-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18rpx;
+  border-radius: 18rpx;
+  padding: 22rpx 26rpx;
+  background: rgba(14, 165, 233, 0.12);
+  border: 2rpx solid transparent;
+}
+
+.course-item.is-ongoing {
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.35);
+}
+
+.course-main { flex: 1; min-width: 0; }
+
+.course-name-row {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.course-name {
+  font-size: 27rpx;
+  font-weight: 500;
+  color: var(--text-1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.course-place {
+  font-size: 23rpx;
+  color: var(--text-4);
+  margin-top: 6rpx;
+}
+
+.course-time {
+  font-size: 27rpx;
+  font-weight: 600;
+  color: #38bdf8;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── 待处理 ───────────────────────────────────── */
+.sec-label {
+  font-size: 21rpx;
+  color: var(--text-4);
+  margin-bottom: 12rpx;
+}
+
+/* 小程序 WXSS 不支持 :last-child 等结构伪类，
+   改用父容器的负下边距抵消最后一项的多余间距。 */
+.todo-list-wrap { margin-bottom: -12rpx; }
+
+.todo-line {
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
+  border-radius: 16rpx;
+  background: var(--surface-3);
+  border: 2rpx solid var(--border-2);
+  padding: 18rpx 22rpx;
+  margin-bottom: 12rpx;
+}
+
+.checkbox-sm {
+  width: 32rpx;
+  height: 32rpx;
+  border-radius: 10rpx;
+  border: 3rpx solid #475569;
+  flex-shrink: 0;
+}
+
+.todo-icon { font-size: 24rpx; flex-shrink: 0; }
+
+.todo-text {
+  flex: 1;
+  font-size: 24rpx;
+  color: var(--text-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.muted { color: var(--text-4); }
+
+/* ── 时间轴 ───────────────────────────────────── */
+/* 时间轴：同样不用 :last-child，靠容器负边距收尾 */
+
+
+
+
+
+
+
+
+
+.full { width: 100%; box-sizing: border-box; }

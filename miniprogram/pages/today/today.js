@@ -4,7 +4,7 @@ const { currentWeek } = require('../../utils/plan');
 const { coursesOn, toMin, buildTimeline, addDays, keyOf } = require('../../utils/schedule');
 const { fromKey, daysUntil } = require('../../utils/storage');
 
-Page({
+const DEFINITION = {
   data: {
     ready: false,
     offset: 0,
@@ -132,4 +132,10 @@ Page({
       themeClass: s.settings.theme === 'light' ? 'theme-light' : '',
     });
   },
-});
+};
+
+Page(DEFINITION);
+
+// 这个页面同时被「总览」合并页当作子模块使用（见 utils/tabHost.js）。
+// 小程序页面模块不 export 定义，这里显式导出一份供 tabHost 取用。
+module.exports = DEFINITION;

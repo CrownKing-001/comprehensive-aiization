@@ -17,6 +17,24 @@ const MP = process.argv[2], OUT = process.argv[3];
 
 const rpx = (css) => css.replace(/(\d+(?:\.\d+)?)rpx/g, (_, n) => (parseFloat(n) * 0.5).toFixed(3).replace(/\.?0+$/, '') + 'px');
 
+/**
+ * 从 `from` 开始，找与之配对的第一个 `</block>` 之后的位置。
+ * 用于把一整个分段 block（可能内含嵌套 block）切出来。
+ */
+function blockEnd(s, from) {
+  let depth = 0;
+  const re = /<block\b[^>]*>|<\/block>/g;
+  re.lastIndex = from;
+  let m;
+  while ((m = re.exec(s))) {
+    if (m[0].startsWith('</')) {
+      if (depth === 0) return re.lastIndex;
+      depth -= 1;
+    } else depth += 1;
+  }
+  return -1;
+}
+
 function dropElseBlocks(s) {
   let out = s, guard = 0;
   while (true) {
@@ -39,6 +57,41 @@ function dropElseBlocks(s) {
 function convert(wxml, opts) {
   opts = opts || {};
   let h = wxml;
+  // 分段预览时要隐藏的那几段需要一条样式，由调用方拼进页面 CSS
+  let hiddenCss = '';
+
+  // ⚠️ 分段过滤必须放在**最前面**，排在 wx:else 清理和 {{}} 占位替换之前：
+  //   · 排在 dropElseBlocks 之后 → 第二段是 <block wx:else>，已经被删掉了；
+  //   · 排在 {{}} 替换之后 → 条件里的 seg === 'xxx' 已经被换成占位符，匹配不上。
+  // 两个顺序坑都踩过一遍，所以这里放在最开头。
+  if (opts.keepSeg) {
+    const segIds = opts.segIds || [];
+    const found = [];
+    const re = /<block\s+wx:if="\{\{\s*seg\s*===\s*'([^']+)'\s*\}\}"\s*>|<block\s+wx:else\s*>/g;
+    let m;
+    let idx = -1;
+    while ((m = re.exec(h))) {
+      idx += 1;
+      found.push({ id: m[1] || segIds[idx] || null, start: m.index, bodyAt: re.lastIndex });
+    }
+    // 从后往前删，避免前面的改动影响后面的下标。
+    // 把不显示的那段**整段删掉**，而不是用 display:none 藏起来 ——
+    // 每段内部还有自己的 wx:else，紧接着的 dropElseBlocks 会从第一个
+    // wx:else 开始配对删除，结果把不该删的也删了、该删的却留着。
+    for (let i = found.length - 1; i >= 0; i--) {
+      const s = found[i];
+      if (s.id === opts.keepSeg) continue;
+      const end = blockEnd(h, s.bodyAt);
+      if (end >= 0) h = h.slice(0, s.start) + h.slice(end);
+    }
+    // 剩下的那段去掉条件，让它无条件渲染。
+    // 两种写法都要处理：第一段是 wx:if，后面的段是 wx:else ——
+    // 只改 wx:if 的话，选中「今日」时段落仍是 wx:else，
+    // 紧接着的 dropElseBlocks 又把它整块删掉（预览里就是一片空白）。
+    h = h.replace(/<block\s+wx:if="\{\{\s*seg\s*===\s*'[^']+'\s*\}\}"\s*>/, '<block>');
+    h = h.replace(/<block\s+wx:else\s*>/, '<block>');
+  }
+
   h = h.replace(/\{\{([\s\S]*?)\}\}/g, (_, e) => {
     const m = /^'([^']*)'$/.exec(e.trim());
     return m ? '\u00a7' + m[1] + '\u00a7' : '\u00a7\u00b7\u00b7\u00a7';
@@ -50,14 +103,6 @@ function convert(wxml, opts) {
   h = h.replace(/<canvas\b[^>]*?><\/canvas>/g, '<div class="ph-canvas">［Canvas 图表］</div>');
   h = h.replace(/<canvas\b[^>]*?\/>/g, '<div class="ph-canvas">［Canvas 图表］</div>');
   h = dropElseBlocks(h);
-  // 合并页（tasks / healthhub）用 <block wx:if="{{seg === 'xxx'}}"> 切换分段。
-  // 静态预览只渲染 keepSeg 指定的那一段，否则三段会叠在一起看不清。
-  if (opts.keepSeg) {
-    h = h.replace(/<block\s+wx:if="\{\{\s*seg\s*===\s*'([^']+)'\s*\}\}"\s*>/g, (all, name) =>
-      name === opts.keepSeg ? '<block>' : '<block style="display:none">');
-    // 上面保留了 wx:else（体重那段），若不在预览范围内也藏起来
-    h = h.replace(/<block\s+style="display:none">/g, '<block style="display:none">');
-  }
   h = h.replace(/<(view|text|block|scroll-view|picker)\b([^<>]*)>/g, (_, raw, attrs) => {
     const tag = { view:'div', 'scroll-view':'div', picker:'div', text:'span', block:'' }[raw] ?? 'div';
     if (!tag) return '';
@@ -72,7 +117,9 @@ function convert(wxml, opts) {
   });
   h = h.replace(/<\/view>/g, '</div>').replace(/<\/text>/g, '</span>')
        .replace(/<\/scroll-view>/g, '</div>').replace(/<\/picker>/g, '</div>').replace(/<\/block>/g, '');
-  return h.replace(/\u00a7/g, '');
+  const html = h.replace(/\u00a7/g, '');
+  // 调用方需要隐藏样式；返回对象便于扩展
+  return hiddenCss ? { html, css: hiddenCss } : { html, css: '' };
 }
 
 const appCss = rpx(fs.readFileSync(path.join(MP, 'app.wxss'), 'utf8'));
@@ -81,12 +128,14 @@ fs.mkdirSync(OUT, { recursive: true });
 
 // 合并页要分段预览，否则三段叠在一起看不清
 const SEG_OF = {
+  dashboard: ['dashboard', 'today'],
   tasks: ['todos', 'assignments'],
   healthhub: ['diet', 'run', 'health'],
 };
 
 // tabBar 文案从 app.json 读，避免和真实配置不一致
-let TAB = ['总览', '今日', '课表', '待办·作业', '健康'];
+// （读不到时的兜底值也保持同步，但正常路径应当读 app.json）
+let TAB = ['总览', '课表', '待办·作业', '健康', '设置'];
 try {
   const aj = JSON.parse(fs.readFileSync(path.join(MP, 'app.json'), 'utf8'));
   if (aj.tabBar && Array.isArray(aj.tabBar.list) && aj.tabBar.list.length) {
@@ -104,7 +153,8 @@ for (const name of dirs) {
   const segs = SEG_OF[name] || [null];
 
   for (const seg of segs) {
-    const body = convert(raw, { keepSeg: seg });
+    const conv = convert(raw, { keepSeg: seg, segIds: segs });
+    const body = conv.html;
     const title = seg ? `${name} · ${seg}` : name;
     const html = `<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><title>${title} 预览</title><style>
 html,body{margin:0;padding:0;background:#0b0e13;}
@@ -129,6 +179,7 @@ body{display:flex;justify-content:center;padding:20px 10px;}
   display:flex;align-items:center;justify-content:center;color:#475569;font-size:12px;}
 ${appCss}
 ${pageCss}
+${conv.css}
 </style></head><body><div class="phone">
 <div class="statusbar">9:41</div>
 <div class="navbar">大学日程 · ${title}</div>

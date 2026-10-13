@@ -113,12 +113,45 @@ def health(c):
     return img
 
 
+def settings(c):
+    """齿轮：8 个方齿 + 中心挖空。
+
+    比例调过两轮：齿顶/齿根半径差太小会像花瓣，中心孔太小会像实心圆点。
+    最终让齿深 ≈ 半径的 35%，中心孔 ≈ 齿根半径的 55%，视觉重量与其它图标一致。
+    """
+    import math
+    img = canvas(); d = ImageDraw.Draw(img)
+    s = SIZE * 4
+    cx = cy = s * 0.5
+    ro = s * 0.345          # 齿顶半径
+    ri = s * 0.225          # 齿根半径（齿深 = ro-ri）
+    half = s * 0.088        # 齿的半宽（直线距离，不是角度）
+    for i in range(8):
+        a = math.pi * 2 * i / 8 - math.pi / 2
+        ux, uy = math.cos(a), math.sin(a)      # 径向
+        px, py = -uy, ux                       # 切向
+        pts = [
+            (cx + ux * ri + px * half, cy + uy * ri + py * half),
+            (cx + ux * ro + px * half * 0.78, cy + uy * ro + py * half * 0.78),
+            (cx + ux * ro - px * half * 0.78, cy + uy * ro - py * half * 0.78),
+            (cx + ux * ri - px * half, cy + uy * ri - py * half),
+        ]
+        d.polygon(pts, fill=c)
+    # 齿根圆盘
+    ellipse(d, (cx - ri, cy - ri, cx + ri, cy + ri), fill=c)
+    # 中心挖空：用透明色，保留 alpha 通道（Pillow 的 ellipse 会直接改写像素）
+    hole = ri * 0.55
+    d.ellipse((cx - hole, cy - hole, cx + hole, cy + hole), fill=(0, 0, 0, 0))
+    return img
+
+
 ICONS = {
     'dashboard': dashboard,
     'today': today,
     'courses': courses,
     'tasks': tasks,
     'health': health,
+    'settings': settings,
 }
 
 

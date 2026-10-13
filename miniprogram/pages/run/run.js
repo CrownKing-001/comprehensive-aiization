@@ -199,7 +199,9 @@ const DEFINITION = {
   },
 
   goSettings() {
-    wx.navigateTo({ url: '/pages/settings/settings' });
+    // 「设置」已经是 tabBar 页面，只能用 switchTab；
+    // 用 navigateTo 会静默失败（不报错也不跳）。
+    wx.switchTab({ url: '/pages/settings/settings' });
   },
 };
 

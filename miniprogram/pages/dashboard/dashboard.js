@@ -4,7 +4,7 @@ const { currentWeek } = require('../../utils/plan');
 const { coursesOn, buildTimeline, toMin } = require('../../utils/schedule');
 const { daysUntil, fromKey } = require('../../utils/storage');
 
-Page({
+const DEFINITION = {
   data: {
     ready: false,
     week: 1,
@@ -18,6 +18,10 @@ Page({
     overdue: [],
     overdueTitles: '',
     pinned: [],
+    // 钉住的倒计时多于 4 个时，卡片改用紧凑样式。
+    // 必须在 data 里先声明：WXML 的 {{compact ? ...}} 在首次 setData 之前
+    // 读到 undefined，虽然三元结果相同，但声明了前缀生成器才能识别它。
+    compact: false,
     runDone: 0,
     runTarget: 30,
     runEnabled: true,
@@ -80,7 +84,10 @@ Page({
         value: String(restCourses.length),
         unit: '节待上',
         sub: todayCourses.length ? `共 ${todayCourses.length} 节` : '今天没课',
-        url: '/pages/today/today',
+        // 「今日」已经并进总览，不再是 tabBar 页 —— 不能再写 switchTab，
+        // 那会静默失败（不报错也不跳）。改成跳到总览的「今日」分段。
+        url: '/pages/dashboard/dashboard',
+        seg: 'today',
         isTab: true,
       },
       {
@@ -258,4 +265,28 @@ Page({
   },
 
   noop() {},
-});
+};
+
+// 总览现在是「总览 / 今日」合并页的宿主（tabBar 只有 5 格，
+// 今日并进总览才腾出位置给设置）。页面定义由 pages/dashboard 自己导出，
+// 再连同 today 子模块一起交给 buildHost 组装。
+module.exports = DEFINITION;
+
+// 只有被小程序真正当页面加载时才注册；被 tabHost require 时不要注册，
+// 否则会覆盖宿主自己那份 Page 定义。
+if (!global.__TABHOST_LOADING__) {
+  const { buildHost } = require('../../utils/tabHost');
+  Page(
+    buildHost({
+      base: __dirname,
+      selfDef: DEFINITION,
+      segments: [
+        { id: 'dashboard', label: '总览', icon: '🏠' },
+        { id: 'today', label: '今日', icon: '📅' },
+      ],
+      modules: {
+        today: { path: '../today/today.js', label: '今日' },
+      },
+    })
+  );
+}

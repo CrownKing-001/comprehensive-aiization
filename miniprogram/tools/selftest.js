@@ -366,19 +366,74 @@ section('[13] 导航完整性');
   scan(path.join(MP, 'pages'), '.js');
   scan(path.join(MP, 'pages'), '.wxml');
 
-  // 这几个页面已经被合并进「待办·作业」和「健康」，不再有独立入口。
-  // 它们仍然注册在 app.json 里（旧链接/「最近使用」可能直接打开），
-  // 所以「没有入站跳转」是符合预期的，这里显式列出来，
+  // 增加一条硬检查：tabBar 的文案顺序必须是约定的那 5 个。
+  // 「今日」并进「总览」后，「设置」才拿到最后一格 —— 顺序变了要立刻发现。
+  const tabTexts = tab.map((t) => t.text);
+  T('tabBar 文案与约定一致',
+    JSON.stringify(tabTexts) === JSON.stringify(['总览', '课表', '待办·作业', '健康', '设置']),
+    tabTexts.join(' / '));
+  T('  设置占了 tabBar 一格', tabPaths.includes('pages/settings/settings'));
+  T('  今日不再是 tabBar 页（已并入总览）', !tabPaths.includes('pages/today/today'));
+
+  // 这几个页面已经被合并进「待办·作业」「健康」，或并进「总览」，
+  // 不再有独立入口。它们仍然注册在 app.json 里（旧链接/「最近使用」
+  // 可能直接打开），所以「没有入站跳转」是符合预期的，这里显式列出来，
   // 避免以后真的加了入口却被这条检查漏掉。
   const MERGED = new Set([
     'pages/todos/todos', 'pages/assignments/assignments',
     'pages/run/run', 'pages/diet/diet', 'pages/health/health',
+    'pages/today/today',
   ]);
   const unreachable = appJson.pages.filter(
     (p) => !tabPaths.includes(p) && !targets.has(p) && !MERGED.has(p)
   );
   T('所有页面都能到达', unreachable.length === 0, unreachable.join(', '));
-  T('  5 个合并子页仅作为子模块存在', [...MERGED].every((p) => appJson.pages.includes(p)));
+  T('  合并子页仅作为子模块存在', [...MERGED].every((p) => appJson.pages.includes(p)));
+
+  // switchTab 只能打 tabBar 页、navigateTo 只能打非 tabBar 页，
+  // 弄反不会报错 —— 就是不跳。这类 bug 只能靠静态检查兜住。
+  // 只查字面量 url；goStat/goTab 那种从 dataset 取 url 的按 isTab 分流，查不了。
+  const badSwitch = [];
+  const scan2 = (dir) => {
+    for (const f of fs.readdirSync(dir, { withFileTypes: true })) {
+      const p = path.join(dir, f.name);
+      if (f.isDirectory()) { scan2(p); continue; }
+      if (!f.name.endsWith('.js')) continue;
+      const src = fs.readFileSync(p, 'utf8');
+      for (const m of src.matchAll(/wx\.switchTab\s*\(\s*\{\s*url:\s*'(\/pages\/[^']+)'/g)) {
+        if (!tabPaths.includes(m[1].slice(1))) badSwitch.push(`${f.name}: switchTab → ${m[1]}`);
+      }
+      for (const m of src.matchAll(/wx\.navigateTo\s*\(\s*\{\s*url:\s*'(\/pages\/[^']+)'/g)) {
+        if (tabPaths.includes(m[1].slice(1))) badSwitch.push(`${f.name}: navigateTo → ${m[1]}`);
+      }
+    }
+  };
+  scan2(path.join(MP, 'pages'));
+  T('switchTab / navigateTo 的目标类型都对', badSwitch.length === 0, badSwitch.join('; '));
+
+  // WXML 里 data-url 指向 tabBar 页的格子，必须绑 goTab（走 switchTab），
+  // 绑成 goPage（走 navigateTo）同样会静默失败。
+  const badTile = [];
+  const scanWxml = (dir) => {
+    for (const f of fs.readdirSync(dir, { withFileTypes: true })) {
+      const p = path.join(dir, f.name);
+      if (f.isDirectory()) { scanWxml(p); continue; }
+      if (!f.name.endsWith('.wxml')) continue;
+      const src = fs.readFileSync(p, 'utf8');
+      // 逐个标签看：同一标签里既有 data-url 又有 bindtap
+      for (const m of src.matchAll(/<[a-z-]+[^>]*>/g)) {
+        const tag = m[0];
+        const u = /data-url="(\/pages\/[^"]+)"/.exec(tag);
+        if (!u) continue;
+        if (!tabPaths.includes(u[1].slice(1))) continue;
+        const h = /bindtap="([^"]+)"/.exec(tag);
+        const hn = h ? h[1] : '';
+        if (!/goTab$/.test(hn)) badTile.push(`${f.name}: ${u[1]} 绑的是 ${hn || '(无)'}`);
+      }
+    }
+  };
+  scanWxml(path.join(MP, 'pages'));
+  T('指向 tabBar 页的入口都走 goTab', badTile.length === 0, badTile.join('; '));
 
   // 合并页必须能取到全部子模块定义（文件末尾的 module.exports = DEFINITION）
   const { buildHost } = require(path.join(MP, 'utils', 'tabHost.js'));
@@ -398,6 +453,81 @@ section('[13] 导航完整性');
   };
   check('待办·作业', ['todos', 'assignments']);
   check('健康', ['diet', 'run', 'health']);
+  check('总览', ['dashboard', 'today']);
+}
+
+// ══ 13b. 总览 / 今日 合并页 ══
+// 「今日」并进「总览」，腾出 tabBar 位置给「设置」。
+// 宿主自己的定义（dashboard）也要作为一个分段参与合并。
+section('[13b] 总览 · 今日 合并页');
+{
+  const APP = { globalData: {} };
+  const savedGetApp = global.getApp;
+  global.getApp = () => APP;
+
+  const defOfPage = (file) => {
+    let d = null;
+    const saved = global.Page;
+    global.Page = (x) => { d = x; };
+    delete require.cache[require.resolve(file)];
+    const ex = require(file);
+    global.Page = saved;
+    return ex && ex.data ? ex : d;
+  };
+  const mount = (def) => Object.assign({}, def, {
+    data: JSON.parse(JSON.stringify(def.data || {})),
+    setData(p, cb) {
+      for (const k of Object.keys(p)) this.data[k] = p[k];
+      if (typeof cb === 'function') cb();
+    },
+  });
+
+  store.resetAll();
+  // 注意：dashboard.js 同时 export 了 DEFINITION（给 tabHost 用）并且
+  // 在非 tabHost 加载时调 Page(buildHost(...)) 注册真正的页面。
+  // 要测的是**注册出去的那个**（带 seg/switchSeg 的宿主），不是裸定义。
+  let registered = null;
+  {
+    const saved = global.Page;
+    global.Page = (x) => { registered = x; };
+    const f = path.join(MP, 'pages/dashboard/dashboard.js');
+    delete require.cache[require.resolve(f)];
+    require(f);
+    global.Page = saved;
+  }
+  T('总览页注册了宿主定义', !!(registered && registered.data && registered.data.segments));
+  const p = mount(registered);
+  T('两个分段', Array.isArray(p.data.segments) && p.data.segments.length === 2,
+    JSON.stringify((p.data.segments || []).map((s) => s.id)));
+  T('默认停在总览分段', p.data.seg === 'dashboard');
+
+  p.onLoad();
+  T('onLoad 后 ready', p.data.ready === true);
+  // 两个模块的数据都带各自前缀并入
+  T('总览数据带 dashboard_ 前缀', 'dashboard_stats' in p.data && 'dashboard_pinned' in p.data);
+  T('今日数据带 today_ 前缀', 'today_shown' in p.data && 'today_timeline' in p.data);
+  T('compact 已声明（WXML 里用到）', 'dashboard_compact' in p.data);
+
+  // tabHost 会挂带前缀的方法别名
+  T('总览方法可调用', typeof p.dashboard_goStat === 'function');
+  T('今日方法可调用', typeof p.today_shiftDay === 'function' || typeof p.today_refresh === 'function');
+  T('宿主提供 switchSeg', typeof p.switchSeg === 'function');
+
+  p.switchSeg({ currentTarget: { dataset: { id: 'today' } } });
+  T('切到今日分段', p.data.seg === 'today');
+  p.switchSeg({ currentTarget: { dataset: { id: 'dashboard' } } });
+  T('切回总览分段', p.data.seg === 'dashboard');
+  p.onUnload();
+
+  // 今日页单独打开仍要正常（旧链接不能变死链）
+  const solo = mount(defOfPage(path.join(MP, 'pages/today/today.js')));
+  solo.onLoad();
+  T('今日单独打开仍正常', solo.data.ready === true);
+  T('  数据无前缀', 'shown' in solo.data && !('today_shown' in solo.data));
+  solo.onUnload();
+
+  global.getApp = savedGetApp;
+  store.resetAll();
 }
 
 // ══ 14. 合并页的分段延迟初始化 ══

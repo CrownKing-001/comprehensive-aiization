@@ -980,6 +980,7 @@ page {
   color: #fda4af;
 }
 
+
 </style></head><body><div class="phone">
 <div class="statusbar">9:41</div>
 <div class="navbar">大学日程 · tasks · assignments</div>
@@ -1001,37 +1002,44 @@ page {
   
   
 
+  
+  
+
     <div class="card">
       <div class="card-head">
-        <div class="icon-chip tone-emerald">＋</div>
-        <div class="card-head-title">新建待办</div>
+        <div class="icon-chip tone-violet">＋</div>
+        <div class="card-head-title">新建作业</div>
       </div>
       <div class="card-body">
+        <div class="field-label">课程</div>
+        <div>
+          <div class="input picker-input">··</div>
+        </div>
+        <span class="ph-inline">［输入框］</span>
+
+        <div class="field-label" style="margin-top: 18rpx;">作业标题 *</div>
         <span class="ph-inline">［输入框］</span>
 
         <div class="form-row">
           <div class="form-col">
-            <div class="field-label">截止日期</div>
+            <div class="field-label">截止日期 *</div>
             <div>
               <div class="input picker-input">··</div>
             </div>
           </div>
           <div class="form-col">
-            <div class="field-label">优先级</div>
+            <div class="field-label">截止时间</div>
             <div>
               <div class="input picker-input">··</div>
             </div>
           </div>
         </div>
 
-        <div class="field-label" style="margin-top: 18rpx;">标签</div>
+        <div class="field-label" style="margin-top: 18rpx;">分值 / 占比</div>
         <span class="ph-inline">［输入框］</span>
 
-        <div class="quick-row">
-          <span class="quick-label">快捷日期：</span>
-          <div class="quick-pill">··</div>
-          <div class="quick-clear">清除日期</div>
-        </div>
+        <div class="field-label" style="margin-top: 18rpx;">备注</div>
+        <span class="ph-inline">［输入框］</span>
 
         <div class="btn-primary ··" style="margin-top: 22rpx; width: 100%;">＋ 添加</div>
       </div>
@@ -1040,8 +1048,7 @@ page {
     <div class="card">
       <div class="card-head">
         <div class="icon-chip tone-sky">☰</div>
-        <div class="card-head-title">待办列表（··）</div>
-        <div class="head-link">清除已完成 (··)</div>
+        <div class="card-head-title">作业列表（··）</div>
       </div>
       <div class="card-body">
         <div class="filter-row">
@@ -1051,22 +1058,25 @@ page {
         </div>
 
         <div class="empty">
-          <div class="empty-icon">✨</div>
+          <div class="empty-icon">🎉</div>
           <div class="empty-text">··</div>
         </div>
 
-        <div class="todo-list">
-          <div class="todo-item ··">
+        <div class="assign-list">
+          <div class="assign-item ··">
             <div class="tick ··">
               <span>✓</span>
             </div>
-            <div class="todo-main">
-              <div class="todo-text ··">··</div>
-              <div class="todo-meta">
-                <span class="chip chip-··">⚑ ··</span>
-                <span class="todo-due is-··">📅 ··</span>
-                <span class="chip chip-sky">··</span>
+            <div class="assign-main">
+              <div class="assign-title-row">
+                <span class="assign-title ··">··</span>
+                <span class="chip chip-violet">··</span>
+                <span class="chip chip-··">··</span>
               </div>
+              <div class="assign-sub">
+                ·· · ······
+              </div>
+              <div class="assign-detail">··</div>
             </div>
             <div class="del-btn">🗑</div>
           </div>
@@ -1074,13 +1084,10 @@ page {
       </div>
     </div>
 
-    <div class="alert alert-amber">
-      有 <span class="bold">··</span> 项待办已经超过截止日期，建议重新排一下优先级。
+    <div class="alert alert-rose">
+      ⚠️ 有 <span class="bold">··</span> 个作业已逾期，尽快补交或联系老师。
     </div>
 
-  
-
-  
   
 
   <div class="footnote">✅ 数据保存在本机，关掉小程序也不会丢</div>
@@ -1088,5 +1095,5 @@ page {
 </div>
 
 </div>
-<div class="tabbar"><span class="">总览</span><span class="">今日</span><span class="">课表</span><span class="on">待办·作业</span><span class="">健康</span></div>
+<div class="tabbar"><span class="">总览</span><span class="">课表</span><span class="">待办·作业</span><span class="on">健康</span><span class="">设置</span></div>
 </div></body></html>

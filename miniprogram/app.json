@@ -39,12 +39,6 @@
         "selectedIconPath": "images/tab/dashboard-on.png"
       },
       {
-        "pagePath": "pages/today/today",
-        "text": "今日",
-        "iconPath": "images/tab/today.png",
-        "selectedIconPath": "images/tab/today-on.png"
-      },
-      {
         "pagePath": "pages/courses/courses",
         "text": "课表",
         "iconPath": "images/tab/courses.png",
@@ -61,6 +55,12 @@
         "text": "健康",
         "iconPath": "images/tab/health.png",
         "selectedIconPath": "images/tab/health-on.png"
+      },
+      {
+        "pagePath": "pages/settings/settings",
+        "text": "设置",
+        "iconPath": "images/tab/settings.png",
+        "selectedIconPath": "images/tab/settings-on.png"
       }
     ]
   },

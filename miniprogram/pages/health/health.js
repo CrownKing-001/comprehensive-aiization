@@ -318,7 +318,9 @@ const DEFINITION = {
   },
 
   goSettings() {
-    wx.navigateTo({ url: '/pages/settings/settings' });
+    // 「设置」已经是 tabBar 页面，只能用 switchTab；
+    // 用 navigateTo 会静默失败（不报错也不跳）。
+    wx.switchTab({ url: '/pages/settings/settings' });
   },
 
   /** 弹层内部点击：阻止冒泡到遮罩，不做任何事 */
