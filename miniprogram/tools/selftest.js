@@ -1625,6 +1625,193 @@ section('[23] 总览 · 置顶卡就地编辑与重要事项补位');
 
   store.resetAll();
 }
+
+// ══ 24. 小程序运行时兼容性 ══
+// 这一节盯的是一类**在 Node 里永远测不出来**的 bug：
+// 代码用了 Node 才有的东西（require.cache / require.resolve / __dirname /
+// process.cwd() / require('path')），Node 里跑得好好的，一进小程序就在
+// 模块顶层抛异常。而页面注册失败的表现是「点这个 tab 没反应」——
+// 不白屏、不弹窗、不报错给用户看，只有开发者工具控制台里有一行红字。
+//
+// 实际踩到过两次：
+//   · tabHost.js 用 require.resolve + delete require.cache 清模块缓存
+//   · 三个宿主页传 base: __dirname 给 buildHost
+// 两次都是「点总览/待办/健康没反应，只有课表和设置能点开」。
+// 所以这里既做静态扫描，也真的在「没有这些 API」的环境里加载一遍页面。
+section('[24] 小程序运行时兼容性（不能用 Node 专有 API）');
+{
+  const fs = require('fs');
+  const walk = (dir, out) => {
+    for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+      const p = path.join(dir, e.name);
+      if (e.isDirectory()) { if (e.name !== 'tools' && e.name !== 'node_modules') walk(p, out); }
+      else if (e.name.endsWith('.js')) out.push(p);
+    }
+    return out;
+  };
+
+  // ── 24a. 静态扫描：源码里（去掉注释后）不该出现这些标识符 ──
+  const BANNED = [
+    { re: /(^|[^.\w$])__dirname\b/, what: '__dirname' },
+    { re: /(^|[^.\w$])__filename\b/, what: '__filename' },
+    { re: /\brequire\s*\.\s*cache\b/, what: 'require.cache' },
+    { re: /\brequire\s*\.\s*resolve\b/, what: 'require.resolve' },
+    { re: /\bprocess\s*\.\s*cwd\b/, what: 'process.cwd()' },
+    { re: /\brequire\s*\(\s*['"](path|fs|os|util|child_process)['"]\s*\)/, what: "require('path'/'fs'/…)" },
+  ];
+  const hits = [];
+  for (const f of walk(MP, [])) {
+    let src = fs.readFileSync(f, 'utf8');
+    src = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1'); // 去注释（保留 http://）
+    for (const b of BANNED) {
+      if (b.re.test(src)) hits.push(`${path.relative(MP, f)} → ${b.what}`);
+    }
+  }
+  T('源码里没有 Node 专有 API', hits.length === 0, hits.join('; '));
+
+  // tabHost 里不该再出现「路径基准」参数
+  const hostSrc = fs.readFileSync(path.join(MP, 'utils', 'tabHost.js'), 'utf8');
+  T('  buildHost 不再依赖 opts.base', !/opts\.base\s*(\|\||\))/.test(hostSrc));
+
+  // ── 24b. 路径换算：宿主页传的相对路径要能落到真实文件 ──
+  const m = /function resolveFromUtils[\s\S]*?\n\}/.exec(hostSrc);
+  T('  tabHost 里有 resolveFromUtils', !!m);
+  if (m) {
+    // eslint-disable-next-line no-eval
+    const resolveFromUtils = eval(`(${m[0].replace('function resolveFromUtils', 'function')})`);
+    const cases = [
+      ['../todos/todos.js', 'pages/todos/todos.js'],
+      ['../assignments/assignments.js', 'pages/assignments/assignments.js'],
+      ['../today/today.js', 'pages/today/today.js'],
+      ['../diet/diet.js', 'pages/diet/diet.js'],
+      ['../run/run.js', 'pages/run/run.js'],
+      ['../health/health.js', 'pages/health/health.js'],
+    ];
+    let bad = [];
+    for (const [input, expect] of cases) {
+      const out = resolveFromUtils(input);
+      const real = path.resolve(MP, 'utils', out);
+      if (!fs.existsSync(real) || !real.endsWith(expect.replace(/\//g, path.sep))) {
+        bad.push(`${input} → ${out}`);
+      }
+    }
+    T('  宿主页传的 6 个子模块路径都能解析到真实文件', bad.length === 0, bad.join('; '));
+  }
+
+  // ── 24c. 在「没有 Node API」的环境里真的加载一遍每个页面 ──
+  // 这是最关键的一条：静态扫描可能漏（比如间接引用），
+  // 但把 require 换成受限版本后，任何 Node 专有用法都会当场抛。
+  const Module = require('module');
+  const realRequire = Module.prototype.require;
+  const realCache = Module.prototype.require.cache;
+  const realResolve = Module.prototype.require.resolve;
+  const load = (abs) => {
+    const cands = [abs, abs + '.js', path.join(abs, 'index.js')];
+    const real = cands.find((c) => fs.existsSync(c) && fs.statSync(c).isFile());
+    if (!real) throw new Error('module not found: ' + abs);
+    if (!Module._cache[real]) {
+      const mm = new Module(real); mm.filename = real; mm.paths = [];
+      Module._cache[real] = mm; mm.load(real);
+    }
+    return Module._cache[real].exports;
+  };
+  // 伪装成小程序：require 上既没有 cache 也没有 resolve，path/fs 也拿不到
+  const strictRequire = function (mod) { return load(path.resolve(path.dirname(this.filename), mod)); };
+  strictRequire.cache = undefined;
+  strictRequire.resolve = undefined;
+  Module.prototype.require = function (mod) {
+    if (mod === 'path' || mod === 'fs') throw new ReferenceError(`module '${mod}' is not defined`);
+    return strictRequire.call(this, mod);
+  };
+  delete Module.prototype.require.cache;
+  delete Module.prototype.require.resolve;
+
+  const pageNames = ['dashboard', 'courses', 'tasks', 'healthhub', 'settings'];
+  const results = [];
+  try {
+    for (const name of pageNames) {
+      const f = path.join(MP, 'pages', name, name + '.js');
+      let reg = null;
+      global.Page = (d) => { reg = d; };
+      delete Module._cache[f];
+      try {
+        load(f);
+      } catch (e) {
+        results.push(`${name}: ${e.message}`);
+        continue;
+      }
+      if (!reg) { results.push(`${name}: Page() 未被调用`); continue; }
+      for (const k of ['data', 'onLoad', 'onShow', 'onUnload']) {
+        if (reg[k] === undefined) results.push(`${name}: 缺 ${k}`);
+      }
+    }
+  } finally {
+    // 一定要还原，否则后面的用例全废
+    Module.prototype.require = realRequire;
+    Module.prototype.require.cache = realCache;
+    Module.prototype.require.resolve = realResolve;
+  }
+  T('  5 个 tabBar 页在「无 Node API」环境下都能注册', results.length === 0, results.join('; '));
+
+  // ── 24d. 三个宿主页确实取到了全部子模块 ──
+  // buildHost 取不到子模块时只 console.error 然后 continue，
+  // 页面照样注册成功，只是分段是空的 —— 静态和注册检查都发现不了。
+  // 注意：这里必须拿 buildHost 组装出来的那个对象（带 segments/onLoad），
+  // 不是页面 export 的 DEFINITION。
+  const expectMods = { dashboard: ['总览', '今日'], tasks: ['待办', '作业'], healthhub: ['饮食', '运动', '体重作息'] };
+  {
+    const { buildHost } = require(path.join(MP, 'utils', 'tabHost.js'));
+    const specs = {
+      dashboard: {
+        segments: [{ id: 'dashboard', label: '总览' }, { id: 'today', label: '今日' }],
+        selfDef: loadHostPage('dashboard'), selfId: 'dashboard', selfLabel: '总览',
+        modules: { today: { path: '../today/today.js', label: '今日' } },
+      },
+      tasks: {
+        segments: [{ id: 'todos', label: '待办' }, { id: 'assignments', label: '作业' }],
+        modules: { todos: { path: '../todos/todos.js', label: '待办' },
+          assignments: { path: '../assignments/assignments.js', label: '作业' } },
+      },
+      healthhub: {
+        segments: [{ id: 'diet', label: '饮食' }, { id: 'run', label: '运动' }, { id: 'health', label: '体重作息' }],
+        modules: { diet: { path: '../diet/diet.js', label: '饮食' }, run: { path: '../run/run.js', label: '运动' },
+          health: { path: '../health/health.js', label: '体重作息' } },
+      },
+    };
+    for (const name of Object.keys(expectMods)) {
+      const host = buildHost(specs[name]);
+      // 子模块的 data 是在 host.onLoad() 里才并进来的（见 tabHost.js），
+      // 所以必须先跑一遍 onLoad 再检查。
+      const inst = Object.assign({}, host, {
+        data: JSON.parse(JSON.stringify(host.data || {})),
+        setData(patch, cb) {
+          for (const k of Object.keys(patch)) {
+            if (k.includes('.')) {
+              const q = k.split('.');
+              let t = this.data;
+              for (let i = 0; i < q.length - 1; i++) t = t[q[i]];
+              if (t) t[q[q.length - 1]] = patch[k];
+              continue;
+            }
+            this.data[k] = patch[k];
+          }
+          if (typeof cb === 'function') cb();
+        },
+      });
+      let err = '';
+      try { inst.onLoad(); } catch (e) { err = e.message; }
+      const keys = Object.keys(inst.data || {});
+      const missing = [];
+      for (const id of specs[name].segments.map((s) => s.id)) {
+        const hasPrefix = keys.some((k) => k.indexOf(id + '_') === 0);
+        if (!hasPrefix) missing.push(id);
+      }
+      T(`  ${name} 的子模块都挂上了（${specs[name].segments.map((s) => s.label).join('/')}）`,
+        missing.length === 0 && !err,
+        err ? `onLoad 抛 ${err}` : `缺 [${missing.join(',')}]，data 键 ${keys.length} 个`);
+    }
+  }
+}
 console.log('\n══════════════════════════════');
 console.log(`  验收: ${ok} 通过 / ${bad} 失败`);
 process.exit(bad ? 1 : 0);

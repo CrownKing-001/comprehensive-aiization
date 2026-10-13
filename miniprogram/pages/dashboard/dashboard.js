@@ -406,7 +406,6 @@ if (!global.__TABHOST_LOADING__) {
   const { buildHost } = require('../../utils/tabHost');
   Page(
     buildHost({
-      base: __dirname,
       selfDef: DEFINITION,
       segments: [
         { id: 'dashboard', label: '总览', icon: '🏠' },

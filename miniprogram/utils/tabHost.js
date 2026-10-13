@@ -39,8 +39,16 @@ function loadPageDef(file) {
 
   let exported = null;
   try {
-    const resolved = require.resolve(file);
-    delete require.cache[resolved];
+    // ⚠️ 这里绝不能用 require.resolve / require.cache / delete require.cache。
+    // 那些是 Node 的东西，小程序运行时没有：
+    //   · require.resolve 在小程序里不存在 → TypeError
+    //   · require.cache 是 undefined → delete undefined[x] 直接抛
+    // 之前就是这两行让总览/待办/健康三个宿主页在 onLoad 阶段直接抛异常，
+    // 页面注册不上，表现为「点 tabBar 没反应」——而课表、设置是普通页面，
+    // 所以只有那两个能点开。这类错误小程序不弹提示，只打在控制台。
+    //
+    // 小程序自己的模块系统本来就缓存，重复 require 返回同一份，
+    // 子模块顶层会执行一次 Page()，用下面替换 global.Page 的方式截获即可。
     exported = require(file);
   } finally {
     g.Page = saved;
@@ -57,6 +65,28 @@ function prefixKeys(mod, prefix) {
   const out = {};
   for (const k of Object.keys((mod && mod.data) || {})) out[prefix + k] = mod.data[k];
   return out;
+}
+
+/**
+ * 把「相对宿主页面」的模块路径转成「相对本文件（utils/tabHost.js）」的路径。
+ *
+ * 小程序没有 path 模块，只能自己做字符串处理。这里不做通用解析，
+ * 只处理实际会出现的两种写法：
+ *   · '../todos/todos.js'      → '../pages/todos/todos.js'
+ *   · '/pages/todos/todos.js'  → '../pages/todos/todos.js'
+ *   · '../pages/x/x.js'        → 原样（已经是相对 utils/ 的）
+ */
+function resolveFromUtils(p) {
+  let s = String(p || '');
+  if (!s) return s;
+  // 绝对路径（小程序里以 / 开头 = 项目根）
+  if (s.charAt(0) === '/') return '..' + s;
+  // 已经是「相对 utils/ 且指向 pages/」的写法，别重复加前缀
+  if (s.indexOf('../pages/') === 0) return s;
+  // 去掉前导的 ../（相对宿主页面目录），改成相对 utils/
+  if (s.indexOf('../') === 0) return '../pages/' + s.slice(3);
+  // 同目录（宿主页面与子模块同层，理论上用不到）
+  return '../pages/' + s;
 }
 
 /**
@@ -115,7 +145,12 @@ function makeView(host, prefix, mod) {
  * @param {object} opts
  * @param {Array}  opts.segments  分段定义 [{id,label,icon}]
  * @param {object} opts.modules   { 分段id: { path: 子模块 js 路径, label } }
- * @param {string} opts.base      路径基准目录（调用方传 __dirname）
+ *
+ * ⚠️ 模块路径写成**相对宿主页面**的（如 '../todos/todos.js'）。
+ * 不要去传 __dirname、base 之类的「路径基准」—— 小程序里没有 __dirname，
+ * 也没有 path 模块；这类代码在 Node 里跑得好好的，一进小程序就在模块顶层
+ * 抛 ReferenceError，表现是「点这个 tab 没反应」，而且只有控制台看得到。
+ * 路径换算由 resolveFromUtils 负责。
  *
  * 传 path 而不是直接传 require 结果，是因为小程序页面不 export 定义，
  * 必须在 require 的瞬间用 global.Page 截获（见 loadPageDef）。
@@ -124,21 +159,27 @@ function buildHost(opts) {
   const segments = opts.segments || [];
   const specs = opts.modules || {};
   const ids = segments.map((s) => s.id);
-  const nodePath = require('path');
 
   // 先把各子模块的定义取出来（每个只取一次）
   const modules = {};
   for (const id of ids) {
     const spec = specs[id];
     if (!spec || !spec.path) continue;
-    // 路径按调用方目录解析：相对路径在 Node 里是相对「本文件」的，
-    // 直接用 '../todos/todos.js' 会从 utils/ 出发，找不到模块
-    const file = nodePath.isAbsolute(spec.path)
-      ? spec.path
-      : nodePath.resolve(opts.base || process.cwd(), spec.path);
-    const def = loadPageDef(file);
+    // ⚠️ 不要用 require('path') 或 process.cwd()：小程序的 require 只认
+    // 它自己那套「相对本文件的路径」，没有 path 模块、也没有 process。
+    //
+    // 而调用方传进来的 path（如 '../todos/todos.js'）是**相对宿主页面**的，
+    // 在 tabHost.js 里直接 require 会从 utils/ 出发、找不到模块。
+    // 所以这里统一转成「相对 tabHost.js」的路径：
+    //   宿主页面在 pages/<name>/，本文件在 utils/，
+    //   所以 '../todos/todos.js'（相对 pages/tasks/）要变成
+    //   '../pages/todos/todos.js'（相对 utils/）。
+    //
+    // 调用方也可以直接给相对 utils/ 的路径（以 '.' 开头且去掉前导 ../ 后
+    // 落在 pages/ 下），这里两种写法都认。
+    const def = loadPageDef(resolveFromUtils(spec.path));
     if (!def) {
-      console.error(`[tabHost] 取不到 ${id} 的 Page 定义（${file}）`);
+      console.error(`[tabHost] 取不到 ${id} 的 Page 定义（${spec.path}）`);
       continue;
     }
     modules[id] = { def, label: spec.label || id };

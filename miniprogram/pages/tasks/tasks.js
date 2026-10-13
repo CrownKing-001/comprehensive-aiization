@@ -12,7 +12,6 @@ const { buildHost } = require('../../utils/tabHost');
 
 Page(
   buildHost({
-    base: __dirname,
     segments: [
       { id: 'todos', label: '待办', icon: '✅' },
       { id: 'assignments', label: '作业', icon: '📚' },

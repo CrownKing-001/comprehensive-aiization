@@ -8,7 +8,6 @@ const { buildHost } = require('../../utils/tabHost');
 
 Page(
   buildHost({
-    base: __dirname,
     segments: [
       { id: 'diet', label: '饮食', icon: '🍚' },
       { id: 'run', label: '运动', icon: '🏃' },
