@@ -197,3 +197,45 @@
   padding: 2rpx 8rpx;
   border-radius: 6rpx;
 }
+/* ── 识别记录 ─────────────────────────────────────── */
+.doc-row {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  background: var(--surface-3);
+  border: 2rpx solid var(--border-2);
+  border-radius: 16rpx;
+  padding: 18rpx 20rpx;
+  margin-bottom: 12rpx;
+}
+
+.doc-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.doc-name {
+  font-size: 25rpx;
+  font-weight: 600;
+  color: var(--text-1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.doc-meta {
+  margin-top: 6rpx;
+  font-size: 20rpx;
+  color: var(--text-4);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 删除按钮给足点击面积 */
+.doc-del {
+  flex-shrink: 0;
+  font-size: 22rpx;
+  color: #f87171;
+  padding: 10rpx 18rpx;
+  border-radius: 12rpx;
+  background: rgba(248, 113, 113, 0.12);
+}

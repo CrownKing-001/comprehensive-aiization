@@ -45,8 +45,15 @@
         auto-height="{{false}}"
       />
 
+      <view class="field" style="margin-top: 18rpx;">
+        <view class="field-label">记录名称（存档用，可选）</view>
+        <input class="input" value="{{docName}}" bindinput="onDocName"
+          placeholder="如：2026 秋 课表" placeholder-class="input-ph" cursor-spacing="24" />
+      </view>
+
       <view class="row-actions mt">
         <view class="btn-primary" bindtap="parsePasted">🔍 解析</view>
+        <view class="btn-ghost" bindtap="saveDoc">💾 存档这次识别</view>
         <view class="btn-ghost" bindtap="goCourses">去课表</view>
       </view>
     </view>
@@ -143,6 +150,28 @@
       <view class="fmt-line">· 只写节次也行：<text class="mono">高等数学，3-4 节，教三-201</text> —— 时间按作息表推算</view>
       <view class="fmt-line">· 周次支持：<text class="mono">1-16 周</text> / <text class="mono">单周</text> / <text class="mono">双周</text> / <text class="mono">非本周</text></view>
       <view class="fmt-line">· 全角标点、序号（<text class="mono">1.</text> <text class="mono">①</text>）、OCR 空格都能容错</view>
+    </view>
+  </view>
+
+  <!-- ── 识别记录 ──
+       把每次识别存档，以后能回看当时贴的是什么（桌面版 CalendarScan.tsx:346）。
+       和「校历识别」共用同一份 store.calendars，两个页面的记录会汇总到一起。 -->
+  <view class="card" wx:if="{{docs.length > 0}}">
+    <view class="card-head">
+      <view class="icon-chip tone-amber">🗂️</view>
+      <view class="card-head-title">识别记录 · {{docs.length}} 条</view>
+    </view>
+    <view class="card-body">
+      <view class="doc-row" wx:for="{{docs}}" wx:key="id">
+        <view class="doc-main">
+          <view class="doc-name">{{item.name}}</view>
+          <view class="doc-meta">{{item.createdText}} · {{item.lineCount}} 行</view>
+        </view>
+        <view class="doc-del" data-id="{{item.id}}" bindtap="deleteDoc">删除</view>
+      </view>
+      <view class="tiny-note">
+        这里是识别记录，不是课程本身 —— 课程已经在「课表」里了。删记录不会删课程。
+      </view>
     </view>
   </view>
 

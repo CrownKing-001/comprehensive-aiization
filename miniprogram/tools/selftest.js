@@ -1328,6 +1328,138 @@ section('[21] 重要事项 · 提前提醒天数可编辑');
 
   store.resetAll();
 }
+
+// ══ 22. 课表识别 · 周次过滤与识别记录 ══
+// 桌面版 CalendarScan.tsx:284-288 的「只导入本周」是拿**用户编辑过的 weeksText**
+// 现算的，不是拿解析时的 weeks 快照；并且本周不上的课直接不显示。
+// 桌面版 332-346 还会把每次识别存成一条记录（store.calendars），
+// 和「校历识别」共用同一份数据，所以两个页面的记录会汇总在一起。
+section('[22] 课表识别 · 周次过滤与识别记录');
+{
+  store.resetAll();
+  store.setSettings({ semesterStart: '2026-09-07' });
+  const p = loadPage('coursescan');
+  p.onLoad();
+  const cur = p.data.currentWeekNum;
+
+  // 用真实格式「N-N周」（解析器要求带「周」字，和桌面版一致）
+  const inR = `${cur}-${cur + 8}周`;
+  const outR = `${cur + 4}-${cur + 12}周`;
+  p.onPasteInput({ detail: { value: `周一\n本周的课，1-2节，A101，${inR}\n不在本周的课，3-4节，B202，${outR}` } });
+  p.parsePasted();
+  T('解析出 2 门课', p.data.draft.length === 2, String(p.data.draft.length));
+  T('  weeksText 被正确填充（不是 undefined）',
+    !!p.data.draft[0].weeksText && !!p.data.draft[1].weeksText,
+    JSON.stringify(p.data.draft.map((d) => d.weeksText)));
+
+  p.setData({ onlyThisWeek: true });
+  p._recompute();
+  T('只导入本周 → 留下含本周的课', p.data.draft.some((d) => d.name === '本周的课'),
+    p.data.draft.map((d) => d.name).join(','));
+  T('  过滤掉不含本周的课', !p.data.draft.some((d) => d.name === '不在本周的课'),
+    p.data.draft.map((d) => d.name).join(','));
+
+  // 改周次后过滤必须立刻跟着变（旧代码读的是解析时的 weeks 快照）
+  const outRow = p._allDraft.find((c) => c.name === '不在本周的课');
+  p.onWeeksEdit({ currentTarget: { dataset: { id: outRow.id } }, detail: { value: '1-30' } });
+  T('改周次后 weeks 快照同步更新',
+    JSON.stringify(p._allDraft.find((c) => c.id === outRow.id).weeks)
+    === JSON.stringify(Array.from({ length: 30 }, (_, i) => i + 1)));
+  p.setData({ onlyThisWeek: true });
+  p._recompute();
+  T('  改成本周后立刻出现在「只导入本周」里',
+    p.data.draft.some((d) => d.name === '不在本周的课'), p.data.draft.map((d) => d.name).join(','));
+
+  // 旧代码无条件保留 nonThisWeek 行，改成含本周的周次后语义也不对
+  p.setData({ onlyThisWeek: false });
+  p.onPasteInput({ detail: { value: '周三\n形势与政策，9-10节，教二-101，非本周\n大学物理，1-2节，理科楼，1-16周' } });
+  p.parsePasted();
+  const pol = p._allDraft.find((c) => c.name === '形势与政策');
+  T('非本周的课被标记 nonThisWeek', !!pol && pol.nonThisWeek === true);
+  p.onWeeksEdit({ currentTarget: { dataset: { id: pol.id } }, detail: { value: '1-16' } });
+  p.setData({ onlyThisWeek: true });
+  p._recompute();
+  T('  改成 1-16 周后本周有课就显示出来',
+    p.data.draft.some((d) => d.name === '形势与政策'), p.data.draft.map((d) => d.name).join(','));
+
+  // 没写周次 = 每周都上，必须保留
+  p.setData({ onlyThisWeek: false });
+  p.onPasteInput({ detail: { value: '周二\n体育，5-6节，体育馆' } });
+  p.parsePasted();
+  p.setData({ onlyThisWeek: true });
+  p._recompute();
+  T('没写周次的课当成每周都上（保留）', p.data.draft.some((d) => d.name === '体育'),
+    p.data.draft.map((d) => d.name).join(','));
+
+  // 识别记录
+  store.resetAll();
+  p.onLoad();
+  T('  初始没有识别记录', p.data.docs.length === 0);
+  p.onPasteInput({ detail: { value: '周一\n高等数学，1-2节，教一A101，1-16周' } });
+  p.onDocName({ detail: { value: '  2026 秋 课表  ' } });
+  p.parsePasted();
+  p.saveDoc();
+  T('存档写进 store.calendars', (store.shape.calendars || []).length === 1);
+  T('  名字两端空白被去掉', store.shape.calendars[0].name === '2026 秋 课表',
+    JSON.stringify(store.shape.calendars[0].name));
+  T('  记了行数', store.shape.calendars[0].lineCount > 0, String(store.shape.calendars[0].lineCount));
+  T('  带创建时间', !!store.shape.calendars[0].createdAt);
+  p.refresh();
+  T('  刷新后列表里能看见', p.data.docs.length === 1);
+  T('  带日期文本', /^\d{4}-\d{2}-\d{2}$/.test(p.data.docs[0].createdText), p.data.docs[0].createdText);
+
+  store.resetAll();
+  p.onLoad();
+  p.onDocName({ detail: { value: '' } });
+  p.onPasteInput({ detail: { value: '周一\n高等数学，1-2节，教一A101，1-16周' } });
+  p.parsePasted();
+  p.saveDoc();
+  T('名字留空时用「课表」兜底', store.shape.calendars[0].name === '课表',
+    JSON.stringify(store.shape.calendars[0].name));
+
+  // 空白内容不能存档（rawLines 只在解析成功后写，不能拿它判断）
+  store.resetAll();
+  p.onLoad();
+  p.onPasteInput({ detail: { value: '   \n  ' } });
+  p.saveDoc();
+  T('只有空白时拒绝存档', (store.shape.calendars || []).length === 0);
+  // 解析成功后清空输入框但不重新解析，也必须拒绝
+  p.onPasteInput({ detail: { value: '周一\n高等数学，1-2节，教一A101，1-16周' } });
+  p.parsePasted();
+  p.onPasteInput({ detail: { value: '' } });
+  p.saveDoc();
+  T('  清空后即使没重新解析也拒绝', (store.shape.calendars || []).length === 0);
+
+  // 删除记录
+  store.resetAll();
+  store.setCalendars([
+    { id: 'd1', name: 'A', lineCount: 3, createdAt: '2026-10-01T00:00:00.000Z', events: [] },
+    { id: 'd2', name: 'B', lineCount: 5, createdAt: '2026-10-02T00:00:00.000Z', events: [] },
+  ]);
+  p.refresh();
+  T('记录按时间倒序（最新在前）', p.data.docs[0].id === 'd2', p.data.docs.map((d) => d.id).join(','));
+  p.deleteDoc({ currentTarget: { dataset: { id: 'd1' } } });
+  T('删除指定记录', (store.shape.calendars || []).every((x) => x.id !== 'd1'));
+  T('  只剩 1 条', (store.shape.calendars || []).length === 1);
+
+  // 删记录不影响课程
+  store.resetAll();
+  store.setCourses([{ id: 'c1', name: '高等数学', day: 1, start: '08:00', end: '09:40', weeks: [1] }]);
+  store.setCalendars([{ id: 'd1', name: '旧记录', lineCount: 1, createdAt: '2026-10-01T00:00:00.000Z', events: [] }]);
+  p.refresh();
+  p.deleteDoc({ currentTarget: { dataset: { id: 'd1' } } });
+  T('删记录不会删课程', (store.shape.courses || []).length === 1);
+
+  // 和校历识别共用 store.calendars
+  store.resetAll();
+  store.setCalendars([{ id: 'cal1', name: '校历', lineCount: 0, createdAt: '2026-10-05T00:00:00.000Z',
+    events: [{ date: '2026-10-01', title: '国庆' }] }]);
+  p.refresh();
+  T('校历识别存的记录在这里也看得到', p.data.docs.length === 1);
+  T('  能看出它是校历（事件数 > 0）', p.data.docs[0].eventCount === 1, String(p.data.docs[0].eventCount));
+
+  store.resetAll();
+}
 console.log('\n══════════════════════════════');
 console.log(`  验收: ${ok} 通过 / ${bad} 失败`);
 process.exit(bad ? 1 : 0);

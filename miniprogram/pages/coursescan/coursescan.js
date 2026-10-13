@@ -41,6 +41,10 @@ Page({
     // 解析警告（如「字段没用逗号分隔」），只要非空就一直挂在页面上
     parseWarnings: [],
 
+    // 识别记录（存档）。和「校历识别」共用 store.calendars。
+    docs: [],
+    docName: '',
+
     msg: null,
   },
 
@@ -60,6 +64,17 @@ Page({
       ready: true,
       themeClass: settings.theme === 'light' ? 'theme-light' : '',
       currentWeekNum: curWeek,
+      // 识别记录：按时间倒序，最新一条在最上面
+      docs: (store.shape.calendars || [])
+        .slice()
+        .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')))
+        .map((d) => ({
+          id: d.id,
+          name: d.name || '未命名',
+          lineCount: d.lineCount || 0,
+          createdText: String(d.createdAt || '').slice(0, 10),
+          eventCount: (d.events || []).length,
+        })),
     });
     this._recompute();
   },
@@ -71,8 +86,15 @@ Page({
       return;
     }
     const cur = this.data.currentWeekNum;
+    // 桌面版 CalendarScan.tsx:284-288：以**当前编辑过的 weeksText** 为准
+    // （用户可能刚改过周次，c.weeks 那个快照还是旧的），
+    // 且 weeks 为空的课当成「每周都上」保留；本週不上的直接不显示。
     const visible = this.data.onlyThisWeek
-      ? this._allDraft.filter((c) => c.nonThisWeek || !c.weeks || c.weeks.indexOf(cur) >= 0)
+      ? this._allDraft.filter((c) => {
+          const weeks = parseWeeksText(c.weeksText) || c.weeks;
+          if (!weeks || !weeks.length) return true; // 每周都上
+          return weeks.indexOf(cur) >= 0;
+        })
       : this._allDraft;
 
     const draft = visible.map((c) => ({
@@ -272,6 +294,56 @@ Page({
 
   goCourses() {
     wx.switchTab({ url: '/pages/courses/courses' });
+  },
+
+  /**
+   * 把这次识别作为一条记录存档（桌面版 saveDoc，CalendarScan.tsx:332-344）。
+   * 和「校历识别」共用 store.calendars，所以两个页面的记录会汇总到一起。
+   * 存的是「这次识别用了哪份文字」，不是识别出的课程本身 ——
+   * 课程已经进了课表，存档是为了以后回看当时贴的是什么。
+   */
+  saveDoc() {
+    // 用粘贴框的实际内容判断，而不是 data.rawLines ——
+    // rawLines 只在「解析」成功后才写，用户改了文字没重新解析时它是旧值，
+    // 会出现「明明框里是空的却能存档」。
+    const lines = String(this.data.pasteText || '')
+      .split(/\r?\n/)
+      .filter((l) => l.trim());
+    if (!lines.length) {
+      this._notify('err', '还没有粘贴任何内容，没有可存档的识别记录。');
+      return;
+    }
+    const docs = store.shape.calendars || [];
+    const doc = {
+      id: uid(),
+      relPath: '',
+      name: String(this.data.docName || '').trim() || '课表',
+      lineCount: lines.length,
+      createdAt: new Date().toISOString(),
+      events: [],
+    };
+    store.setCalendars([doc, ...docs]);
+    this._notify('ok', '已把这次识别记入下方「识别记录」。');
+  },
+
+  deleteDoc(e) {
+    const id = e.currentTarget.dataset.id;
+    const docs = store.shape.calendars || [];
+    const d = docs.find((x) => x.id === id);
+    if (!d) return;
+    wx.showModal({
+      title: '删除识别记录',
+      content: `确定删除「${d.name || '未命名'}」吗？不影响已经导入课表的课程。`,
+      success: (res) => {
+        if (!res.confirm) return;
+        store.setCalendars(docs.filter((x) => x.id !== id));
+        this._notify('ok', '已删除该识别记录。');
+      },
+    });
+  },
+
+  onDocName(e) {
+    this.setData({ docName: e.detail.value });
   },
 
   _notify(kind, text) {
