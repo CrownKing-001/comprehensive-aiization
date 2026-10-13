@@ -814,8 +814,58 @@ page {
   margin-top: 8px;
   margin-bottom: 0;
 }
+/* ── 接下来 ───────────────────────────────────────── */
+.up-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 6px;
+}
 
+.up-item {
+  border-radius: 9px;
+  border: 1px solid var(--border-2);
+  background: var(--surface-3);
+  padding: 9px 10px;
+  min-width: 0;
+}
 
+/* 快到期（剩的天数 <= 该事项自己的提前提醒天数）整块标红 */
+.up-item.is-soon {
+  background: rgba(244, 63, 94, 0.12);
+  border-color: rgba(244, 63, 94, 0.35);
+}
+
+.up-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.up-emoji {
+  font-size: 15px;
+  flex-shrink: 0;
+}
+
+.up-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.up-meta {
+  margin-top: 4px;
+  font-size: 10.5px;
+  color: var(--text-4);
+  font-variant-numeric: tabular-nums;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 </style></head><body><div class="phone">
 <div class="statusbar">9:41</div>
@@ -842,6 +892,27 @@ page {
 
   
   <div class="msg-box">··</div>
+
+  
+  <div class="card">
+    <div class="card-head">
+      <div class="icon-chip tone-rose">⏰</div>
+      <div class="card-head-title">接下来 · ·· 条</div>
+    </div>
+    <div class="card-body">
+      <div class="up-grid">
+        <div class="up-item ··">
+          <div class="up-top">
+            <span class="up-emoji">··</span>
+            <span class="up-title">··</span>
+            <span class="chip chip-··">··</span>
+          </div>
+          <div class="up-meta">··</div>
+        </div>
+      </div>
+      <div class="tiny-note">点一下可以直接改日期和时间。</div>
+    </div>
+  </div>
 
   
   <div class="card">
@@ -892,9 +963,16 @@ page {
         </div>
       </div>
 
-      <div class="field">
-        <div class="field-label">地点（可选）</div>
-        <span class="ph-inline">［输入框］</span>
+      <div class="field-row">
+        <div class="field">
+          <div class="field-label">地点（可选）</div>
+          <span class="ph-inline">［输入框］</span>
+        </div>
+        
+        <div class="field">
+          <div class="field-label">提前提醒（天）</div>
+          <span class="ph-inline">［输入框］</span>
+        </div>
       </div>
 
       <div class="field">

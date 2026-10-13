@@ -900,7 +900,48 @@ page {
   padding: 1px 4px;
   border-radius: 3px;
 }
+/* ── 识别记录 ─────────────────────────────────────── */
+.doc-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface-3);
+  border: 1px solid var(--border-2);
+  border-radius: 8px;
+  padding: 9px 10px;
+  margin-bottom: 6px;
+}
 
+.doc-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.doc-name {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.doc-meta {
+  margin-top: 3px;
+  font-size: 10px;
+  color: var(--text-4);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 删除按钮给足点击面积 */
+.doc-del {
+  flex-shrink: 0;
+  font-size: 11px;
+  color: #f87171;
+  padding: 5px 9px;
+  border-radius: 6px;
+  background: rgba(248, 113, 113, 0.12);
+}
 
 </style></head><body><div class="phone">
 <div class="statusbar">9:41</div>
@@ -953,8 +994,14 @@ page {
         auto-height="··"
       />
 
+      <div class="field" style="margin-top: 18rpx;">
+        <div class="field-label">记录名称（存档用，可选）</div>
+        <span class="ph-inline">［输入框］</span>
+      </div>
+
       <div class="row-actions mt">
         <div class="btn-primary">🔍 解析</div>
+        <div class="btn-ghost">💾 存档这次识别</div>
         <div class="btn-ghost">去课表</div>
       </div>
     </div>
@@ -1048,6 +1095,26 @@ page {
       <div class="fmt-line">· 只写节次也行：<span class="mono">高等数学，3-4 节，教三-201</span> —— 时间按作息表推算</div>
       <div class="fmt-line">· 周次支持：<span class="mono">1-16 周</span> / <span class="mono">单周</span> / <span class="mono">双周</span> / <span class="mono">非本周</span></div>
       <div class="fmt-line">· 全角标点、序号（<span class="mono">1.</span> <span class="mono">①</span>）、OCR 空格都能容错</div>
+    </div>
+  </div>
+
+  
+  <div class="card">
+    <div class="card-head">
+      <div class="icon-chip tone-amber">🗂️</div>
+      <div class="card-head-title">识别记录 · ·· 条</div>
+    </div>
+    <div class="card-body">
+      <div class="doc-row">
+        <div class="doc-main">
+          <div class="doc-name">··</div>
+          <div class="doc-meta">·· · ·· 行</div>
+        </div>
+        <div class="doc-del">删除</div>
+      </div>
+      <div class="tiny-note">
+        这里是识别记录，不是课程本身 —— 课程已经在「课表」里了。删记录不会删课程。
+      </div>
     </div>
   </div>
 

@@ -1324,7 +1324,67 @@ page {
 
 
 .full { width: 100%; box-sizing: border-box; }
+/* ── 置顶卡片就地编辑（桌面版 Dashboard.tsx:219-257）──
+   桌面版靠 hover 出铅笔；手机没有 hover，改成点卡片进入编辑态。
+   编辑态下卡片里是 名称输入框 + 日期选择 + 保存/取消。 */
+.pin-card.is-editing {
+  min-width: 120px;
+  padding: 8px 9px 7px;
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.35);
+}
 
+/* 可点区域：覆盖 label/days/unit 三行，不跟右上角的 ✕ 抢点击 */
+.pin-tap {
+  display: block;
+}
+
+.pin-edit-input {
+  width: 100%;
+  box-sizing: border-box;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 5px;
+  padding: 3px 5px;
+  font-size: 10.5px;
+  color: #fff;
+  text-align: center;
+}
+
+.pin-edit-ph {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.pin-edit-date {
+  margin-top: 4px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 5px;
+  padding: 3px 5px;
+  font-size: 10.5px;
+  color: #fff;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.pin-edit-actions {
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+  margin-top: 5px;
+}
+
+.pin-edit-btn {
+  flex: 1;
+  border-radius: 5px;
+  padding: 3px 0;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.pin-edit-btn.is-save {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.28);
+}
 
 </style></head><body><div class="phone">
 <div class="statusbar">9:41</div>
@@ -1345,119 +1405,6 @@ page {
   
 
   
-  
-  <div class="date-bar">
-    <div class="date-nav">‹</div>
-    <div class="date-mid">
-      <div class="date-main">
-        ·· · ··
-        <span class="date-rel">··</span>
-      </div>
-      <div class="date-week">第 ·· 教学周</div>
-    </div>
-    <div class="date-right">
-      <div class="btn-back-today">回到今天</div>
-      <div class="date-nav">›</div>
-    </div>
-  </div>
-
-  
-  <div class="card">
-    <div class="card-head">
-      <div class="icon-chip tone-sky">📘</div>
-      <div class="card-head-title">
-        ··课程（·· 节）
-      </div>
-      <div class="head-note">✓ 已上完 ·· 节</div>
-    </div>
-    <div class="card-body">
-      <div class="empty">
-        <div class="empty-icon">🎉</div>
-        <div class="empty-text">
-          ··
-        </div>
-      </div>
-      <div class="course-list">
-        <div class="course-item ··">
-          <div class="course-main">
-            <div class="course-name-row">
-              <span class="course-name">··</span>
-              <span class="chip chip-sky">··</span>
-              <span class="chip chip-emerald">进行中</span>
-            </div>
-            <div class="course-place">··</div>
-          </div>
-          <div class="course-time">··–··</div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  
-  <div class="card">
-    <div class="card-head">
-      <div class="icon-chip tone-emerald">✅</div>
-      <div class="card-head-title">当天要处理的事</div>
-    </div>
-    <div class="card-body">
-      <div class="empty">
-        <div class="empty-icon">🎉</div>
-        <div class="empty-text">没有到期的待办和作业 🎉</div>
-      </div>
-      <div>
-        <div>
-          <div class="sec-label">待办</div>
-          <div class="todo-list-wrap">
-            <div class="todo-line">
-              <div class="checkbox-sm"></div>
-              <div class="todo-text">··</div>
-              <span class="chip chip-rose">逾期</span>
-            </div>
-          </div>
-        </div>
-        <div style="margin-top: 20rpx;">
-          <div class="sec-label">作业</div>
-          <div class="todo-list-wrap">
-            <div class="todo-line">
-              <div class="todo-icon">📖</div>
-              <div class="todo-text"><span class="muted">·· · </span>··</div>
-              <span class="chip chip-··">··</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  
-  <div class="card">
-    <div class="card-head">
-      <div class="icon-chip tone-violet">🕐</div>
-      <div class="card-head-title">当日完整时间轴</div>
-    </div>
-    <div class="card-body">
-      <div class="empty">
-        <div class="empty-icon">🕐</div>
-        <div class="empty-text">这一天没有任何安排</div>
-      </div>
-      <div class="tl">
-        <div class="tl-item">
-          <div class="tl-time">··</div>
-          <div class="tl-body ··">
-            <div class="tl-title-row">
-              <span class="tl-title">··</span>
-              <span class="chip chip-emerald">进行中</span>
-              <span class="tl-min">·· 分钟</span>
-            </div>
-            <div class="tl-sub">··</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="btn-ghost full">回到今天</div>
-
   
 
 </div>

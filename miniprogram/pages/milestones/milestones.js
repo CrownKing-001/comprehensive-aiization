@@ -72,6 +72,7 @@ Page({
 
     // 列表
     list: [],
+    upcomingList: [],
     cats: ['全部'],
     catIndex: 0,
     filter: '全部',
@@ -148,10 +149,32 @@ Page({
       };
     });
 
-    const upcoming = all.filter((m) => {
-      if (m.done || !m.date) return false;
+    // 「接下来」面板（桌面版 Milestones.tsx:332-362）：
+    // 未完成 + 有日期 + 没过去，按日期升序取前 6 条。
+    // 快到期（距今天数 <= 该事项自己的提前提醒天数）的标红 ——
+    // 用的就是上面刚补上输入框的那个字段。
+    const upcoming = all
+      .filter((m) => {
+        if (m.done || !m.date) return false;
+        const d = daysUntil(fromKey(m.date), today);
+        return d !== null && d >= 0;
+      })
+      .sort((a, b) => String(a.date).localeCompare(String(b.date)));
+
+    const upcomingList = upcoming.slice(0, 6).map((m) => {
+      const u = urgency(m.date, today, m.done);
       const d = daysUntil(fromKey(m.date), today);
-      return d !== null && d >= 0;
+      const remind = Number(m.remindDaysBefore);
+      const soon = d !== null && d <= (isNaN(remind) ? 7 : remind);
+      return {
+        id: m.id,
+        emoji: m.emoji || '📌',
+        title: m.title,
+        dateText: [m.date, m.time, m.place].filter(Boolean).join(' · '),
+        urgencyText: u.text,
+        urgencyTone: u.tone,
+        soon,
+      };
     });
 
     this.setData({
@@ -161,6 +184,7 @@ Page({
       cats,
       catIndex: Math.max(0, cats.indexOf(this.data.filter)),
       upcomingCount: upcoming.length,
+      upcomingList,
       totalCount: all.length,
     });
   },

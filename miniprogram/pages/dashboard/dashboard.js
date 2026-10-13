@@ -25,6 +25,12 @@ const DEFINITION = {
     // 「从重要事项里挑」的选择器是否展开
     pinPickerOpen: false,
     availablePins: [],
+    // 置顶卡就地编辑：正在编辑哪一条 + 草稿值（桌面版 Dashboard.tsx:76-92）
+    pinEditId: '',
+    pinDraftTitle: '',
+    pinDraftDate: '',
+    // 重要事项指标卡的副标题：最近一项的名字（桌面版 Dashboard.tsx:570）
+    nextMilestoneText: '',
     runDone: 0,
     runTarget: 30,
     runEnabled: true,
@@ -133,6 +139,11 @@ const DEFINITION = {
       });
     } else {
       const undone = s.milestones.filter((m) => !m.done).length;
+      // 副标题显示「最近一项：<名字>」（桌面版 Dashboard.tsx:570），
+      // 比光写「待处理」有用。条件是未完成 + 有日期 + 还没过期。
+      const nextMs = s.milestones
+        .filter((m) => !m.done && m.date && daysUntil(fromKey(m.date), today) >= 0)
+        .sort((a, b) => String(a.date).localeCompare(String(b.date)))[0];
       stats.push({
         key: 'milestone',
         icon: '🎯',
@@ -140,7 +151,7 @@ const DEFINITION = {
         label: '重要事项',
         value: String(undone),
         unit: '项',
-        sub: undone ? '待处理' : '还没有待办事项',
+        sub: nextMs ? `最近一项：${nextMs.title}` : (undone ? '待处理' : '还没有待办事项'),
         url: '/pages/milestones/milestones',
         isTab: false,
       });
@@ -231,6 +242,14 @@ const DEFINITION = {
       runDone,
       runTarget,
       runEnabled: !!s.settings.runEnabled,
+      // 运动打卡关闭时补位的「重要事项」卡片用这两项
+      undoneCount: (s.milestones || []).filter((m) => !m.done).length,
+      nextMilestoneText: (() => {
+        const n = (s.milestones || [])
+          .filter((m) => !m.done && m.date && daysUntil(fromKey(m.date), today) >= 0)
+          .sort((a, b) => String(a.date).localeCompare(String(b.date)))[0];
+        return n ? n.title : '';
+      })(),
       latestWeight: latestHealth && latestHealth.weight ? latestHealth.weight : null,
       todayProtein,
       proteinTarget: store.proteinTarget,
@@ -325,6 +344,52 @@ const DEFINITION = {
   /** 选择器里一个都没有时的「去新建」入口 */
   goMilestones() {
     wx.navigateTo({ url: '/pages/milestones/milestones' });
+  },
+
+  // ── 置顶卡片就地编辑（桌面版 Dashboard.tsx:76-92）────────
+  // 桌面版是 hover 出铅笔。手机没有 hover，所以点整张卡片进编辑态。
+  startPinEdit(e) {
+    const id = e.currentTarget.dataset.id;
+    const all = store.shape.milestones || [];
+    const m = all.find((x) => x.id === id);
+    if (!m) return;
+    this.setData({
+      pinEditId: id,
+      pinDraftTitle: m.title || '',
+      pinDraftDate: m.date || '',
+      pinPickerOpen: false,
+    });
+  },
+
+  onPinTitle(e) {
+    this.setData({ pinDraftTitle: e.detail.value });
+  },
+
+  onPinDate(e) {
+    this.setData({ pinDraftDate: e.detail.value });
+  },
+
+  cancelPinEdit() {
+    this.setData({ pinEditId: '', pinDraftTitle: '', pinDraftDate: '' });
+  },
+
+  /**
+   * 保存就地编辑。桌面版 saveMilestone：标题或日期为空就直接退出编辑、不写数据
+   * （而不是存一个空标题进去）。
+   */
+  savePinEdit(e) {
+    const id = e.currentTarget.dataset.id || this.data.pinEditId;
+    const title = String(this.data.pinDraftTitle || '').trim();
+    const date = this.data.pinDraftDate;
+    if (!id || !title || !date) {
+      this.cancelPinEdit();
+      return;
+    }
+    const all = store.shape.milestones || [];
+    store.setMilestones(all.map((m) => (m.id === id ? { ...m, title, date } : m)));
+    this.cancelPinEdit();
+    this.refresh();
+    wx.showToast({ title: '已更新', icon: 'success' });
   },
 
   noop() {},

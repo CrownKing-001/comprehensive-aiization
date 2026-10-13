@@ -20,6 +20,31 @@
   <!-- ── 提示 ── -->
   <view class="msg-box" wx:if="{{note}}">{{note}}</view>
 
+  <!-- ── 接下来（桌面版 Milestones.tsx:332-362）──
+       未完成 + 有日期 + 没过去的，按日期升序取前 6 条。
+       快到期（剩的天数 <= 该事项自己的「提前提醒」）的整块标红。 -->
+  <view class="card" wx:if="{{upcomingList.length > 0}}">
+    <view class="card-head">
+      <view class="icon-chip tone-rose">⏰</view>
+      <view class="card-head-title">接下来 · {{upcomingList.length}} 条</view>
+    </view>
+    <view class="card-body">
+      <view class="up-grid">
+        <view class="up-item {{item.soon ? 'is-soon' : ''}}"
+          wx:for="{{upcomingList}}" wx:key="id"
+          data-id="{{item.id}}" bindtap="startEdit">
+          <view class="up-top">
+            <text class="up-emoji">{{item.emoji}}</text>
+            <text class="up-title">{{item.title}}</text>
+            <text class="chip chip-{{item.urgencyTone}}">{{item.urgencyText}}</text>
+          </view>
+          <view class="up-meta">{{item.dateText}}</view>
+        </view>
+      </view>
+      <view class="tiny-note">点一下可以直接改日期和时间。</view>
+    </view>
+  </view>
+
   <!-- ── 编辑 / 新建 ── -->
   <view class="card" wx:if="{{editing}}">
     <view class="card-head">

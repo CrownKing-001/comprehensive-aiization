@@ -29,12 +29,32 @@
 
     <!-- 钉到总览的倒计时 -->
     <view class="pin-row">
-      <view class="pin-card {{dashboard_compact ? 'is-compact' : ''}}" wx:for="{{dashboard_pinned}}" wx:key="id">
-        <!-- 手机上没法用 hover，撤下按钮直接常显 -->
-        <view class="pin-x" data-id="{{item.id}}" catchtap="dashboard_unpinMilestone">✕</view>
-        <view class="pin-label">距 {{item.label}}</view>
-        <view class="pin-days">{{item.done ? '✓' : item.days}}</view>
-        <view class="pin-unit">{{item.done ? '已完成' : '天'}}</view>
+      <view class="pin-card {{dashboard_compact ? 'is-compact' : ''}} {{dashboard_pinEditId === item.id ? 'is-editing' : ''}}"
+        wx:for="{{dashboard_pinned}}" wx:key="id">
+
+        <!-- 就地编辑（桌面版是 hover 出铅笔；手机没有 hover，点卡片进入） -->
+        <block wx:if="{{dashboard_pinEditId === item.id}}">
+          <input class="pin-edit-input" value="{{dashboard_pinDraftTitle}}"
+            data-id="{{item.id}}" bindinput="dashboard_onPinTitle"
+            placeholder="名称" placeholder-class="pin-edit-ph" cursor-spacing="24" />
+          <picker mode="date" value="{{dashboard_pinDraftDate}}" data-id="{{item.id}}" bindchange="dashboard_onPinDate">
+            <view class="pin-edit-date">{{dashboard_pinDraftDate || '选择日期'}}</view>
+          </picker>
+          <view class="pin-edit-actions">
+            <view class="pin-edit-btn is-save" data-id="{{item.id}}" catchtap="dashboard_savePinEdit">保存</view>
+            <view class="pin-edit-btn" catchtap="dashboard_cancelPinEdit">取消</view>
+          </view>
+        </block>
+
+        <block wx:else>
+          <!-- 手机上没法用 hover，撤下按钮直接常显 -->
+          <view class="pin-x" data-id="{{item.id}}" catchtap="dashboard_unpinMilestone">✕</view>
+          <view class="pin-tap" data-id="{{item.id}}" catchtap="dashboard_startPinEdit">
+            <view class="pin-label">距 {{item.label}}</view>
+            <view class="pin-days">{{item.done ? '✓' : item.days}}</view>
+            <view class="pin-unit">{{item.done ? '已完成' : '天'}}</view>
+          </view>
+        </block>
       </view>
 
       <!-- 添加 = 从「重要事项」里挑一个，不新建，保证两边共用一份数据 -->
@@ -253,7 +273,8 @@
     </view>
   </view>
 
-  <!-- 运动打卡 -->
+  <!-- 运动打卡。关掉「运动打卡」时由下面的「重要事项」补位
+       （桌面版 Dashboard.tsx:541-581 也是这个二选一）。 -->
   <view class="card" wx:if="{{dashboard_runEnabled}}">
     <view class="card-head">
       <view class="icon-chip tone-emerald">👟</view>
@@ -270,6 +291,25 @@
       </view>
       <view class="row-actions mt">
         <view class="btn-ghost btn-emerald" data-url="/pages/healthhub/healthhub" data-seg="run" bindtap="dashboard_goTab">🏃 打开运动打卡</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 重要事项（运动打卡关闭时补位，桌面版 Dashboard.tsx:559-580）-->
+  <view class="card" wx:else>
+    <view class="card-head">
+      <view class="icon-chip tone-rose">🎯</view>
+      <view class="card-head-title">重要事项</view>
+      <view class="head-link" bindtap="dashboard_goMilestones">去管理 →</view>
+    </view>
+    <view class="card-body">
+      <view class="big-num">{{dashboard_undoneCount}}<text class="big-sub"> 项待办</text></view>
+      <view class="mini-sub" style="margin-top: 14rpx;">
+        {{dashboard_nextMilestoneText ? '最近一项：' + dashboard_nextMilestoneText : '还没有待办事项'}}
+      </view>
+      <view class="row-actions mt">
+        <view class="btn-primary btn-sm" bindtap="dashboard_goMilestones">🎯 去管理</view>
+        <view class="btn-ghost btn-sm" data-url="/pages/settings/settings" bindtap="dashboard_goTab">⚙️ 去设置</view>
       </view>
     </view>
   </view>

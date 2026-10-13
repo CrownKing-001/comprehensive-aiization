@@ -1324,7 +1324,67 @@ page {
 
 
 .full { width: 100%; box-sizing: border-box; }
+/* ── 置顶卡片就地编辑（桌面版 Dashboard.tsx:219-257）──
+   桌面版靠 hover 出铅笔；手机没有 hover，改成点卡片进入编辑态。
+   编辑态下卡片里是 名称输入框 + 日期选择 + 保存/取消。 */
+.pin-card.is-editing {
+  min-width: 120px;
+  padding: 8px 9px 7px;
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.35);
+}
 
+/* 可点区域：覆盖 label/days/unit 三行，不跟右上角的 ✕ 抢点击 */
+.pin-tap {
+  display: block;
+}
+
+.pin-edit-input {
+  width: 100%;
+  box-sizing: border-box;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 5px;
+  padding: 3px 5px;
+  font-size: 10.5px;
+  color: #fff;
+  text-align: center;
+}
+
+.pin-edit-ph {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.pin-edit-date {
+  margin-top: 4px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 5px;
+  padding: 3px 5px;
+  font-size: 10.5px;
+  color: #fff;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.pin-edit-actions {
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+  margin-top: 5px;
+}
+
+.pin-edit-btn {
+  flex: 1;
+  border-radius: 5px;
+  padding: 3px 0;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.pin-edit-btn.is-save {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.28);
+}
 
 </style></head><body><div class="phone">
 <div class="statusbar">9:41</div>
@@ -1352,12 +1412,21 @@ page {
 
     
     <div class="pin-row">
-      <div class="pin-card ··">
+      <div class="pin-card ·· ··">
+
         
-        <div class="pin-x">✕</div>
-        <div class="pin-label">距 ··</div>
-        <div class="pin-days">··</div>
-        <div class="pin-unit">··</div>
+        
+          <span class="ph-inline">［输入框］</span>
+          <div>
+            <div class="pin-edit-date">··</div>
+          </div>
+          <div class="pin-edit-actions">
+            <div class="pin-edit-btn is-save">保存</div>
+            <div class="pin-edit-btn">取消</div>
+          </div>
+        
+
+        
       </div>
 
       
@@ -1458,6 +1527,7 @@ page {
     <div class="card-head">
       <div class="icon-chip tone-sky">🕐</div>
       <div class="card-head-title">今日时间轴</div>
+      
       <div class="head-link">查看详情 →</div>
     </div>
     <div class="card-body">
@@ -1575,6 +1645,25 @@ page {
       </div>
       <div class="row-actions mt">
         <div class="btn-ghost btn-emerald">🏃 打开运动打卡</div>
+      </div>
+    </div>
+  </div>
+
+  
+  <div class="card">
+    <div class="card-head">
+      <div class="icon-chip tone-rose">🎯</div>
+      <div class="card-head-title">重要事项</div>
+      <div class="head-link">去管理 →</div>
+    </div>
+    <div class="card-body">
+      <div class="big-num">··<span class="big-sub"> 项待办</span></div>
+      <div class="mini-sub" style="margin-top: 14rpx;">
+        ··
+      </div>
+      <div class="row-actions mt">
+        <div class="btn-primary btn-sm">🎯 去管理</div>
+        <div class="btn-ghost btn-sm">⚙️ 去设置</div>
       </div>
     </div>
   </div>

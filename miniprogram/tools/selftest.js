@@ -77,6 +77,42 @@ function loadPage(name) {
     },
   });
 }
+
+/**
+ * 装载「tabHost 宿主」页面（总览）。
+ * 这类页面末尾会在 !global.__TABHOST_LOADING__ 时自己调 Page(buildHost(...))，
+ * 但它的页面定义本身是 module.exports 出去的 DEFINITION。
+ * 直接把 __TABHOST_LOADING__ 置真，require 之后就拿到干净的 DEFINITION，
+ * 不用去拆 buildHost 拼出来的合并对象。
+ */
+function loadHostPage(name) {
+  global.__TABHOST_LOADING__ = true;
+  try {
+    const f = path.join(MP, 'pages', name, name + '.js');
+    delete require.cache[require.resolve(f)];
+    const def = require(f);
+    return Object.assign({}, def, {
+      data: JSON.parse(JSON.stringify(def.data || {})),
+      setData(patch, cb) {
+        for (const k of Object.keys(patch)) {
+          const m = /^(\w+)\[(\d+)\]\.(\w+)$/.exec(k);
+          if (m) { this.data[m[1]][+m[2]][m[3]] = patch[k]; continue; }
+          if (k.includes('.')) {
+            const q = k.split('.');
+            let t = this.data;
+            for (let i = 0; i < q.length - 1; i++) t = t[q[i]];
+            if (t) t[q[q.length - 1]] = patch[k];
+            continue;
+          }
+          this.data[k] = patch[k];
+        }
+        if (typeof cb === 'function') cb();
+      },
+    });
+  } finally {
+    global.__TABHOST_LOADING__ = false;
+  }
+}
 const ev = (dataset, value) => ({ currentTarget: { dataset }, detail: { value }, target: { dataset } });
 
 // ── 断言 ──────────────────────────────────────────────
@@ -1457,6 +1493,135 @@ section('[22] 课表识别 · 周次过滤与识别记录');
   p.refresh();
   T('校历识别存的记录在这里也看得到', p.data.docs.length === 1);
   T('  能看出它是校历（事件数 > 0）', p.data.docs[0].eventCount === 1, String(p.data.docs[0].eventCount));
+
+  store.resetAll();
+}
+
+// ══ 23. 总览 · 置顶卡就地编辑 + 重要事项补位 ══
+// 桌面版 Dashboard.tsx:219-257 的置顶倒计时卡片可以直接改标题和日期
+// （hover 出铅笔）。手机没有 hover，改成点卡片进编辑态。
+// Dashboard.tsx:541-581 还规定：运动打卡关掉时，那张卡片由「重要事项」补位，
+// 并且指标卡副标题写「最近一项：<名字>」。
+section('[23] 总览 · 置顶卡就地编辑与重要事项补位');
+{
+  const now = store.today;
+  const shift = (n) => {
+    const d = new Date(now.getTime() + n * 86400000);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  };
+  const boot = (p) => { p.onLoad(); p.refresh(); };
+
+  // ── 置顶卡就地编辑 ──
+  store.resetAll();
+  store.setSettings({ runEnabled: false });
+  store.setMilestones([{ id: 'a', title: '期末考试', date: shift(10), emoji: '📝', done: false, pinned: true }]);
+  const p = loadHostPage('dashboard');
+  boot(p);
+  T('钉住的事项出现在倒计时条上', p.data.pinned.length === 1, String(p.data.pinned.length));
+  T('  初始不在编辑态', p.data.pinEditId === '', JSON.stringify(p.data.pinEditId));
+
+  p.startPinEdit(ev({ id: 'a' }));
+  T('点卡片进入编辑态', p.data.pinEditId === 'a');
+  T('  草稿标题回填原值', p.data.pinDraftTitle === '期末考试', p.data.pinDraftTitle);
+  T('  草稿日期回填原值', p.data.pinDraftDate === shift(10), p.data.pinDraftDate);
+
+  p.onPinTitle(ev({}, '  期末数学考试  '));
+  p.onPinDate(ev({}, shift(20)));
+  p.savePinEdit(ev({ id: 'a' }));
+  T('保存后标题更新（两端空白去掉）', store.shape.milestones[0].title === '期末数学考试',
+    store.shape.milestones[0].title);
+  T('  日期更新', store.shape.milestones[0].date === shift(20), store.shape.milestones[0].date);
+  T('  退出编辑态', p.data.pinEditId === '');
+  T('  仍钉在总览上', store.shape.milestones[0].pinned === true);
+
+  // 桌面版 saveMilestone：标题为空就直接退出编辑、不写数据
+  p.startPinEdit(ev({ id: 'a' }));
+  p.onPinTitle(ev({}, '   '));
+  p.savePinEdit(ev({ id: 'a' }));
+  T('标题留空时不保存（改回原值）', store.shape.milestones[0].title === '期末数学考试',
+    store.shape.milestones[0].title);
+  T('  退出编辑态', p.data.pinEditId === '');
+
+  p.startPinEdit(ev({ id: 'a' }));
+  p.onPinTitle(ev({}, '改了但不保存'));
+  p.cancelPinEdit();
+  T('取消后不写数据', store.shape.milestones[0].title === '期末数学考试');
+  T('  草稿清空', p.data.pinDraftTitle === '');
+
+  // 只改标题和日期，别的字段不能被抹掉
+  store.resetAll();
+  store.setSettings({ runEnabled: false });
+  store.setMilestones([{ id: 'b', title: '竞赛', date: shift(5), emoji: '🏆', time: '09:00',
+    place: '体育馆', done: false, pinned: true, remindDaysBefore: 3 }]);
+  boot(p);
+  p.startPinEdit(ev({ id: 'b' }));
+  p.onPinTitle(ev({}, '数学竞赛'));
+  p.savePinEdit(ev({ id: 'b' }));
+  const s0 = store.shape.milestones[0];
+  T('就地编辑保留 emoji', s0.emoji === '🏆', s0.emoji);
+  T('  保留时间', s0.time === '09:00', s0.time);
+  T('  保留地点', s0.place === '体育馆', s0.place);
+  T('  保留提前提醒天数', s0.remindDaysBefore === 3, String(s0.remindDaysBefore));
+  T('  保留钉住状态', s0.pinned === true);
+
+  // ── 重要事项卡片补位 ──
+  store.resetAll();
+  store.setSettings({ runEnabled: false });
+  store.setMilestones([
+    { id: 'x', title: '三个月后', date: shift(90), done: false },
+    { id: 'y', title: '五天后', date: shift(5), done: false },
+    { id: 'z', title: '已过期', date: shift(-3), done: false },
+    { id: 'w', title: '已完成', date: shift(2), done: true },
+  ]);
+  boot(p);
+  T('运动打卡关掉时卡片走补位分支', p.data.runEnabled === false);
+  T('  待办数只算未完成（3）', p.data.undoneCount === 3, String(p.data.undoneCount));
+  T('  最近一项跳过已过期/已完成 →「五天后」', p.data.nextMilestoneText === '五天后', p.data.nextMilestoneText);
+
+  store.resetAll();
+  store.setSettings({ runEnabled: false });
+  boot(p);
+  T('没有事项时副标题为空串', p.data.nextMilestoneText === '', JSON.stringify(p.data.nextMilestoneText));
+  T('  待办数为 0', p.data.undoneCount === 0);
+
+  // ── 指标卡副标题 ──
+  const card = () => p.data.stats.find((s) => s.key === 'milestone');
+  store.resetAll();
+  store.setSettings({ runEnabled: false });
+  store.setMilestones([{ id: 'm', title: '毕业论文', date: shift(30), done: false }]);
+  boot(p);
+  T('指标卡副标题「最近一项：毕业论文」', card() && card().sub === '最近一项：毕业论文',
+    JSON.stringify(card() && card().sub));
+  T('  value 是待办数', card() && card().value === '1', JSON.stringify(card() && card().value));
+
+  store.resetAll();
+  store.setSettings({ runEnabled: false });
+  store.setMilestones([{ id: 'm', title: '只有过期的', date: shift(-5), done: false }]);
+  boot(p);
+  T('只剩过期事项时退回「待处理」', card() && card().sub === '待处理', JSON.stringify(card() && card().sub));
+  T('  value 仍是 1', card() && card().value === '1', JSON.stringify(card() && card().value));
+
+  store.resetAll();
+  store.setSettings({ runEnabled: false });
+  boot(p);
+  T('空列表时是「还没有待办事项」', card() && card().sub === '还没有待办事项',
+    JSON.stringify(card() && card().sub));
+
+  store.resetAll();
+  store.setSettings({ runEnabled: false });
+  store.setMilestones([
+    { id: 'a', title: '三个月后', date: shift(90), done: false },
+    { id: 'b', title: '五天后', date: shift(5), done: false },
+  ]);
+  boot(p);
+  T('多个未完成时取日期最近的', card() && card().sub === '最近一项：五天后', JSON.stringify(card() && card().sub));
+  T('  value 是 2', card() && card().value === '2', JSON.stringify(card() && card().value));
+
+  store.resetAll();
+  store.setSettings({ runEnabled: true });
+  boot(p);
+  T('运动打卡开启时指标卡是「运动打卡」', !!p.data.stats.find((s) => s.key === 'run'));
+  T('  没有 milestone 指标卡', !card());
 
   store.resetAll();
 }

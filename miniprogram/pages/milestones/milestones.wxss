@@ -111,4 +111,55 @@
   margin-top: 16rpx;
   margin-bottom: 0;
 }
+/* ── 接下来 ───────────────────────────────────────── */
+.up-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12rpx;
+}
 
+.up-item {
+  border-radius: 18rpx;
+  border: 2rpx solid var(--border-2);
+  background: var(--surface-3);
+  padding: 18rpx 20rpx;
+  min-width: 0;
+}
+
+/* 快到期（剩的天数 <= 该事项自己的提前提醒天数）整块标红 */
+.up-item.is-soon {
+  background: rgba(244, 63, 94, 0.12);
+  border-color: rgba(244, 63, 94, 0.35);
+}
+
+.up-top {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.up-emoji {
+  font-size: 30rpx;
+  flex-shrink: 0;
+}
+
+.up-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 25rpx;
+  font-weight: 600;
+  color: var(--text-1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.up-meta {
+  margin-top: 8rpx;
+  font-size: 21rpx;
+  color: var(--text-4);
+  font-variant-numeric: tabular-nums;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

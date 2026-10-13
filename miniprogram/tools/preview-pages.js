@@ -11,6 +11,15 @@
 //   · rpx 按 750rpx=375px 折算成 px
 //   · scroll-view 不滚动，canvas 用占位块
 //
+// ⚠️ 截图宽度必须 >= 420px，否则右侧会被裁掉、看起来像「UI 被遮挡」。
+//    .phone 是 375px 宽，body 还有 padding 20px 10px（左右各 10px），
+//    合计 395px；窗口再小于这个数，Edge 就把右边切掉。
+//    之前用 --window-size=400,1500 截出来的图右侧缺一条，
+//    误判成布局 bug —— 实际 .page-wrap 内部零横向溢出（可用注入脚本量
+//    scrollWidth - clientWidth 验证）。正确的调用：
+//      msedge --headless=new --disable-gpu --hide-scrollbars \
+//             --window-size=420,1600 --screenshot=out.png file:///.../x.html
+//
 // 用法: node tools/preview-pages.js <小程序目录> <输出目录>
 const fs = require('fs'), path = require('path');
 const MP = process.argv[2], OUT = process.argv[3];
