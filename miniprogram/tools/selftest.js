@@ -494,6 +494,56 @@ section('[14] 合并页分段延迟初始化');
   }
 }
 
+// ══ 15. 设置页写入与持久化 ══
+section('[15] 设置页');
+{
+  const p = loadPage('settings');
+  p.onLoad();
+  T('页面加载', p.data.ready === true);
+
+  // switch 组件走 change 事件（e.detail.value），不是 tap
+  const sw = (v) => ({ detail: { value: v }, currentTarget: { dataset: {} }, target: { dataset: {} } });
+  const inp = (v) => ({ detail: { value: v }, currentTarget: { dataset: {} }, target: { dataset: {} } });
+
+  p.toggleTheme(sw(true));
+  T('切到浅色主题', store.shape.settings.theme === 'light');
+  p.toggleTheme(sw(false));
+  T('切回深色主题', store.shape.settings.theme === 'dark');
+
+  p.onSemesterStart(inp('2026-09-07'));
+  T('学期起点保存', store.shape.settings.semesterStart === '2026-09-07');
+  p.onTotalWeeks(inp('19'));
+  T('总周数保存', store.shape.settings.totalWeeks === 19);
+
+  p.toggleRunEnabled(sw(true));
+  T('运动打卡开关', store.shape.settings.runEnabled === true);
+  p.onRunTarget(inp('20'));
+  T('运动目标次数', store.shape.settings.runTarget === 20);
+
+  // 通知开关只负责持久化（真正的推送需要订阅消息 + 服务端，属已知缺口）
+  p.toggleNotify(sw(true));
+  T('通知开关持久化', store.shape.settings.notifyEnabled === true);
+
+  T('存储占用文案可读', typeof p.data.usageText === 'string' && p.data.usageText.length > 0);
+  p.onUnload();
+
+  // 与桌面版的设置键保持一致，桌面备份才能无损导入
+  const st = store.shape.settings;
+  const NEED = ['periods', 'semesterStart', 'notifyEnabled', 'notifyMinutesBefore',
+    'pinnedDate', 'proteinFactor', 'proteinTargetOverride', 'runEnabled', 'runTarget',
+    'runStart', 'runEnd', 'runTypes', 'trainDays', 'photoQuotaMB', 'theme', 'totalWeeks'];
+  const missing = NEED.filter((k) => !(k in st));
+  T('桌面版设置键齐全', missing.length === 0, '缺: ' + missing.join(', '));
+
+  // periods 默认是空数组（与桌面版一致），解析课表时回退到内置 12 节时间表
+  const tp = require(path.join(MP, 'utils', 'textParse.js'));
+  T('  内置 12 节时间表可用', tp.DEFAULT_PERIOD_TIMES.length === 12);
+  const r = tp.parseTimetableText('周一\n高等数学，1-2节，A101，1-16周');
+  T('  periods 为空时仍能解出时间', r.courses.length === 1 && r.courses[0].start === '08:00',
+    JSON.stringify(r.courses.map((c) => c.start + '-' + c.end)));
+  store.resetAll();
+}
+
 console.log('\n══════════════════════════════');
 console.log(`  验收: ${ok} 通过 / ${bad} 失败`);
 process.exit(bad ? 1 : 0);
