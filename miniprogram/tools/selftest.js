@@ -18,6 +18,8 @@ const MP = process.argv[2] || path.join(__dirname, '..');
 
 // ── 假的微信运行环境 ──────────────────────────────────
 const mem = {};
+// 模拟剪贴板：备份导出写进来、导入从这里读，这样能真的验一遍来回
+let clipboard = '';
 global.wx = {
   getStorageSync: (k) => (mem[k] === undefined ? '' : mem[k]),
   setStorageSync: (k, v) => { mem[k] = v; },
@@ -26,8 +28,8 @@ global.wx = {
   clearStorageSync: () => { for (const k of Object.keys(mem)) delete mem[k]; },
   showToast: () => {},
   showModal: (o) => o.success && o.success({ confirm: true }),
-  setClipboardData: (o) => o.success && o.success(),
-  getClipboardData: (o) => o.success && o.success({ data: '' }),
+  setClipboardData: (o) => { clipboard = String(o.data === undefined ? '' : o.data); o.success && o.success(); },
+  getClipboardData: (o) => o.success && o.success({ data: clipboard }),
   navigateTo: () => {},
   switchTab: () => {},
   setNavigationBarTitle: () => {},
@@ -541,6 +543,94 @@ section('[15] 设置页');
   const r = tp.parseTimetableText('周一\n高等数学，1-2节，A101，1-16周');
   T('  periods 为空时仍能解出时间', r.courses.length === 1 && r.courses[0].start === '08:00',
     JSON.stringify(r.courses.map((c) => c.start + '-' + c.end)));
+  store.resetAll();
+}
+
+// ══ 16. 备份导入导出 ══
+// 存储键与桌面版逐字节一致，桌面备份能直接导入 —— 这是移植的关键卖点，
+// 之前只验过「不崩」，没有验过真的能来回。
+section('[16] 备份导入导出');
+{
+  const K = require(path.join(MP, 'utils', 'storage.js')).KEYS;
+
+  // 先核对存储键和桌面版一致（写死一份，防止以后改动破坏兼容）
+  const DESKTOP_KEYS = {
+    health: 'fitplan-health-logs', trainDone: 'fitplan-train-done',
+    diet: 'fitplan-diet-logs', dietSeed: 'fitplan-diet-seed-ids',
+    run: 'fitplan-run-logs', courses: 'fitplan-courses', todos: 'fitplan-todos',
+    assignments: 'fitplan-assignments', templates: 'fitplan-templates',
+    settings: 'fitplan-settings', notes: 'fitplan-notes',
+    milestones: 'fitplan-milestones', calendars: 'fitplan-calendars',
+  };
+  const drift = Object.keys(DESKTOP_KEYS).filter((k) => K[k] !== DESKTOP_KEYS[k]);
+  T('存储键与桌面版一致', drift.length === 0, '不一致: ' + drift.join(', '));
+
+  // 造数据 → 导出 → 清空 → 导入 → 比对
+  store.resetAll();
+  store.setCourses([{ id: 'c1', day: 1, name: '高等数学', start: '08:00', end: '09:40',
+    place: 'A101', weeks: [1, 2, 3], tag: '必修', teacher: '张老师', credit: 4 }]);
+  store.setTodos([{ id: 't1', text: '交报告', due: '2026-10-20', priority: 'high', tag: '学习', done: false }]);
+  store.setAssignments([{ id: 'a1', course: '高等数学', title: '习题3', detail: '第3章',
+    due: '2026-10-25', dueTime: '23:59', weight: '20%', done: false }]);
+  store.setRun([{ date: '2026-10-13', type: '跑步' }]);
+  store.setSettings({ semesterStart: '2026-09-07', runTarget: 25 });
+
+  const p = loadPage('settings');
+  p.onLoad();
+  clipboard = '';
+  p.doExport();
+  T('导出内容进了剪贴板', clipboard.length > 0, clipboard.length + ' 字节');
+
+  const ex = JSON.parse(clipboard);
+  T('  是合法 JSON 且带应用标识', ex.__app === 'university-desk', String(ex.__app));
+  T('  带版本号和导出时间', ex.__version === 1 && !!ex.__exportedAt);
+  // dietSeed / notes 不导出 —— 与桌面版 exportAll 的键集合逐一对齐过：
+  // dietSeed 是「哪些食物已进过种子库」的本地标记、notes 是临时便签，
+  // 都属于可再生的本地状态，桌面版同样不导出。
+  const EXPORTED = ['health', 'trainDone', 'diet', 'run', 'courses', 'todos',
+    'assignments', 'templates', 'milestones', 'calendars', 'settings'];
+  const notExported = Object.keys(DESKTOP_KEYS).filter((k) => !EXPORTED.includes(k));
+  T('  导出的键与桌面版一一对应',
+    EXPORTED.every((k) => ex[DESKTOP_KEYS[k]] !== undefined)
+    && notExported.every((k) => ex[DESKTOP_KEYS[k]] === undefined),
+    '不含: ' + notExported.join(', '));
+
+  store.resetAll();
+  T('清空后课表为空', store.shape.courses.length === 0);
+  p.doImport();
+  T('导入后课表恢复', store.shape.courses.length === 1);
+  T('  待办恢复', store.shape.todos.length === 1);
+  T('  作业恢复', store.shape.assignments.length === 1);
+  T('  运动记录恢复', store.shape.run.length === 1);
+  T('  设置恢复', store.shape.settings.runTarget === 25);
+  T('  课程字段无损', !!store.shape.courses[0] && store.shape.courses[0].teacher === '张老师'
+    && store.shape.courses[0].credit === 4 && JSON.stringify(store.shape.courses[0].weeks) === '[1,2,3]');
+
+  // 桌面版 exportAll 返回的是解析后的对象（它的存储层写入 stringify、读取 parse）
+  const desktopBackup = {
+    __app: 'university-desk', __version: 1, __exportedAt: '2026-01-01T00:00:00.000Z',
+    [K.courses]: [{ id: 'd1', day: 2, name: '大学英语', start: '10:00', end: '11:40',
+      place: 'B202', weeks: [1, 2], tag: '必修' }],
+    [K.todos]: [{ id: 'd2', text: '桌面待办', due: '2026-11-01', priority: 'low', tag: '其他', done: false }],
+    [K.settings]: { theme: 'light', runTarget: 42, semesterStart: '2026-09-01' },
+  };
+  clipboard = JSON.stringify(desktopBackup);
+  store.resetAll();
+  p.doImport();
+  T('桌面备份可直接导入', store.shape.courses.length === 1 && store.shape.todos.length === 1);
+  T('  课程字段完整', !!store.shape.courses[0] && store.shape.courses[0].name === '大学英语');
+  T('  设置与主题导入', store.shape.settings.runTarget === 42 && store.shape.settings.theme === 'light');
+
+  // 坏备份不能让页面崩掉
+  for (const [name, bad] of [['非 JSON', '这不是 json'], ['空字符串', ''],
+    ['是数组', '[1,2,3]'], ['是 null', 'null'], ['缺 __app', '{"foo":1}'],
+    ['键值是坏 JSON', '{"__app":"university-desk","fitplan-courses":"{坏}"}']]) {
+    clipboard = bad;
+    let crashed = false;
+    try { store.resetAll(); p.doImport(); } catch (e) { crashed = true; }
+    T(`  ${name} 不崩溃`, !crashed);
+  }
+  p.onUnload();
   store.resetAll();
 }
 
