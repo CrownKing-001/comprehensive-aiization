@@ -14,6 +14,39 @@ page {
   min-height: 100%;
 }
 
+/* ── 盒模型：补回全局 border-box ─────────────────────────
+   桌面版用 Tailwind，它的 preflight 里有
+     *, ::before, ::after { box-sizing: border-box }
+   小程序没有这层 reset，view 默认是 content-box —— 于是
+   「width: 100% + padding」的元素总宽会多出左右 padding，
+   直接撑出容器。实际踩到的：
+     待办页的「＋ 添加」按钮（.btn-primary 有 padding: 0 30rpx，
+     WXML 里又写死了 width: 100%），整块凸出卡片右边 ~60rpx，
+     一直压到屏幕边缘 —— 用户报的「按钮凸出」就是这个。
+   WXSS 不支持 * 选择器，所以按元素类型列出来。 */
+view,
+text,
+image,
+button,
+input,
+textarea,
+navigator,
+form,
+label,
+scroll-view,
+swiper,
+swiper-item,
+picker,
+picker-view,
+movable-view,
+movable-area,
+cover-view,
+camera,
+video,
+canvas {
+  box-sizing: border-box;
+}
+
 .page-wrap {
   /* ── 深色主题（默认）───────────────────────────── */
   --surface-0: #12161d; /* 应用底色 */
@@ -163,13 +196,17 @@ page {
   font-weight: 500;
   padding: 0 30rpx;
   line-height: 1;
+  /* 按钮常被写成「内联 width:100%」撑满一行。
+     content-box 时总宽会多出左右各 30rpx、直接凸出卡片 ——
+     这里显式声明，别再依赖全局 reset。 */
+  box-sizing: border-box;
 }
 
 .btn-primary.is-disabled { opacity: 0.4; }
 
 /* 小尺寸按钮变体 */
-.btn-sm { height: 64rpx; font-size: 24rpx; padding: 0 22rpx; border-radius: 16rpx; }
-.btn-xs { height: 52rpx; font-size: 22rpx; padding: 0 18rpx; border-radius: 14rpx; }
+.btn-sm { height: 64rpx; font-size: 24rpx; padding: 0 22rpx; border-radius: 16rpx; box-sizing: border-box; }
+.btn-xs { height: 52rpx; font-size: 22rpx; padding: 0 18rpx; border-radius: 14rpx; box-sizing: border-box; }
 
 /* 按钮行：自动换行，避免窄屏挤压 */
 .row-actions {
@@ -195,6 +232,7 @@ page {
   font-weight: 500;
   padding: 0 30rpx;
   line-height: 1;
+  box-sizing: border-box;
 }
 
 /* ── 输入 ─────────────────────────────────────── */

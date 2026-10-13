@@ -1870,6 +1870,91 @@ section('[24] 小程序运行时兼容性（不能用 Node 专有 API）');
     }
   }
 }
+// ══ 25. 盒模型 ══
+// 这一节防的是「按钮凸出卡片」这类问题。
+//
+// 桌面版用 Tailwind，它的 preflight 里有 *,::before,::after{box-sizing:border-box}。
+// 小程序没有这层 reset，view 默认是 content-box —— 于是「width:100% + padding」
+// 的元素总宽 = 100% + 左右 padding，直接撑出容器。
+//
+// 实际踩到：待办页那个「＋ 添加」按钮（.btn-primary 有 padding:0 30rpx，
+// WXML 里写死 style="width:100%"），整块凸出卡片右边约 60rpx、压到屏幕边缘。
+// 是用户截图报上来的。所以这里把「全局 reset 必须在」钉死。
+section('[25] 盒模型（width:100% + padding 不能溢出容器）');
+{
+  const fs = require('fs');
+  const appWxss = fs.readFileSync(path.join(MP, 'app.wxss'), 'utf8');
+  const src = appWxss.replace(/\/\*[\s\S]*?\*\//g, '');
+
+  // 25a. 必须有一条覆盖 view 的全局 border-box
+  const resetRe = /([^{}]+)\{([^{}]*box-sizing:\s*border-box[^{}]*)\}/g;
+  let m2;
+  let coversView = false;
+  let coversInput = false;
+  const selectorsWithReset = [];
+  while ((m2 = resetRe.exec(src)) !== null) {
+    const sel = m2[1].trim();
+    selectorsWithReset.push(sel);
+    const types = sel.split(',').map((s) => s.trim());
+    // 精确到元素类型，不能只是 .page-wrap / .full 这种类
+    if (types.indexOf('view') >= 0) coversView = true;
+    if (types.indexOf('input') >= 0) coversInput = true;
+    // 也接受 * 选择器（WXSS 里不常见，但语义上等价）
+    if (types.indexOf('*') >= 0) { coversView = true; coversInput = true; }
+  }
+  T('  app.wxss 有覆盖 view 的全局 border-box reset', coversView,
+    '当前带 reset 的选择器: ' + selectorsWithReset.join(' | '));
+  T('  该 reset 也覆盖 input/textarea（输入框同样有 padding）', coversInput);
+
+  // 25b. 真实高危组合：WXML 内联 width:100% + class 有左右 padding
+  //      reset 在的话就安全；这里把它们列出来，将来 reset 被删掉会立刻报错。
+  const risky = [];
+  const allWxml = [];
+  const walkDir = (dir) => {
+    for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+      const p = path.join(dir, e.name);
+      if (e.isDirectory()) walkDir(p);
+      else if (e.name.endsWith('.wxml')) allWxml.push(p);
+    }
+  };
+  walkDir(path.join(MP, 'pages'));
+
+  const allWxss = appWxss;
+  for (const f of allWxml) {
+    const s = fs.readFileSync(f, 'utf8');
+    const re = /class="([^"]*)"[^>]*style="[^"]*width:\s*100%/g;
+    let m3;
+    while ((m3 = re.exec(s)) !== null) {
+      for (const cls of m3[1].split(/\s+/).filter(Boolean)) {
+        if (cls.indexOf('{{') >= 0) continue;
+        // 该 class 在任意 wxss 里有没有左右 padding？
+        const clsRe = new RegExp('\\.' + cls.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*\\{([^}]*)\\}', 'g');
+        const pageWxss = f.replace(/\.wxml$/, '.wxss');
+        const pool = allWxss + (fs.existsSync(pageWxss) ? fs.readFileSync(pageWxss, 'utf8') : '');
+        let m4;
+        while ((m4 = clsRe.exec(pool)) !== null) {
+          if (/padding(-left|-right)?\s*:\s*[^;]*[1-9]/.test(m4[1])) {
+            risky.push(`${path.relative(MP, f)} .${cls}`);
+            break;
+          }
+        }
+      }
+    }
+  }
+  T(`  ${risky.length} 处「内联 width:100% + 有 padding 的 class」都靠全局 reset 兜住`,
+    coversView, risky.slice(0, 4).join('; '));
+
+  // 25c. 反向保护：.btn-* 自己也显式声明 border-box，
+  //      这样即使将来有人删了全局 reset，按钮也不会再凸出。
+  const btnMissing = [];
+  for (const cls of ['btn-primary', 'btn-ghost', 'btn-sm', 'btn-xs']) {
+    const r = new RegExp('\\.' + cls + '\\s*\\{([^}]*)\\}');
+    const mm = r.exec(src);
+    if (!mm) continue;
+    if (!/box-sizing:\s*border-box/.test(mm[1])) btnMissing.push(cls);
+  }
+  T('  .btn-* 自身也显式声明了 border-box', btnMissing.length === 0, btnMissing.join(', '));
+}
 console.log('\n══════════════════════════════');
 console.log(`  验收: ${ok} 通过 / ${bad} 失败`);
 process.exit(bad ? 1 : 0);
