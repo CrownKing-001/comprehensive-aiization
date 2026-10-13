@@ -38,6 +38,9 @@ Page({
     rawLines: [],
     showRaw: false,
 
+    // 解析警告（如「字段没用逗号分隔」），只要非空就一直挂在页面上
+    parseWarnings: [],
+
     msg: null,
   },
 
@@ -129,13 +132,24 @@ Page({
       detectedWeek: res.textWeek,
       rawLines: text.split(/\r?\n/).filter((l) => l.trim()),
       showRaw: false,
+      // 解析出的警告要一直挂着，不能只在「一门课都没解析出来」时才说。
+      // 之前这里是丢掉的：只要解析出 1 门课就走成功提示，用户看不到
+      // 「字段没用逗号分隔」这类问题，会直接导入一串错数据。
+      parseWarnings: res.warnings || [],
     });
     this._recompute();
 
-    this._notify(
-      'ok',
-      `解析出 ${res.courses.length} 门课程${res.textWeek ? `（这份文字属于第 ${res.textWeek} 周）` : ''}，请核对后导入。`
-    );
+    if (res.warnings && res.warnings.length) {
+      this._notify(
+        'err',
+        `解析出 ${res.courses.length} 门课程，但有问题需要先处理：${res.warnings[0]}`
+      );
+    } else {
+      this._notify(
+        'ok',
+        `解析出 ${res.courses.length} 门课程${res.textWeek ? `（这份文字属于第 ${res.textWeek} 周）` : ''}，请核对后导入。`
+      );
+    }
   },
 
   toggleAccept(e) {

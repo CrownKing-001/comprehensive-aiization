@@ -58,6 +58,11 @@
         <view class="btn-ghost btn-xs" bindtap="applyCurrentWeek">把当前周设为第 {{detectedWeek}} 周</view>
       </view>
 
+      <!-- 解析警告：解析出课程但有问题的，一直挂在页面上直到重新解析 -->
+      <view class="notice notice-err parse-warn" wx:for="{{parseWarnings}}" wx:key="*this">
+        <text class="notice-text">⚠ {{item}}</text>
+      </view>
+
       <!-- 只导入本周 -->
       <view class="switch-row">
         <text class="switch-label">只显示本周有课的（第 {{currentWeekNum}} 周）</text>

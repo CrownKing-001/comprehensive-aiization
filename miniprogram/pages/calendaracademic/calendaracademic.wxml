@@ -70,6 +70,11 @@
         支持「第 N 周：9.7–9.13」周次表、「共 19 周」、军训/开课/节假日等关键日期。
       </view>
 
+      <!-- 解析警告：解析出内容但有问题的，一直挂着直到重新解析 -->
+      <view class="warn-item" wx:for="{{parseWarnings}}" wx:key="*this">
+        <text class="warn-text">⚠ {{item}}</text>
+      </view>
+
       <!-- 解析出的学期信息 -->
       <view class="tip-box" wx:if="{{parsedStart || parsedWeeks}}">
         <view class="tip-text">📌 从这段文字里还读到了学期设置</view>

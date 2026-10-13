@@ -32,6 +32,21 @@
   word-break: break-all;
 }
 
+/* ── 解析警告 ─────────────────────────────────── */
+.warn-item {
+  margin-top: 14rpx;
+  border-radius: 16rpx;
+  padding: 18rpx 22rpx;
+  background: rgba(245, 158, 11, 0.12);
+  border: 2rpx solid rgba(245, 158, 11, 0.35);
+}
+
+.warn-text {
+  font-size: 23rpx;
+  line-height: 1.65;
+  color: #fcd34d;
+}
+
 /* ── 输入区 ───────────────────────────────────── */
 .textarea {
   width: 100%;

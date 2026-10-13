@@ -47,6 +47,9 @@ Page({
     parsedStart: '',
     parsedWeeks: null,
 
+    // 解析警告（如「没找到第 1 周对应表，学期起点可能不准」）
+    parseWarnings: [],
+
     // 识别记录
     docs: [],
     activeId: null,
@@ -137,6 +140,7 @@ Page({
     if (!String(text || '').trim()) return;
     const res = parseCalendarText(text);
     if (!res.events.length && !res.semesterStart) {
+      this.setData({ parseWarnings: res.warnings || [] });
       this._notify('err', (res.warnings && res.warnings[0]) || '没有解析出内容，请检查文字里是否包含日期。');
       return;
     }
@@ -172,6 +176,10 @@ Page({
         parsedWeeks: res.totalWeeks || null,
         rawLines: String(text).split(/\r?\n/),
         showRaw: false,
+        // 警告一直挂在页面上，不只在「一条都没解析出来」时才说。
+        // 比如「没找到第 1 周对应表」会导致学期起点不准，但用户仍会看到
+        // 解析成功的提示，不知道起点是猜的。
+        parseWarnings: res.warnings || [],
       },
       () => {
         this._loadDraft(doc);

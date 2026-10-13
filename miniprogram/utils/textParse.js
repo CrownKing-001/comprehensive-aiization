@@ -199,6 +199,18 @@ function parseTimetableText(text, periods) {
 
   if (!courses.length) warnings.push('没有解析出任何课程，请检查文字里是否包含「周一」这类分节标题。');
 
+  // 字段之间必须用逗号分隔（课程名，节次，地点，周次）。
+  // 用空格分隔时，整行会被当成一个字段 → 课程名变成「1-2节 高等数学 A101 1-16周」
+  // 这种一整串，地点为空、时间退化成默认值。桌面版也是这个行为，
+  // 但那时没有任何提示，用户会以为解析成功了。这里补一条警告。
+  const spaced = courses.filter((c) => !c.place && /\s/.test(c.name) && /[节周]/.test(c.name));
+  if (spaced.length) {
+    warnings.push(
+      `有 ${spaced.length} 条课程看起来没有用逗号分隔字段（例如「${spaced[0].name}」）。` +
+        '请改成「课程名，节次（时间），地点，周次」的格式，每条之间用逗号隔开。'
+    );
+  }
+
   // 文字里出现最多的「第 N 周」，作为「这份课表属于第几周」的推断
   const weekHits = new Map();
   for (const line of lines) {
@@ -246,7 +258,17 @@ const EVENT_RULES = [
   { re: /新生开课|本科新生开课/, title: '新生开课', category: '教务', emoji: '🎓' },
   { re: /报到/, title: '新生报到', category: '教务', emoji: '🧳' },
   { re: /正式上课|教学周开始/, title: '正式上课', category: '教务', emoji: '🎓' },
+  // 期中考试必须排在 /考试周/ 前面，否则会被后面那条吞掉。
+  // 桌面版没有这条规则，「期中考试」会被静默丢弃 —— 这是补的。
+  { re: /期中考试|期中测验|半期考/, title: '期中考试', category: '考试', emoji: '📝' },
   { re: /期末考试|考试周/, title: '期末考试周', category: '考试', emoji: '📚' },
+  // 桌面版同样缺这几条，常用且重要，一并补上
+  { re: /补考|缓考/, title: '补考', category: '考试', emoji: '📝' },
+  { re: /四六级|英语四级|英语六级|CET-?\s*[46]/, title: '四六级考试', category: '考试', emoji: '🔤' },
+  { re: /计算机等级|二级考试|三级考试/, title: '计算机等级考试', category: '考试', emoji: '💻' },
+  { re: /运动会|校运会|田径运动会/, title: '运动会', category: '活动', emoji: '🏃' },
+  { re: /选课|退课|补选/, title: '选课', category: '教务', emoji: '📋' },
+  { re: /实习|实践周/, title: '实习实践', category: '教务', emoji: '🧰' },
   { re: /寒假/, title: '寒假', category: '假期', emoji: '❄️' },
   { re: /暑假|暑期/, title: '暑假', category: '假期', emoji: '☀️' },
   { re: /中秋节|中秋/, title: '中秋节', category: '假期', emoji: '🥮' },
