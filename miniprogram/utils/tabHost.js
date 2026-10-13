@@ -178,19 +178,67 @@ function buildHost(opts) {
       this.setData({ ready: true });
     },
 
+    /**
+     * onReady：只给「当前显示的那一段」跑子模块的 onReady。
+     *
+     * 原因：分段内容在 wx:if 分支里，没显示的那几段不在渲染树上，
+     * 子模块 onReady 里去查 canvas 节点会拿到 null。
+     * 其余分段等切过去时由 _revealSeg 补跑。
+     */
+    onReady() {
+      const cur = this.data.seg;
+      const mod = modules[cur] && modules[cur].def;
+      const view = this._views && this._views[cur];
+      if (!mod || !view) return;
+      this._segReady = this._segReady || {};
+      this._segReady[cur] = true;
+      if (typeof mod.onReady === 'function') {
+        try {
+          mod.onReady.call(view);
+        } catch (e) {
+          console.error(`[tabHost] ${cur}.onReady 出错`, e);
+        }
+      }
+    },
+
+    /** 同 onReady：子模块可能在 onHide 里停掉定时器之类 */
+    onHide() {
+      for (const id of ids) {
+        const mod = modules[id] && modules[id].def;
+        const view = this._views && this._views[id];
+        if (mod && view && typeof mod.onHide === 'function') {
+          try {
+            mod.onHide.call(view);
+          } catch (e) {
+            console.error(`[tabHost] ${id}.onHide 出错`, e);
+          }
+        }
+      }
+    },
+
     onShow() {
       // 别的页面可能用「switchTab + globalData.pendingSeg」的方式指定过
       // 要停在哪个分段（switchTab 的 url 不能带 query）。
       // 这里检查一次，用完即清，避免下次切回来又被改分段。
+      //
+      // 走 _revealSeg 而不是直接 setData：目标分段可能是第一次显示，
+      // 需要补跑它的 onReady（画图表的代码在那里）。
+      let pendingSeg = null;
       try {
         const app = typeof getApp === 'function' ? getApp() : null;
         const pending = app && app.globalData && app.globalData.pendingSeg;
-        if (pending && ids.indexOf(pending.seg) >= 0 && pending.seg !== this.data.seg) {
+        if (pending && ids.indexOf(pending.seg) >= 0) {
           app.globalData.pendingSeg = null;
-          this.setData({ seg: pending.seg });
+          pendingSeg = pending.seg;
         }
       } catch (e) {
         // getApp 在某些时机拿不到，忽略即可
+      }
+
+      if (pendingSeg && pendingSeg !== this.data.seg) {
+        // _revealSeg 里已经包含 refresh，这里直接返回就行
+        this._revealSeg(pendingSeg);
+        return;
       }
 
       for (const id of ids) {
@@ -224,22 +272,53 @@ function buildHost(opts) {
     switchSeg(e) {
       const id = e.currentTarget.dataset.id;
       if (!id || ids.indexOf(id) < 0 || id === this.data.seg) return;
-      this.setData({ seg: id });
-      // 切过去时刷新一下该模块，保证看到的是最新数据
-      const mod = modules[id] && modules[id].def;
-      const view = this._views && this._views[id];
-      if (mod && view && typeof mod.refresh === 'function') {
-        try {
-          mod.refresh.call(view);
-        } catch (err) {
-          console.error(`[tabHost] ${id}.refresh 出错`, err);
-        }
-      }
+      this._revealSeg(id);
     },
 
-    /** 允许外部指定初始分段（配合 wx.navigateTo 的 query 用） */
+    /**
+     * 切到某个分段。
+     *
+     * 分段内容都在 wx:if 分支里，没显示的那几段根本不在渲染树上 ——
+     * 所以子模块的 onReady（画 canvas 图表就写在这里）不能在宿主 onReady
+     * 时统一调，必须等它那段真的显示出来。
+     *
+     * 这里用 _segReady 记录「这段的 onReady 跑过了」，避免来回切换时重复初始化
+     * （重复 initChart 会拿到新节点、旧节点上的绘制白做，还可能泄漏）。
+     */
+    _revealSeg(id) {
+      const firstTime = !this._segReady || !this._segReady[id];
+      this.setData({ seg: id }, () => {
+        const mod = modules[id] && modules[id].def;
+        const view = this._views && this._views[id];
+        if (!mod || !view) return;
+
+        // 首次显示时补跑 onReady —— 此时节点才存在
+        if (firstTime && typeof mod.onReady === 'function') {
+          this._segReady = this._segReady || {};
+          this._segReady[id] = true;
+          try {
+            mod.onReady.call(view);
+          } catch (err) {
+            console.error(`[tabHost] ${id}.onReady 出错`, err);
+          }
+        }
+
+        // 每次切过来都刷新一下，保证看到的是最新数据
+        if (typeof mod.refresh === 'function') {
+          try {
+            mod.refresh.call(view);
+          } catch (err) {
+            console.error(`[tabHost] ${id}.refresh 出错`, err);
+          }
+        }
+      });
+    },
+
+    /** 允许外部指定初始分段（配合 globalData.pendingSeg 用） */
     setSeg(id) {
-      if (ids.indexOf(id) >= 0) this.setData({ seg: id });
+      if (ids.indexOf(id) < 0) return;
+      if (id === this.data.seg) return;
+      this._revealSeg(id);
     },
   };
 

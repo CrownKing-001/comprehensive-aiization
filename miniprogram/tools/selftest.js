@@ -398,6 +398,89 @@ section('[13] 导航完整性');
   check('健康', ['diet', 'run', 'health']);
 }
 
+// ══ 14. 合并页的分段延迟初始化 ══
+// 分段内容在 wx:if 分支里，没显示的那几段不在渲染树上。
+// 子模块的 onReady（画 canvas 图表写在这里）不能在宿主 onReady 时统一跑，
+// 必须等那一段真的显示出来 —— 否则「健康」页的体重/睡眠曲线永远不画，
+// 页面还不报错。这条曾经真的漏过，所以固定成回归用例。
+section('[14] 合并页分段延迟初始化');
+{
+  // 记录 createSelectorQuery 查了哪些 id
+  const queries = [];
+  const savedQuery = wx.createSelectorQuery;
+  wx.createSelectorQuery = () => {
+    const q = {
+      _sel: null,
+      in() { return q; },
+      select(s) { q._sel = s; return q; },
+      fields() { return q; },
+      exec(cb) { queries.push(q._sel); cb([{ node: null, width: 100, height: 40 }]); },
+    };
+    return q;
+  };
+
+  const APP = { globalData: {} };
+  const savedGetApp = global.getApp;
+  global.getApp = () => APP;
+
+  const fs = require('fs');
+  const defOfPage = (file) => {
+    let d = null;
+    const saved = global.Page;
+    global.Page = (x) => { d = x; };
+    delete require.cache[require.resolve(file)];
+    const ex = require(file);
+    global.Page = saved;
+    return ex && ex.data ? ex : d;
+  };
+  const mount = (def) => Object.assign({}, def, {
+    data: JSON.parse(JSON.stringify(def.data || {})),
+    setData(p, cb) {
+      for (const k of Object.keys(p)) this.data[k] = p[k];
+      if (typeof cb === 'function') cb();
+    },
+  });
+
+  store.resetAll();
+  const hub = mount(defOfPage(path.join(MP, 'pages/healthhub/healthhub.js')));
+  hub.onLoad();
+  T('默认停在饮食段', hub.data.seg === 'diet');
+
+  queries.length = 0;
+  hub.onReady();
+  T('  onReady 不查不可见分段的 canvas', queries.length === 0, '查了 ' + queries.length + ' 次');
+
+  queries.length = 0;
+  hub.switchSeg({ currentTarget: { dataset: { id: 'health' } } });
+  T('切到体重段才初始化图表', queries.length === 2, JSON.stringify(queries));
+  T('  查的是体重/睡眠两个 canvas',
+    queries.indexOf('#weightCanvas') >= 0 && queries.indexOf('#sleepCanvas') >= 0);
+
+  queries.length = 0;
+  hub.switchSeg({ currentTarget: { dataset: { id: 'diet' } } });
+  hub.switchSeg({ currentTarget: { dataset: { id: 'health' } } });
+  T('来回切换不重复初始化', queries.length === 0, '又查了 ' + queries.length + ' 次');
+
+  // 总览指标卡 → pendingSeg → 目标页切分段。
+  // 用一个**全新的**页面实例：同一个实例上 health 段早就初始化过了，
+  // 再切过去不会重复查询 canvas，那样测不出「首次进入」的行为。
+  APP.globalData.pendingSeg = { seg: 'health' };
+  queries.length = 0;
+  const hub2 = mount(defOfPage(path.join(MP, 'pages/healthhub/healthhub.js')));
+  hub2.onLoad();
+  hub2.onReady();
+  hub2.onShow();
+  T('onShow 处理 pendingSeg', hub2.data.seg === 'health');
+  T('  首次进入该段会初始化图表', queries.length === 2, '查了 ' + queries.length + ' 次');
+  T('  pendingSeg 用完即清', !APP.globalData.pendingSeg);
+  hub2.onUnload();
+  hub.onUnload();
+
+  wx.createSelectorQuery = savedQuery;
+  global.getApp = savedGetApp;
+  store.resetAll();
+}
+
 console.log('\n══════════════════════════════');
 console.log(`  验收: ${ok} 通过 / ${bad} 失败`);
 process.exit(bad ? 1 : 0);

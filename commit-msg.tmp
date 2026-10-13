@@ -1,0 +1,33 @@
+fix(miniprogram): 合并页的图表永远不画 —— onReady 没转发 + 分段未延迟初始化
+
+上一轮把「健康」做成合并页后，体重和睡眠的趋势曲线其实一直是空白的。
+
+两个原因叠在一起：
+
+1. tabHost 只在 onLoad / onShow / onUnload 转发给子模块，漏了 onReady。
+   而 health.js 里画 canvas 的代码就写在 onReady —— 根本没被调用过。
+
+2. 就算转发了 onReady 也不够：canvas 在 <block wx:if="{{seg === 'health'}}">
+   里面，而页面默认停在「饮食」段，onReady 触发时那段不在渲染树上，
+   createSelectorQuery 查 #weightCanvas 只会拿到 null。
+
+   所以改成「分段首次显示时才跑该段的 onReady」：
+     · 宿主 onReady 只初始化当前显示的那一段
+     · _revealSeg 在 setData 回调里补跑首次显示的段的 onReady
+       （必须在回调里，setData 之后节点才存在）
+     · 用 _segReady 记录跑过的段，来回切换不重复初始化
+     · onShow 处理 pendingSeg 时也走 _revealSeg，否则从总览跳进来
+       停在体重段仍然不画图
+
+这类 bug 很难发现：页面不报错、控制台干净，就是不显示。
+所以固化成了自测用例（[14] 段），并单独验证了
+「切过去才查 canvas」「来回切不重复查」「独立打开 health 仍正常」。
+
+顺带修的：
+  · tabHost 补转发 onHide（子模块可能在里面停定时器）
+  · diet 的「去看体重」按钮在合并页里改为切分段而不是 navigateTo，
+    独立打开时仍回退到 navigateTo
+
+验证：自测 79/79（新增 [14] 分段延迟初始化 8 项）
+      编译 0 错误（329.5 KB），JS/JSON/WXML/BOM 全过
+      health 独立打开仍能正常初始化两个图表
