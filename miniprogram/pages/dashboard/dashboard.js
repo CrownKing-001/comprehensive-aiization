@@ -414,6 +414,10 @@ if (!global.__TABHOST_LOADING__) {
       modules: {
         today: { path: '../today/today.js', label: '今日' },
       },
+      // ⚠️ 必须是字符串字面量的 require，理由见 utils/tabHost.js 的 buildHost
+      loadDefs() {
+        return { today: require('../today/def') };
+      },
     })
   );
 }

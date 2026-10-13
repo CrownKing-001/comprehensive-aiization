@@ -20,5 +20,15 @@ Page(
       todos: { path: '../todos/todos.js', label: '待办' },
       assignments: { path: '../assignments/assignments.js', label: '作业' },
     },
+    // ⚠️ 必须用**字符串字面量**的 require —— 小程序的打包器只看字面量，
+    // 动态拼出来的路径不会被打进包，运行时报 "module ... is not defined"，
+    // 宿主页在求值阶段就抛异常、Page() 走不到，页面一片空白。
+    // 详见 utils/tabHost.js 的 buildHost。
+    loadDefs() {
+      return {
+        todos: require('../todos/def'),
+        assignments: require('../assignments/def'),
+      };
+    },
   })
 );

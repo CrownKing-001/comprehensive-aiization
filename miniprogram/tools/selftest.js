@@ -1673,29 +1673,49 @@ section('[24] 小程序运行时兼容性（不能用 Node 专有 API）');
   const hostSrc = fs.readFileSync(path.join(MP, 'utils', 'tabHost.js'), 'utf8');
   T('  buildHost 不再依赖 opts.base', !/opts\.base\s*(\|\||\))/.test(hostSrc));
 
-  // ── 24b. 路径换算：宿主页传的相对路径要能落到真实文件 ──
-  const m = /function resolveFromUtils[\s\S]*?\n\}/.exec(hostSrc);
-  T('  tabHost 里有 resolveFromUtils', !!m);
-  if (m) {
-    // eslint-disable-next-line no-eval
-    const resolveFromUtils = eval(`(${m[0].replace('function resolveFromUtils', 'function')})`);
-    const cases = [
-      ['../todos/todos.js', 'pages/todos/todos.js'],
-      ['../assignments/assignments.js', 'pages/assignments/assignments.js'],
-      ['../today/today.js', 'pages/today/today.js'],
-      ['../diet/diet.js', 'pages/diet/diet.js'],
-      ['../run/run.js', 'pages/run/run.js'],
-      ['../health/health.js', 'pages/health/health.js'],
-    ];
-    let bad = [];
-    for (const [input, expect] of cases) {
-      const out = resolveFromUtils(input);
-      const real = path.resolve(MP, 'utils', out);
-      if (!fs.existsSync(real) || !real.endsWith(expect.replace(/\//g, path.sep))) {
-        bad.push(`${input} → ${out}`);
+  // ── 24b. 宿主页 loadDefs 的 require 目标要落到真实文件 ──
+  //
+  // ⚠️ 这里的路径是 pages/<n>/def.js，不是 pages/<n>/<n>.js。
+  // 小程序的打包器**不允许 require 另一个页面文件**：
+  //   require('./pages/today/today') → module 'pages/today/today.js' is not defined
+  // 所以每个可被合并的子模块，定义都住在同目录的 def.js 里（普通模块，可以 require），
+  // 页面文件 <n>.js 只是一层薄壳：require('./def') + Page(DEFINITION)。
+  {
+    const hosts = ['dashboard', 'tasks', 'healthhub'];
+    const bad = [];
+    for (const h of hosts) {
+      const src = fs.readFileSync(path.join(MP, 'pages', h, h + '.js'), 'utf8');
+      const re = /require\('(\.\.[^']+)'\)/g;
+      let mm;
+      const seen = [];
+      while ((mm = re.exec(src)) !== null) {
+        const rel = mm[1];
+        if (rel.indexOf('/def') < 0) continue; // 只查合并子模块的 require
+        seen.push(rel);
+        const real = path.resolve(MP, 'pages', h, rel) + '.js';
+        if (!fs.existsSync(real)) bad.push(`${h}: ${rel} → 不存在`);
       }
+      if (seen.length === 0) bad.push(`${h}: 没有找到 loadDefs 里的 require`);
     }
-    T('  宿主页传的 6 个子模块路径都能解析到真实文件', bad.length === 0, bad.join('; '));
+    T('  三个宿主页 loadDefs 的 require 都指向真实 def.js', bad.length === 0, bad.join('; '));
+
+    // 每个 def.js 必须是「普通模块」：有导出、且自己不调 Page()
+    const defs = ['todos', 'assignments', 'today', 'diet', 'run', 'health'];
+    const bad2 = [];
+    for (const n of defs) {
+      const f = path.join(MP, 'pages', n, 'def.js');
+      if (!fs.existsSync(f)) { bad2.push(`${n}/def.js 不存在`); continue; }
+      const s = fs.readFileSync(f, 'utf8');
+      if (!/module\.exports\s*=\s*DEFINITION/.test(s)) bad2.push(`${n}/def.js 没有导出 DEFINITION`);
+      if (/^\s*Page\s*\(/m.test(s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1'))) {
+        bad2.push(`${n}/def.js 里不该有 Page()`);
+      }
+      // 页面薄壳要注册
+      const w = fs.readFileSync(path.join(MP, 'pages', n, n + '.js'), 'utf8');
+      if (!/Page\(DEFINITION\)/.test(w)) bad2.push(`${n}/${n}.js 没有注册 Page`);
+      if (new RegExp(`require\\('\\./def'\\)`).test(w) === false) bad2.push(`${n}/${n}.js 没有 require('./def')`);
+    }
+    T('  6 个子模块的 def.js / 薄壳都符合约定', bad2.length === 0, bad2.join('; '));
   }
 
   // ── 24c. 在「没有 Node API」的环境里真的加载一遍每个页面 ──
@@ -1795,17 +1815,25 @@ section('[24] 小程序运行时兼容性（不能用 Node 专有 API）');
       dashboard: {
         segments: [{ id: 'dashboard', label: '总览' }, { id: 'today', label: '今日' }],
         selfDef: loadHostPage('dashboard'), selfId: 'dashboard', selfLabel: '总览',
-        modules: { today: { path: '../today/today.js', label: '今日' } },
+        // 用 loadDefs（和宿主页真实写法一致）：
+        // require 的字面量必须是 def.js，不能是页面文件
+        // eslint-disable-next-line global-require
+        loadDefs: () => ({ today: require(path.join(MP, 'pages', 'today', 'def.js')) }),
       },
       tasks: {
         segments: [{ id: 'todos', label: '待办' }, { id: 'assignments', label: '作业' }],
-        modules: { todos: { path: '../todos/todos.js', label: '待办' },
-          assignments: { path: '../assignments/assignments.js', label: '作业' } },
+        loadDefs: () => ({
+          todos: require(path.join(MP, 'pages', 'todos', 'def.js')),
+          assignments: require(path.join(MP, 'pages', 'assignments', 'def.js')),
+        }),
       },
       healthhub: {
         segments: [{ id: 'diet', label: '饮食' }, { id: 'run', label: '运动' }, { id: 'health', label: '体重作息' }],
-        modules: { diet: { path: '../diet/diet.js', label: '饮食' }, run: { path: '../run/run.js', label: '运动' },
-          health: { path: '../health/health.js', label: '体重作息' } },
+        loadDefs: () => ({
+          diet: require(path.join(MP, 'pages', 'diet', 'def.js')),
+          run: require(path.join(MP, 'pages', 'run', 'def.js')),
+          health: require(path.join(MP, 'pages', 'health', 'def.js')),
+        }),
       },
     };
     for (const name of Object.keys(expectMods)) {

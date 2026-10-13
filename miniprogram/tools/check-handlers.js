@@ -31,6 +31,22 @@ function methodsOf(src) {
   );
 }
 
+/**
+ * 读出一个页面/子模块的方法集合。
+ *
+ * ⚠️ 子模块的定义现在住在同目录的 def.js 里（页面文件 <n>.js 只是
+ * require('./def') + Page(DEFINITION) 的薄壳）。原因：小程序的打包器
+ * 不允许 require 另一个页面文件，合并页要复用定义就必须让它住在普通模块里。
+ * 详见 utils/tabHost.js。所以这里优先读 def.js，读不到再退回页面文件。
+ */
+function methodsOfModule(dir, name) {
+  const def = path.join(MP, 'pages', dir, 'def.js');
+  const p = path.join(MP, 'pages', dir, name + '.js');
+  if (fs.existsSync(def)) return methodsOf(fs.readFileSync(def, 'utf8'));
+  if (fs.existsSync(p)) return methodsOf(fs.readFileSync(p, 'utf8'));
+  return new Set();
+}
+
 let problems = 0;
 const dirs = fs.readdirSync(path.join(MP, 'pages'), { withFileTypes: true })
   .filter((d) => d.isDirectory()).map((d) => d.name);
@@ -42,8 +58,10 @@ for (const name of dirs) {
 
   const wxml = fs.readFileSync(wxmlPath, 'utf8');
   const js = fs.readFileSync(jsPath, 'utf8');
-  const own = methodsOf(js);
   const merged = MERGED[name] || null;
+  // 合并页的宿主方法（switchSeg 等）写在页面 js 里，子模块方法在 def.js 里，
+  // 两边都要算上；普通页面只有 def.js（或退回页面文件）。
+  const own = new Set([...methodsOf(js), ...methodsOfModule(name, name)]);
 
   // tabHost 自己提供的方法
   const hostMethods = new Set(['switchSeg', 'setSeg', '_revealSeg', 'onLoad', 'onShow',
@@ -64,9 +82,7 @@ for (const name of dirs) {
       for (const [prefix, page] of Object.entries(merged)) {
         if (!h.startsWith(prefix + '_')) continue;
         const sub = h.slice(prefix.length + 1);
-        const subPath = path.join(MP, 'pages', page, page + '.js');
-        if (!fs.existsSync(subPath)) break;
-        if (methodsOf(fs.readFileSync(subPath, 'utf8')).has(sub)) { matched = true; break; }
+        if (methodsOfModule(page, page).has(sub)) { matched = true; break; }
       }
       if (matched) continue;
     }

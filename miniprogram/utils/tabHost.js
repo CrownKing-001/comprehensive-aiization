@@ -18,45 +18,46 @@
 //   · 子模块之间不共享状态，需要联动得自己在宿主里写。
 
 /**
- * 取出一个页面模块的 Page 定义。
+ * 在一段「正在加载子模块」的上下文里执行 fn。
  *
- * 优先用 module.exports —— 子模块会显式导出一份定义（见 pages/todos/todos.js）。
- * 拿不到时回退到「临时替换 global.Page 截获」：小程序的页面是用 Page({...})
- * 注册的，直接 require 时 module.exports 是空的。
- *
- * 注意：require 之前要清缓存，否则模块已经求值过、不会再调 Page()。
+ * 子模块顶层会无条件执行 `Page(DEFINITION)`。宿主页把它们 require 进来时，
+ * 这次 Page() 会把子模块注册成「当前页面」，把宿主自己顶掉。所以这里临时
+ * 把 global.Page 换成收集器，并置上 __TABHOST_LOADING__ 标志。
  */
-function loadPageDef(file) {
+function withCapture(fn) {
   const g = typeof globalThis !== 'undefined' ? globalThis : global;
-  const saved = g.Page;
+  const savedPage = g.Page;
+  const savedFlag = g.__TABHOST_LOADING__;
   let captured = null;
   g.Page = (def) => { captured = def; };
-  // 告诉子模块「你正在被 tabHost 加载，不要自己注册 Page」——
-  // 宿主页面（如 dashboard）自己也要参与合并时，self-require 会重入，
-  // 不设这个标志就会把宿主的 Page 定义再注册一遍。
-  const savedFlag = g.__TABHOST_LOADING__;
   g.__TABHOST_LOADING__ = true;
-
-  let exported = null;
+  let ret;
   try {
-    // ⚠️ 这里绝不能用 require.resolve / require.cache / delete require.cache。
-    // 那些是 Node 的东西，小程序运行时没有：
-    //   · require.resolve 在小程序里不存在 → TypeError
-    //   · require.cache 是 undefined → delete undefined[x] 直接抛
-    // 之前就是这两行让总览/待办/健康三个宿主页在 onLoad 阶段直接抛异常，
-    // 页面注册不上，表现为「点 tabBar 没反应」——而课表、设置是普通页面，
-    // 所以只有那两个能点开。这类错误小程序不弹提示，只打在控制台。
-    //
-    // 小程序自己的模块系统本来就缓存，重复 require 返回同一份，
-    // 子模块顶层会执行一次 Page()，用下面替换 global.Page 的方式截获即可。
-    exported = require(file);
+    ret = fn();
   } finally {
-    g.Page = saved;
+    g.Page = savedPage;
     g.__TABHOST_LOADING__ = savedFlag;
   }
+  return { captured, ret };
+}
 
+/**
+ * 取出一个页面模块的 Page 定义。
+ *
+ * ⚠️ 这个函数用「运行时算出来的路径」调 require，小程序**不能**这么用：
+ * 打包器只把「字符串字面量 require」的目标打进包，动态路径的模块根本不在包里，
+ * 运行时报 `module 'pages/xxx/xxx.js' is not defined`。
+ * 这个异常发生在宿主页模块求值阶段，Page() 没执行到，页面就是一片空白
+ * （不白屏、不弹窗，只有控制台一行红字）—— 课表/设置是普通页面所以正常，
+ * 总览/待办·作业/健康三个合并页全空。
+ *
+ * 所以正常路径改走 opts.loadDefs（宿主页里写死字面量 require，见 buildHost）。
+ * 这里只作为**回退**保留：Node 环境下 require 支持动态路径，单测仍然走这条路。
+ */
+function loadPageDef(file) {
+  const { captured, ret } = withCapture(() => require(file));
   // 导出的是页面定义本身（有 data / onLoad）才用它
-  if (exported && typeof exported === 'object' && exported.data) return exported;
+  if (ret && typeof ret === 'object' && ret.data) return ret;
   return captured;
 }
 
@@ -80,13 +81,16 @@ function resolveFromUtils(p) {
   let s = String(p || '');
   if (!s) return s;
   // 绝对路径（小程序里以 / 开头 = 项目根）
-  if (s.charAt(0) === '/') return '..' + s;
+  if (s.charAt(0) === '/') s = '..' + s;
   // 已经是「相对 utils/ 且指向 pages/」的写法，别重复加前缀
-  if (s.indexOf('../pages/') === 0) return s;
+  else if (s.indexOf('../pages/') === 0) { /* 原样 */ }
   // 去掉前导的 ../（相对宿主页面目录），改成相对 utils/
-  if (s.indexOf('../') === 0) return '../pages/' + s.slice(3);
+  else if (s.indexOf('../') === 0) s = '../pages/' + s.slice(3);
   // 同目录（宿主页面与子模块同层，理论上用不到）
-  return '../pages/' + s;
+  else s = '../pages/' + s;
+  // 去掉 .js 后缀，统一成小程序模块表的键名
+  if (s.slice(-3) === '.js') s = s.slice(0, -3);
+  return s;
 }
 
 /**
@@ -160,29 +164,44 @@ function buildHost(opts) {
   const specs = opts.modules || {};
   const ids = segments.map((s) => s.id);
 
+  // ⚠️ 子模块必须由调用方用**字符串字面量的 require** 取进来。
+  //
+  // 小程序的打包器只把字面量 require 的目标打进包。之前这里用
+  // loadPageDef(算出来的路径) 去 require，那些模块压根不在包里，运行时抛
+  //   module 'pages/today/today.js' is not defined
+  // 这个异常在宿主页模块求值阶段就抛出，Page() 根本没执行到，页面一片空白。
+  // 课表、设置是普通页面，所以看起来「只有那两个能用」。
+  //
+  // 用法（宿主页里）：
+  //   buildHost({ ..., loadDefs() { return { today: require('../today/today.js') }; } })
+  // 传进来的是个函数，只有在 withCapture 里调用它，子模块顶层的
+  // Page(DEFINITION) 才不会被当成宿主自己的注册。
+  let preloaded = null;
+  if (typeof opts.loadDefs === 'function') {
+    const { ret } = withCapture(() => opts.loadDefs());
+    preloaded = ret || {};
+  }
+
   // 先把各子模块的定义取出来（每个只取一次）
   const modules = {};
   for (const id of ids) {
-    const spec = specs[id];
-    if (!spec || !spec.path) continue;
-    // ⚠️ 不要用 require('path') 或 process.cwd()：小程序的 require 只认
-    // 它自己那套「相对本文件的路径」，没有 path 模块、也没有 process。
-    //
-    // 而调用方传进来的 path（如 '../todos/todos.js'）是**相对宿主页面**的，
-    // 在 tabHost.js 里直接 require 会从 utils/ 出发、找不到模块。
-    // 所以这里统一转成「相对 tabHost.js」的路径：
-    //   宿主页面在 pages/<name>/，本文件在 utils/，
-    //   所以 '../todos/todos.js'（相对 pages/tasks/）要变成
-    //   '../pages/todos/todos.js'（相对 utils/）。
-    //
-    // 调用方也可以直接给相对 utils/ 的路径（以 '.' 开头且去掉前导 ../ 后
-    // 落在 pages/ 下），这里两种写法都认。
-    const def = loadPageDef(resolveFromUtils(spec.path));
+    // spec 只是「可选补充」：有了 loadDefs 之后，宿主页可以完全不写 modules，
+    // 标签直接从 segments 里取。
+    const spec = specs[id] || {};
+
+    // 优先：宿主页字面量 require 进来的定义
+    let def = preloaded && preloaded[id] ? preloaded[id] : null;
+    // 其次：调用方直接给的定义对象
+    if (!def && spec.def) def = spec.def;
+    // 回退：动态 require（Node 单测走这条；小程序里这条路走不通，见上）
+    if (!def && spec.path) def = loadPageDef(resolveFromUtils(spec.path));
+
     if (!def) {
-      console.error(`[tabHost] 取不到 ${id} 的 Page 定义（${spec.path}）`);
+      console.error(`[tabHost] 取不到 ${id} 的 Page 定义（${spec.path || id}）`);
       continue;
     }
-    modules[id] = { def, label: spec.label || id };
+    const seg = segments.filter((s) => s.id === id)[0];
+    modules[id] = { def, label: spec.label || (seg && seg.label) || id };
   }
 
   // 宿主自己的定义也能作为一个分段参与（如「总览 / 今日」里的总览）。

@@ -18,5 +18,13 @@ Page(
       run: { path: '../run/run.js', label: '运动' },
       health: { path: '../health/health.js', label: '体重作息' },
     },
+    // ⚠️ 必须是字符串字面量的 require，理由见 utils/tabHost.js 的 buildHost
+    loadDefs() {
+      return {
+        diet: require('../diet/def'),
+        run: require('../run/def'),
+        health: require('../health/def'),
+      };
+    },
   })
 );
