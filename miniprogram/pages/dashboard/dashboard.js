@@ -22,6 +22,9 @@ const DEFINITION = {
     // 必须在 data 里先声明：WXML 的 {{compact ? ...}} 在首次 setData 之前
     // 读到 undefined，虽然三元结果相同，但声明了前缀生成器才能识别它。
     compact: false,
+    // 「从重要事项里挑」的选择器是否展开
+    pinPickerOpen: false,
+    availablePins: [],
     runDone: 0,
     runTarget: 30,
     runEnabled: true,
@@ -144,14 +147,33 @@ const DEFINITION = {
     }
 
     // ── 钉到总览的倒计时（与「重要事项」共用同一份数据）──
-    const pinned = s.milestones
-      .filter((m) => m.pinned && m.date)
+    // 卡片只显示被「钉」上的事项；「添加」是从重要事项里挑一个放上来，
+    // 不新建 —— 这样绿色条和重要事项页永远是同一份数据。
+    const datedMilestones = s.milestones.filter((m) => m.date);
+    const pinned = datedMilestones
+      .filter((m) => m.pinned)
       .sort((a, b) => a.date.localeCompare(b.date))
       .map((m) => {
         const d = daysUntil(fromKey(m.date), today);
         return { id: m.id, label: m.title, date: m.date, days: d, done: d !== null && d < 0 };
       });
     const compact = pinned.length > 4;
+
+    // 可供挑选的：有日期、还没钉上、且没有过去太久（过期一天内还留着）
+    const availablePins = datedMilestones
+      .filter((m) => !m.pinned && daysUntil(fromKey(m.date), today) >= -1)
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .map((m) => ({
+        id: m.id,
+        title: m.title,
+        emoji: m.emoji || '📌',
+        category: m.category || '',
+        date: m.date,
+        daysText: (() => {
+          const d = daysUntil(fromKey(m.date), today);
+          return d < 0 ? `已过 ${-d} 天` : d === 0 ? '就是今天' : `还有 ${d} 天`;
+        })(),
+      }));
 
     // ── 待办速览 ──
     const todoPreview = [...openTodos]
@@ -201,6 +223,7 @@ const DEFINITION = {
       timeline,
       pinned,
       compact,
+      availablePins,
       openTodos: todoPreview,
       dueSoon: assignPreview,
       overdue,
@@ -257,11 +280,51 @@ const DEFINITION = {
     else wx.navigateTo({ url });
   },
 
-  /** 非 tabBar 页面的入口（分析 / 周计划 / 事项 / 识别 / 设置） */
+  /** 非 tabBar 页面的入口（分析 / 周计划 / 事项 / 识别） */
   goPage(e) {
     const url = e.currentTarget.dataset.url;
     if (!url) return;
     wx.navigateTo({ url });
+  },
+
+  // ── 倒计时卡片的增删（与「重要事项」共用同一份 milestones 数据）──
+
+  /** 打开 / 关闭「从重要事项里挑」的选择器 */
+  togglePinPicker() {
+    this.setData({ pinPickerOpen: !this.data.pinPickerOpen });
+  },
+
+  /**
+   * 把某一事项钉到总览上。
+   * 只改 pinned 标记，不新建事项 —— 绿色条和重要事项页永远一致。
+   */
+  pinMilestone(e) {
+    const id = e.currentTarget.dataset.id;
+    if (!id) return;
+    const all = store.shape.milestones || [];
+    store.setMilestones(all.map((m) => (m.id === id ? { ...m, pinned: true } : m)));
+    this.setData({ pinPickerOpen: false });
+    this.refresh();
+    wx.showToast({ title: '已钉到总览', icon: 'success' });
+  },
+
+  /**
+   * 从总览撤下。
+   * 语义是「取消钉住」，事项本身仍留在重要事项页里，不会被删掉 ——
+   * 所以不弹确认框，误点也不丢数据。
+   */
+  unpinMilestone(e) {
+    const id = e.currentTarget.dataset.id;
+    if (!id) return;
+    const all = store.shape.milestones || [];
+    store.setMilestones(all.map((m) => (m.id === id ? { ...m, pinned: false } : m)));
+    this.refresh();
+    wx.showToast({ title: '已从总览撤下', icon: 'none' });
+  },
+
+  /** 选择器里一个都没有时的「去新建」入口 */
+  goMilestones() {
+    wx.navigateTo({ url: '/pages/milestones/milestones' });
   },
 
   noop() {},

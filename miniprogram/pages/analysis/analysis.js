@@ -34,6 +34,9 @@ Page({
 
     hasCourses: false,
     courseCount: 0,
+    // 重要事项默认只显示前 8 条，点「展开全部」看剩下的
+    msExpanded: false,
+    msMore: 0,
     weekFrom: 1,
     weekTo: 3,
     total: 3,
@@ -93,8 +96,13 @@ Page({
       if (!b.date) return -1;
       return String(a.date).localeCompare(String(b.date));
     });
-    const milestones = ms.slice(0, 8).map((m) => {
+    const milestones = ms.map((m) => {
       const d = m.date ? daysUntil(fromKey(m.date), today) : null;
+      // 提醒提前量是**每条事项自己的**设置（重要事项页可改，默认 7 天）。
+      // 桌面版 Analysis.tsx 写的是 (m.remindDaysBefore ?? 7)，
+      // 这里原来写死 7，会把用户改过的提前量忽略掉。
+      // 用 || 不用 ??：老数据里可能是 0 或空串，都要退回默认 7。
+      const remind = Number(m.remindDaysBefore) || 7;
       return {
         id: m.id,
         title: m.title,
@@ -104,9 +112,19 @@ Page({
         done: !!m.done,
         daysText:
           d === null ? '未定日期' : d < 0 ? `已过 ${-d} 天` : d === 0 ? '就是今天' : `还有 ${d} 天`,
-        urgent: !m.done && d !== null && d >= 0 && d <= 7,
+        urgent: !m.done && d !== null && d >= 0 && d <= remind,
       };
     });
+
+    // 桌面版这里不截断（Analysis.tsx 把全部事项直接渲染出来），
+    // 但手机上几十条事项会把页面拉得很长，所以默认只显示前 8 条，
+    // 其余用「展开全部」放出来 —— 不能像原来那样直接 slice 掉，
+    // 那样第 9 条之后的事项在分析页就再也看不到了。
+    const MS_PREVIEW = 8;
+    const milestonesShown = this.data.msExpanded
+      ? milestones
+      : milestones.slice(0, MS_PREVIEW);
+    const msMore = Math.max(0, milestones.length - milestonesShown.length);
 
     // 空课表：整页只给一个引导，不渲染算不出内容的热力图
     if (!hasCourses) {
@@ -115,7 +133,9 @@ Page({
         themeClass: settings.theme === 'light' ? 'theme-light' : '',
         hasCourses: false,
         courseCount: 0,
-        milestones,
+        milestones: milestonesShown,
+        msMore,
+        msExpanded: !!this.data.msExpanded,
         hint: '还没有课程数据，先把课表填进来，这里会自动算出你每周的空闲时段热力图。',
       });
       return;
@@ -208,8 +228,15 @@ Page({
       ranked,
       flattest,
       bySlot,
-      milestones,
+      milestones: milestonesShown,
+      msMore,
+      msExpanded: !!this.data.msExpanded,
     });
+  },
+
+  /** 展开/收起「接下来要做的事」的剩余条目 */
+  toggleMsExpand() {
+    this.setData({ msExpanded: !this.data.msExpanded }, () => this.refresh());
   },
 
   goCourses() {

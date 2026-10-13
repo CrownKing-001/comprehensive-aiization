@@ -96,7 +96,49 @@
       <view class="tiny-note">
         {{hasPlan ? '带「·」的是你在设置里定的训练日，点格子打卡。' : '还没有设置训练日，去「设置」里填「训练日」后会显示计划标记。'}}
       </view>
+
+      <!-- ── 月历打卡（桌面版 CheckinCalendar.tsx）──
+           周条只能看本周，换成真实月历才能跨月看长期坚持情况，
+           也才能补上个月漏打的日子。 -->
+      <view class="cal">
+        <view class="cal-head">
+          <view class="cal-nav" data-delta="-1" bindtap="shiftMonth">‹</view>
+          <view class="cal-mid">
+            <view class="cal-month">{{calLabel}}</view>
+            <view class="cal-sub">
+              本月打卡 {{monthDone}} 天
+              <text class="cal-streak" wx:if="{{hasPlan && streak > 0}}">连续 {{streak}} 天</text>
+            </view>
+          </view>
+          <view class="cal-nav {{canGoNextMonth ? '' : 'is-off'}}" data-delta="1" bindtap="shiftMonth">›</view>
+        </view>
+
+        <view class="cal-week">
+          <view class="cal-wd" wx:for="{{['一','二','三','四','五','六','日']}}" wx:key="*this">{{item}}</view>
+        </view>
+
+        <view class="cal-grid">
+          <view
+            class="cal-cell {{item.inMonth ? '' : 'is-out'}} {{item.checked ? 'is-done' : ''}} {{!item.checked && item.isPlan ? 'is-plan' : ''}} {{item.isToday && !item.checked ? 'is-today' : ''}} {{item.isFuture ? 'is-future' : ''}}"
+            wx:for="{{calCells}}"
+            wx:key="key"
+            data-key="{{item.key}}"
+            bindtap="toggleTrain"
+          >
+            <text>{{item.day}}</text>
+            <text class="cal-check" wx:if="{{item.checked}}">✓</text>
+          </view>
+        </view>
+
+        <view class="cal-legend">
+          <view class="cal-lg"><view class="cal-sw is-done"></view>已打卡</view>
+          <view class="cal-lg"><view class="cal-sw is-plan"></view>有训练安排</view>
+          <view class="cal-lg"><view class="cal-sw"></view>休息日</view>
+        </view>
+      </view>
+
       <view class="row-actions">
+        <view class="btn-ghost btn-sm" bindtap="backToThisMonth">回到本月</view>
         <view class="btn-ghost btn-sm" bindtap="goSettings">⚙️ 设置训练日</view>
       </view>
     </view>

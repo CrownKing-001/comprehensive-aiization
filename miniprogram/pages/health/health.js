@@ -54,6 +54,15 @@ const DEFINITION = {
     hasPlan: false,
     week: 1,
 
+    // 月历打卡。calCursor 为 null 表示「跟着今天所在的月份」，
+    // 用户翻月后才写入 {y, m}；这样跨天打开不会被上次翻的月份卡住。
+    calCursor: null,
+    calCells: [],
+    calLabel: '',
+    monthDone: 0,
+    streak: 0,
+    canGoNextMonth: false,
+
     // 历史
     logs: [],
   },
@@ -135,6 +144,51 @@ const DEFINITION = {
     }
     const doneCount = weekDays.filter((d) => d.checked).length;
 
+    // ── 月历打卡 ──
+    // 桌面版是 CheckinCalendar.tsx：真实月历网格（不是 7 格周条），
+    // 这样跨月也能看出长期坚持情况，还能补上个月漏打的日子。
+    const doneSet = new Set(done);
+    const calCursor = this.data.calCursor; // {y, m}，m 为 0-11
+    const cy = calCursor ? calCursor.y : today.getFullYear();
+    const cm = calCursor ? calCursor.m : today.getMonth();
+
+    // 周一为第一列：getDay() 是 0=周日…6=周六，转成「周一=0」
+    const firstOfMonth = new Date(cy, cm, 1);
+    const lead = (firstOfMonth.getDay() + 6) % 7;
+    const gridStart = new Date(cy, cm, 1 - lead);
+    const calCells = [];
+    for (let i = 0; i < 42; i++) {
+      const d = new Date(gridStart.getFullYear(), gridStart.getMonth(), gridStart.getDate() + i);
+      const key = toKey(d);
+      calCells.push({
+        key,
+        day: d.getDate(),
+        inMonth: d.getMonth() === cm,
+        isToday: key === todayKey,
+        isFuture: key > todayKey,
+        checked: doneSet.has(key),
+        isPlan: isTrainDay(key),
+      });
+    }
+
+    // 连续打卡：从今天往回数，遇到「该练却没打」就停。
+    // 休息日跳过 —— 不计数也不打断，否则一周只练 3 天的人永远连不上。
+    // 今天还没过完，今天没打卡不算断。
+    let streak = 0;
+    {
+      let d = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      for (let i = 0; i < 400; i++) {
+        const key = toKey(d);
+        if (doneSet.has(key)) streak += 1;
+        else if (isTrainDay(key) && key !== todayKey) break;
+        d = new Date(d.getFullYear(), d.getMonth(), d.getDate() - 1);
+      }
+    }
+
+    const monthPrefix = `${cy}-${String(cm + 1).padStart(2, '0')}`;
+    const monthDone = done.filter((k) => String(k).indexOf(monthPrefix) === 0).length;
+    const calLabel = `${cy} 年 ${cm + 1} 月`;
+
     const stats = [
       {
         tone: 'emerald',
@@ -202,6 +256,11 @@ const DEFINITION = {
         doneCount,
         hasPlan,
         week,
+        calCells,
+        calLabel,
+        monthDone,
+        streak,
+        canGoNextMonth: cy < today.getFullYear() || (cy === today.getFullYear() && cm < today.getMonth()),
         logs: sortedLogs.map((l) => ({
           date: l.date,
           weight: l.weight === undefined ? '—' : String(l.weight),
@@ -321,6 +380,27 @@ const DEFINITION = {
     // 「设置」已经是 tabBar 页面，只能用 switchTab；
     // 用 navigateTo 会静默失败（不报错也不跳）。
     wx.switchTab({ url: '/pages/settings/settings' });
+  },
+
+  // ── 月历打卡的翻月 ────────────────────────────────
+  /**
+   * 翻月。游标默认跟随今天所在月，用户翻过之后才固定下来。
+   * delta 为 -1 / +1；不允许翻到未来的月份（未来还没发生，没有可打卡的日子）。
+   */
+  shiftMonth(e) {
+    const delta = Number(e.currentTarget.dataset.delta) || 0;
+    const today = store.today;
+    const cur = this.data.calCursor || { y: today.getFullYear(), m: today.getMonth() };
+    const d = new Date(cur.y, cur.m + delta, 1);
+    // 不许翻到未来：超过「今天所在月」就停在当月
+    const limit = today.getFullYear() * 12 + today.getMonth();
+    if (d.getFullYear() * 12 + d.getMonth() > limit) return;
+    this.setData({ calCursor: { y: d.getFullYear(), m: d.getMonth() } }, () => this.refresh());
+  },
+
+  /** 回到今天所在的月份 */
+  backToThisMonth() {
+    this.setData({ calCursor: null }, () => this.refresh());
   },
 
   /** 弹层内部点击：阻止冒泡到遮罩，不做任何事 */

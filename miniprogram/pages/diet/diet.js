@@ -71,6 +71,13 @@ const DEFINITION = {
       ),
     })),
 
+    // 自己存过的套餐（store.templates）。内置的是 TEMPLATES 常量，
+    // 自己存的是用户数据 —— wxml 里分两排渲染，自存的带 ★ 区分。
+    savedTemplates: [],
+    // 「存为我的套餐」的输入框与弹层
+    saveTplOpen: false,
+    tplName: '',
+
     // 今日汇总
     todayProtein: 0,
     todayCalories: 0,
@@ -196,6 +203,15 @@ const DEFINITION = {
     this.setData({
       ready: true,
       themeClass: settings.theme === 'light' ? 'theme-light' : '',
+      // 自己存过的套餐：只显示名字和摘要，点一下套用
+      savedTemplates: (store.shape.templates || []).map((t) => ({
+        id: t.id,
+        name: t.name,
+        meal: t.meal,
+        count: (t.items || []).length,
+        summary: (t.items || []).map((i) => i.name).join(' + '),
+        protein: Math.round((t.items || []).reduce((s, i) => s + (i.protein || 0), 0)),
+      })),
       proteinTarget: target,
       calorieTarget,
       latestWeight: latestWeightVal,
@@ -403,6 +419,94 @@ const DEFINITION = {
     );
   },
 
+  /**
+   * 套用自己存过的套餐。
+   * 与内置套餐的区别：这里的 items 是**存下来的快照**（含名称/蛋白/热量），
+   * 所以要按 foodId 查最新食物库补全，查不到就沿用快照 ——
+   * 否则食物库改过之后，旧套餐会因为找不到食物而少几项。
+   */
+  applySaved(e) {
+    const id = e.currentTarget.dataset.id;
+    const t = (store.shape.templates || []).find((x) => x.id === id);
+    if (!t) return;
+    const picked = (t.items || []).map((it) => {
+      const f = foodById(it.foodId);
+      return {
+        foodId: it.foodId,
+        name: (f && f.name) || it.name || '未知食物',
+        qty: it.qty || 1,
+        protein: Math.round(((f ? f.protein : it.protein) || 0) * (it.qty || 1) * 10) / 10,
+        calories: Math.round(((f ? f.calories : it.calories) || 0) * (it.qty || 1)),
+      };
+    });
+    const meal = t.meal || this.data.meal;
+    this.setData(
+      { picked, meal, mealIndex: MEALS.indexOf(meal), msg: `已套用「${t.name}」` },
+      () => this._recalcPicked()
+    );
+  },
+
+  /** 打开「存为我的套餐」输入框 */
+  openSaveTpl() {
+    if (!this.data.picked.length) {
+      this.setData({ msg: '清单是空的，先加点食物再存套餐' });
+      return;
+    }
+    this.setData({ saveTplOpen: true, tplName: '' });
+  },
+
+  closeSaveTpl() {
+    this.setData({ saveTplOpen: false, tplName: '' });
+  },
+
+  onTplName(e) {
+    this.setData({ tplName: e.detail.value });
+  },
+
+  /** 把当前清单存成套餐；名字留空就用「早餐套餐」这种默认名 */
+  commitTemplate() {
+    const picked = this.data.picked;
+    if (!picked.length) {
+      this.setData({ saveTplOpen: false, msg: '清单是空的，没有可存的' });
+      return;
+    }
+    const name = String(this.data.tplName || '').trim() || `${this.data.meal}套餐`;
+    const list = store.shape.templates || [];
+    store.setTemplates([
+      ...list,
+      {
+        id: uid(),
+        name,
+        meal: this.data.meal,
+        items: picked.map((p) => ({
+          foodId: p.foodId,
+          name: p.name,
+          qty: p.qty,
+          protein: p.protein,
+          calories: p.calories,
+        })),
+      },
+    ]);
+    this.setData({ saveTplOpen: false, tplName: '', msg: `已存为套餐「${name}」，下次一键复用` });
+  },
+
+  /** 删除自己存的套餐（内置套餐不能删） */
+  removeTemplate(e) {
+    const id = e.currentTarget.dataset.id;
+    const list = store.shape.templates || [];
+    const t = list.find((x) => x.id === id);
+    if (!t) return;
+    wx.showModal({
+      title: '删除套餐',
+      content: `确定删除「${t.name}」吗？不影响已经记录的内容。`,
+      success: (res) => {
+        if (!res.confirm) return;
+        store.setTemplates(list.filter((x) => x.id !== id));
+        this.setData({ msg: `已删除套餐「${t.name}」` });
+      },
+    });
+  },
+
   // ── 保存 ──────────────────────────────────────────
   save() {
     const picked = this.data.picked;
@@ -524,6 +628,9 @@ const DEFINITION = {
     }
     wx.navigateTo({ url: '/pages/health/health' });
   },
+
+  /** 弹层内部点击：阻止冒泡到遮罩，不做任何事 */
+  noop() {},
 };
 
 Page(DEFINITION);

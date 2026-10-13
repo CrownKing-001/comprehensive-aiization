@@ -197,6 +197,18 @@
   font-weight: 600;
 }
 
+/* 展开 / 收起「接下来要做的事」 */
+.ms-more {
+  margin-top: 18rpx;
+  padding: 16rpx 0;
+  border-radius: 14rpx;
+  border: 2rpx solid var(--border);
+  background: var(--chip-bg);
+  color: var(--text-2);
+  font-size: 24rpx;
+  text-align: center;
+}
+
 .warn {
   color: #fb7185;
   font-weight: 500;

@@ -785,6 +785,156 @@ page {
   line-height: 1;
 }
 
+/* ── 月历打卡 ────────────────────────────────────── */
+.cal {
+  margin-top: 12px;
+  padding-top: 11px;
+  border-top: 1px solid var(--border);
+}
+
+.cal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+/* 翻月按钮 28px 见方，手指点得中 */
+.cal-nav {
+  width: 28px;
+  height: 28px;
+  line-height: 28px;
+  text-align: center;
+  border-radius: 7px;
+  font-size: 16px;
+  color: var(--text-3);
+  background: var(--chip-bg);
+  flex-shrink: 0;
+}
+
+/* 已经到当月了，下个月按钮变灰（点它也没用） */
+.cal-nav.is-off {
+  opacity: 0.3;
+}
+
+.cal-mid { text-align: center; flex: 1; min-width: 0; }
+
+.cal-month {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-1);
+}
+
+.cal-sub {
+  margin-top: 2px;
+  font-size: 10px;
+  color: var(--text-4);
+}
+
+.cal-streak {
+  margin-left: 6px;
+  color: #34d399;
+  font-weight: 600;
+}
+
+.cal-week {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+.cal-wd {
+  text-align: center;
+  font-size: 10px;
+  color: var(--text-4);
+}
+
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.cal-cell {
+  position: relative;
+  height: 34px;
+  border-radius: 7px;
+  border: 1px solid transparent;
+  background: var(--surface-3);
+  color: var(--text-3);
+  font-size: 11.5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 邻月的日子淡出，但仍然可点 —— 方便补上个月漏打的 */
+.cal-cell.is-out { opacity: 0.35; }
+
+.cal-cell.is-future { opacity: 0.2; }
+
+/* 有训练安排但还没打卡：浅底 + 绿边，一眼看出「该练没练」 */
+.cal-cell.is-plan {
+  background: rgba(16, 185, 129, 0.1);
+  border-color: rgba(16, 185, 129, 0.3);
+  color: #34d399;
+}
+
+.cal-cell.is-done {
+  background: #10b981;
+  border-color: #10b981;
+  color: #fff;
+  font-weight: 600;
+}
+
+.cal-cell.is-today {
+  border-color: rgba(56, 189, 248, 0.6);
+}
+
+/* 勾角标：小程序不支持 :last-child 之类的伪类，直接绝对定位 */
+.cal-check {
+  position: absolute;
+  right: 3px;
+  bottom: 1px;
+  font-size: 8px;
+  opacity: 0.85;
+}
+
+.cal-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 9px;
+  font-size: 9.5px;
+  color: var(--text-4);
+}
+
+.cal-lg {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.cal-sw {
+  width: 11px;
+  height: 11px;
+  border-radius: 3px;
+  background: var(--surface-3);
+  border: 1px solid var(--border-2);
+}
+
+.cal-sw.is-done {
+  background: #10b981;
+  border-color: #10b981;
+}
+
+.cal-sw.is-plan {
+  background: rgba(16, 185, 129, 0.1);
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
 /* ── 历史行 ───────────────────────────────────── */
 .hd-weight,
 .hd-sleep,
@@ -926,7 +1076,41 @@ page {
       <div class="tiny-note">
         ··
       </div>
+
+      
+      <div class="cal">
+        <div class="cal-head">
+          <div class="cal-nav">‹</div>
+          <div class="cal-mid">
+            <div class="cal-month">··</div>
+            <div class="cal-sub">
+              本月打卡 ·· 天
+              <span class="cal-streak">连续 ·· 天</span>
+            </div>
+          </div>
+          <div class="cal-nav ··">›</div>
+        </div>
+
+        <div class="cal-week">
+          <div class="cal-wd">··</div>
+        </div>
+
+        <div class="cal-grid">
+          <div class="cal-cell ·· ·· ·· ·· ··">
+            <span>··</span>
+            <span class="cal-check">✓</span>
+          </div>
+        </div>
+
+        <div class="cal-legend">
+          <div class="cal-lg"><div class="cal-sw is-done"></div>已打卡</div>
+          <div class="cal-lg"><div class="cal-sw is-plan"></div>有训练安排</div>
+          <div class="cal-lg"><div class="cal-sw"></div>休息日</div>
+        </div>
+      </div>
+
       <div class="row-actions">
+        <div class="btn-ghost btn-sm">回到本月</div>
         <div class="btn-ghost btn-sm">⚙️ 设置训练日</div>
       </div>
     </div>

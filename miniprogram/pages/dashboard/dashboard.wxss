@@ -98,6 +98,23 @@
   background: rgba(255, 255, 255, 0.12);
   border: 2rpx solid rgba(255, 255, 255, 0.12);
   text-align: center;
+  /* 撤下按钮绝对定位在右上角 */
+  position: relative;
+}
+
+/* 撤下：桌面版是 hover 才出现，手机没有 hover，所以常显。
+   屏幕小、手指粗，可点区域给到 40rpx 见方，免得点不中。 */
+.pin-x {
+  position: absolute;
+  top: 4rpx;
+  right: 6rpx;
+  width: 40rpx;
+  height: 40rpx;
+  line-height: 40rpx;
+  border-radius: 12rpx;
+  font-size: 20rpx;
+  color: rgba(255, 255, 255, 0.55);
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .pin-card.is-compact {
@@ -143,6 +160,72 @@
 
 .pin-add-plus { font-size: 34rpx; color: rgba(255, 255, 255, 0.8); }
 .pin-add-text { font-size: 20rpx; color: rgba(255, 255, 255, 0.75); }
+.pin-add-hint { font-size: 19rpx; color: rgba(255, 255, 255, 0.45); }
+
+/* 一个都没钉时，添加块要跟倒计时卡差不多高，
+   否则绿色条上只剩一条小窄条，看起来像渲染坏了 */
+.pin-add.is-empty { min-height: 176rpx; }
+
+/* ── 「从重要事项里挑」选择器 ── */
+.pin-picker {
+  margin-top: 16rpx;
+  padding: 12rpx;
+  border-radius: 22rpx;
+  background: rgba(0, 0, 0, 0.32);
+  border: 2rpx solid rgba(255, 255, 255, 0.16);
+}
+
+.pin-picker-head {
+  padding: 8rpx 12rpx 12rpx;
+  font-size: 20rpx;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.pin-picker-empty {
+  padding: 22rpx 12rpx;
+  text-align: center;
+  font-size: 22rpx;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.pin-picker-link {
+  margin-left: 8rpx;
+  color: #34d399;
+}
+
+.pin-picker-item {
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
+  padding: 18rpx 12rpx;
+  border-radius: 16rpx;
+}
+
+.pin-picker-emoji { font-size: 30rpx; flex-shrink: 0; }
+
+.pin-picker-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+}
+
+.pin-picker-title {
+  font-size: 25rpx;
+  color: rgba(255, 255, 255, 0.92);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pin-picker-meta { font-size: 20rpx; color: rgba(255, 255, 255, 0.5); }
+
+.pin-picker-days {
+  font-size: 20rpx;
+  color: rgba(209, 250, 229, 0.85);
+  flex-shrink: 0;
+}
 
 /* ── 时间轴 ───────────────────────────────────── */
 /* 时间轴：小程序不支持 :last-child，靠容器负下边距抵消末项间距 */

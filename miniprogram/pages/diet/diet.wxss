@@ -165,6 +165,23 @@
   min-width: 0;
 }
 
+/* 自己存的套餐：绿色描边，和内置的区分开（桌面版也是这个区分方式） */
+.tpl-card.is-mine {
+  border-color: rgba(16, 185, 129, 0.4);
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.tpl-card.is-mine .tpl-name {
+  color: #34d399;
+}
+
+/* 「★ 我自己存的」小标题 */
+.tpl-sub {
+  margin: 24rpx 0 14rpx;
+  font-size: 21rpx;
+  color: var(--text-4);
+}
+
 .tpl-name {
   font-size: 24rpx;
   font-weight: 600;
@@ -294,4 +311,38 @@
   color: var(--text-4);
   font-variant-numeric: tabular-nums;
   flex-shrink: 0;
+}
+
+/* ── 弹层 ─────────────────────────────────────── */
+.modal-mask {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48rpx;
+  z-index: 100;
+}
+
+.modal-card {
+  width: 100%;
+  max-width: 620rpx;
+  max-height: 80%;
+  overflow-y: auto;
+  background: var(--surface-1);
+  border: 2rpx solid var(--border-2);
+  border-radius: 28rpx;
+  padding: 34rpx 32rpx;
+  box-sizing: border-box;
+}
+
+.modal-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: var(--text-1);
+  margin-bottom: 26rpx;
 }

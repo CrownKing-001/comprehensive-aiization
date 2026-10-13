@@ -530,6 +530,88 @@ section('[13b] 总览 · 今日 合并页');
   store.resetAll();
 }
 
+// ══ 13c. 总览的置顶倒计时增删 ══
+// 桌面版是 hover 出现铅笔/叉号，手机没有 hover，所以撤下按钮常显。
+// 「添加」是从重要事项里挑，不新建 —— 绿色条和重要事项页必须共用一份数据。
+section('[13c] 总览 · 置顶倒计时增删');
+{
+  const APP = { globalData: {} };
+  const savedGetApp = global.getApp;
+  global.getApp = () => APP;
+
+  // 取宿主注册出去的实例（方法带 dashboard_ 前缀）
+  let reg = null;
+  {
+    const saved = global.Page;
+    global.Page = (x) => { reg = x; };
+    const f = path.join(MP, 'pages/dashboard/dashboard.js');
+    delete require.cache[require.resolve(f)];
+    require(f);
+    global.Page = saved;
+  }
+  const p = Object.assign({}, reg, {
+    data: JSON.parse(JSON.stringify(reg.data || {})),
+    setData(patch, cb) {
+      for (const k of Object.keys(patch)) this.data[k] = patch[k];
+      if (typeof cb === 'function') cb();
+    },
+  });
+
+  // 相对今天偏移 n 天的 YYYY-MM-DD（不引 toKey，避免多一个依赖）
+  const shift = (n) => {
+    const d = new Date(store.today.getTime() + n * 86400000);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  };
+
+  store.resetAll();
+  store.setMilestones([
+    { id: 'p1', title: '期末考试', date: shift(20), emoji: '📝', category: '考试', done: false },
+    { id: 'p2', title: '四级报名', date: shift(5), emoji: '📘', category: '考试', done: false },
+    { id: 'p3', title: '很久以前', date: '2020-01-01', emoji: '📌', category: '其他', done: false },
+    { id: 'p4', title: '没有日期', date: '', emoji: '📌', category: '其他', done: false },
+  ]);
+  p.onLoad();
+
+  T('初始没有钉住的', p.data.dashboard_pinned.length === 0);
+  T('可选列表排除过期太久的', !p.data.dashboard_availablePins.some((x) => x.id === 'p3'));
+  T('  也排除没有日期的', !p.data.dashboard_availablePins.some((x) => x.id === 'p4'));
+  T('  可选的按日期升序', p.data.dashboard_availablePins[0].id === 'p2',
+    p.data.dashboard_availablePins.map((x) => x.id).join(','));
+
+  p.dashboard_togglePinPicker();
+  T('选择器可展开', p.data.dashboard_pinPickerOpen === true);
+  p.dashboard_pinMilestone({ currentTarget: { dataset: { id: 'p2' } } });
+  T('钉住后出现在绿色条上', p.data.dashboard_pinned.some((x) => x.id === 'p2'));
+  T('  选择器自动收起', p.data.dashboard_pinPickerOpen === false);
+  T('  已钉的不再出现在可选列表', !p.data.dashboard_availablePins.some((x) => x.id === 'p2'));
+  T('  事项本身没被复制成两条', (store.shape.milestones || []).length === 4);
+
+  p.dashboard_unpinMilestone({ currentTarget: { dataset: { id: 'p2' } } });
+  T('撤下后不在绿色条上', !p.data.dashboard_pinned.some((x) => x.id === 'p2'));
+  T('  撤下≠删除，事项还在', (store.shape.milestones || []).some((m) => m.id === 'p2'));
+  T('  撤下后回到可选列表', p.data.dashboard_availablePins.some((x) => x.id === 'p2'));
+
+  // 超过 4 条改用紧凑卡片（桌面版 dashMilestones.length > 4）
+  store.setMilestones([
+    { id: 'q1', title: 'a', date: shift(1), emoji: '📌', category: '', done: false, pinned: true },
+    { id: 'q2', title: 'b', date: shift(2), emoji: '📌', category: '', done: false, pinned: true },
+    { id: 'q3', title: 'c', date: shift(3), emoji: '📌', category: '', done: false, pinned: true },
+    { id: 'q4', title: 'd', date: shift(4), emoji: '📌', category: '', done: false, pinned: true },
+    { id: 'q5', title: 'e', date: shift(5), emoji: '📌', category: '', done: false, pinned: true },
+  ]);
+  p.dashboard_refresh();
+  T('钉超过 4 条改用紧凑样式', p.data.dashboard_compact === true);
+  T('  钉住的按日期升序', JSON.stringify(p.data.dashboard_pinned.map((x) => x.date))
+    === JSON.stringify([...p.data.dashboard_pinned.map((x) => x.date)].sort()));
+
+  store.setMilestones([]);
+  p.dashboard_refresh();
+  T('没有可添加项时列表为空', p.data.dashboard_availablePins.length === 0);
+
+  global.getApp = savedGetApp;
+  store.resetAll();
+}
+
 // ══ 14. 合并页的分段延迟初始化 ══
 // 分段内容在 wx:if 分支里，没显示的那几段不在渲染树上。
 // 子模块的 onReady（画 canvas 图表写在这里）不能在宿主 onReady 时统一跑，
@@ -820,6 +902,197 @@ section('[17] 文字解析 · 校历事项');
   T('  地点与周次', !!math && math.place === '教一A101' && math.weeks.length === 16);
 }
 
+// ══ 18. 饮食 · 自定义套餐 ══
+// 桌面版 Diet.tsx：内置 TEMPLATES 是常量，用户可以「存为我的套餐」
+// 写进 store.templates，之后一键复用。自存的带 ★ 且绿色描边。
+section('[18] 饮食 · 自定义套餐');
+{
+  const mkPage = () => {
+    let def = null;
+    const saved = global.Page;
+    global.Page = (x) => { def = x; };
+    const f = path.join(MP, 'pages/diet/diet.js');
+    delete require.cache[require.resolve(f)];
+    require(f);
+    global.Page = saved;
+    return Object.assign({}, def, {
+      data: JSON.parse(JSON.stringify(def.data || {})),
+      setData(patch, cb) {
+        for (const k of Object.keys(patch)) this.data[k] = patch[k];
+        if (typeof cb === 'function') cb();
+      },
+    });
+  };
+
+  store.resetAll();
+  const p = mkPage();
+  p.onLoad();
+
+  T('初始没有自存套餐', p.data.savedTemplates.length === 0);
+  T('内置套餐来自常量', p.data.templates.length > 0, String(p.data.templates.length));
+
+  // 清单为空时不允许存
+  p.setData({ picked: [] });
+  p.openSaveTpl();
+  T('清单为空时不开保存弹层', p.data.saveTplOpen === false);
+
+  // 存一个
+  const builtin = p.data.templates[0];
+  p.applyTemplate({ currentTarget: { dataset: { id: builtin.id } } });
+  const n1 = p.data.picked.length;
+  T('内置套餐能套用', n1 > 0);
+  p.openSaveTpl();
+  T('  清单非空时可开弹层', p.data.saveTplOpen === true);
+  p.onTplName({ detail: { value: '我的增肌餐' } });
+  p.commitTemplate();
+  T('已写进 store.templates', (store.shape.templates || []).length === 1);
+  T('  名字用的是输入值', store.shape.templates[0].name === '我的增肌餐');
+  T('  条目快照完整', (store.shape.templates[0].items || []).length === n1);
+  T('  存完自动关弹层', p.data.saveTplOpen === false);
+
+  p.refresh();
+  T('刷新后列表里能看到', p.data.savedTemplates.length === 1);
+  T('  带项数与摘要', p.data.savedTemplates[0].count === n1
+    && p.data.savedTemplates[0].summary.length > 0);
+
+  // 名字留空用「餐次+套餐」
+  p.setData({ tplName: '' });
+  p.commitTemplate();
+  T('名字留空时用「餐次套餐」兜底',
+    store.shape.templates[1].name === builtin.meal + '套餐', store.shape.templates[1].name);
+
+  // 套用自存套餐
+  p.setData({ picked: [], meal: '晚餐' });
+  p.refresh();
+  p.applySaved({ currentTarget: { dataset: { id: store.shape.templates[0].id } } });
+  T('自存套餐能套用', p.data.picked.length === n1, String(p.data.picked.length));
+  T('  餐次跟着还原', p.data.meal === builtin.meal);
+
+  // 食物库改了 / 食物下架时，用存下来的快照兜底，不能整份丢
+  store.setTemplates([{
+    id: 'legacy1', name: '旧套餐', meal: '午餐',
+    items: [{ foodId: '__不存在__', name: '已下架鸡胸', qty: 2, protein: 30, calories: 200 }],
+  }]);
+  p.refresh();
+  p.applySaved({ currentTarget: { dataset: { id: 'legacy1' } } });
+  T('食物已下架时用快照兜底', p.data.picked.length === 1
+    && p.data.picked[0].name === '已下架鸡胸', JSON.stringify(p.data.picked));
+  T('  数量也按快照', p.data.picked[0].qty === 2);
+
+  // 删除自存套餐（内置的删不掉，因为不在 store 里）
+  store.setTemplates([
+    { id: 'd1', name: 'A', meal: '早餐', items: [] },
+    { id: 'd2', name: 'B', meal: '午餐', items: [] },
+  ]);
+  p.removeTemplate({ currentTarget: { dataset: { id: 'd1' } } });
+  T('删除自存套餐', (store.shape.templates || []).every((x) => x.id !== 'd1'));
+  T('  只删指定的那个', (store.shape.templates || []).length === 1);
+  T('内置套餐不受影响', p.data.templates.length > 0);
+
+  store.resetAll();
+}
+
+// ══ 19. 健康 · 月历打卡与连续天数 ══
+// 桌面版是 CheckinCalendar.tsx：真实月历网格（不是 7 格周条），
+// 能跨月看长期坚持情况、能补上个月漏打的日子。
+// 连续天数按「有训练计划的天」算，休息日跳过 —— 不计数也不打断，
+// 否则一周只练 3 天的人永远连不上。
+section('[19] 健康 · 月历打卡与连续天数');
+{
+  const mkPage = () => {
+    let def = null;
+    const saved = global.Page;
+    global.Page = (x) => { def = x; };
+    const f = path.join(MP, 'pages/health/health.js');
+    delete require.cache[require.resolve(f)];
+    require(f);
+    global.Page = saved;
+    return Object.assign({}, def, {
+      data: JSON.parse(JSON.stringify(def.data || {})),
+      setData(patch, cb) {
+        for (const k of Object.keys(patch)) this.data[k] = patch[k];
+        if (typeof cb === 'function') cb();
+      },
+    });
+  };
+  const K = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const back = (n) => {
+    const t = store.today;
+    return new Date(t.getFullYear(), t.getMonth(), t.getDate() - n);
+  };
+
+  store.resetAll();
+  // 训练日 = 周一 / 周三 / 周五
+  store.setSettings({ trainDays: '1,3,5' });
+  // 最近的 4 个训练日
+  const td = [back(1), back(4), back(6), back(8)].map(K);
+
+  let p = mkPage();
+  store.setTrainDone(td);
+  p.onLoad();
+
+  T('月历是 6 行 × 7 列共 42 格', p.data.calCells.length === 42, String(p.data.calCells.length));
+  T('月历标题形如「YYYY 年 M 月」', /^\d{4} 年 \d{1,2} 月$/.test(p.data.calLabel), p.data.calLabel);
+  T('默认不允许翻到未来', p.data.canGoNextMonth === false);
+
+  // 连续打卡的边界：休息日不打断、漏一个训练日就断
+  const cases = [
+    ['打满 4 次', td, 4],
+    ['漏掉最近那个训练日 → 断', td.slice(1), 0],
+    ['只漏中间那个 → 数到中间为止', [td[0], td[1], td[3]], 2],
+    ['只打最近两次', td.slice(0, 2), 2],
+    ['一个都没打', [], 0],
+  ];
+  for (const [name, done, want] of cases) {
+    store.setTrainDone(done);
+    p = mkPage();
+    p.onLoad();
+    T(`连续天数：${name}`, p.data.streak === want, `得 ${p.data.streak}，期望 ${want}`);
+  }
+
+  // 今天（休息日）没安排，昨天的打卡仍应算在连续里
+  store.setTrainDone([K(back(1))]);
+  p = mkPage();
+  p.onLoad();
+  T('休息日不打断连续', p.data.streak === 1, String(p.data.streak));
+
+  // 今天额外补练也计入
+  store.setTrainDone([K(back(1)), K(store.today)]);
+  p = mkPage();
+  p.onLoad();
+  T('今天额外打卡也计入连续', p.data.streak === 2, String(p.data.streak));
+
+  // 翻月
+  store.setTrainDone(td);
+  p = mkPage();
+  p.onLoad();
+  p.shiftMonth({ currentTarget: { dataset: { delta: -1 } } });
+  T('可以翻到上个月', p.data.calCursor !== null);
+  T('  翻月后允许往后翻', p.data.canGoNextMonth === true);
+  p.shiftMonth({ currentTarget: { dataset: { delta: 1 } } });
+  T('  不能翻过当月', p.data.canGoNextMonth === false);
+  p.backToThisMonth();
+  T('回到本月后游标清空（跟随今天）', p.data.calCursor === null);
+
+  // 点格子补打卡 / 取消
+  const cell = p.data.calCells.find((c) => !c.checked && c.inMonth && !c.isFuture);
+  T('月历里有可点的历史格子', !!cell);
+  if (cell) {
+    p.toggleTrain({ currentTarget: { dataset: { key: cell.key } } });
+    p.refresh();
+    T('  点格子能补打卡', p.data.calCells.find((c) => c.key === cell.key).checked === true);
+    p.toggleTrain({ currentTarget: { dataset: { key: cell.key } } });
+    p.refresh();
+    T('  再点一次取消打卡', p.data.calCells.find((c) => c.key === cell.key).checked === false);
+  }
+
+  // 没设训练日时 hasPlan=false（WXML 靠它隐藏「连续 N 天」）
+  store.setSettings({ trainDays: '' });
+  p.refresh();
+  T('没设训练日时 hasPlan=false', p.data.hasPlan === false);
+
+  store.resetAll();
+}
 console.log('\n══════════════════════════════');
 console.log(`  验收: ${ok} 通过 / ${bad} 失败`);
 process.exit(bad ? 1 : 0);

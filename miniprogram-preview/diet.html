@@ -868,6 +868,23 @@ page {
   min-width: 0;
 }
 
+/* 自己存的套餐：绿色描边，和内置的区分开（桌面版也是这个区分方式） */
+.tpl-card.is-mine {
+  border-color: rgba(16, 185, 129, 0.4);
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.tpl-card.is-mine .tpl-name {
+  color: #34d399;
+}
+
+/* 「★ 我自己存的」小标题 */
+.tpl-sub {
+  margin: 12px 0 7px;
+  font-size: 10.5px;
+  color: var(--text-4);
+}
+
 .tpl-name {
   font-size: 12px;
   font-weight: 600;
@@ -999,6 +1016,40 @@ page {
   flex-shrink: 0;
 }
 
+/* ── 弹层 ─────────────────────────────────────── */
+.modal-mask {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 100;
+}
+
+.modal-card {
+  width: 100%;
+  max-width: 310px;
+  max-height: 80%;
+  overflow-y: auto;
+  background: var(--surface-1);
+  border: 1px solid var(--border-2);
+  border-radius: 14px;
+  padding: 17px 16px;
+  box-sizing: border-box;
+}
+
+.modal-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-1);
+  margin-bottom: 13px;
+}
+
 
 </style></head><body><div class="phone">
 <div class="statusbar">9:41</div>
@@ -1128,6 +1179,7 @@ page {
     <div class="card-head">
       <div class="icon-chip tone-violet">⚡</div>
       <div class="card-head-title">常用套餐（一键加入清单）</div>
+      <div class="card-head-action">存为我的套餐</div>
     </div>
     <div class="card-body">
       <div class="tpl-grid">
@@ -1136,6 +1188,36 @@ page {
           <div class="tpl-sum">··</div>
           <div class="tpl-num">··g 蛋白 · ··</div>
         </div>
+      </div>
+
+      
+      
+        <div class="tpl-sub">★ 我自己存的 · ·· 个（长按可删）</div>
+        <div class="tpl-grid">
+          <div class="tpl-card is-mine">
+            <div class="tpl-name">★ ··</div>
+            <div class="tpl-sum">··</div>
+            <div class="tpl-num">··g 蛋白 · ·· · ·· 项</div>
+          </div>
+        </div>
+      
+      <div class="tiny-note">
+        还没有自己的套餐。选好食物后点右上角「存为我的套餐」，下次一键复用。
+      </div>
+    </div>
+  </div>
+
+  
+  <div class="modal-mask">
+    <div class="modal-card">
+      <div class="modal-title">存为我的套餐</div>
+      <div class="modal-desc">
+        当前清单 ·· 项，餐次「··」。下次点一下就能整份加回来。
+      </div>
+      <span class="ph-inline">［输入框］</span>
+      <div class="modal-actions">
+        <div class="btn-primary btn-sm">保存</div>
+        <div class="btn-ghost btn-sm">取消</div>
       </div>
     </div>
   </div>

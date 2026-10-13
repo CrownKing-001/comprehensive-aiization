@@ -30,13 +30,41 @@
     <!-- 钉到总览的倒计时 -->
     <view class="pin-row">
       <view class="pin-card {{dashboard_compact ? 'is-compact' : ''}}" wx:for="{{dashboard_pinned}}" wx:key="id">
+        <!-- 手机上没法用 hover，撤下按钮直接常显 -->
+        <view class="pin-x" data-id="{{item.id}}" catchtap="dashboard_unpinMilestone">✕</view>
         <view class="pin-label">距 {{item.label}}</view>
         <view class="pin-days">{{item.done ? '✓' : item.days}}</view>
         <view class="pin-unit">{{item.done ? '已完成' : '天'}}</view>
       </view>
-      <view class="pin-add" wx:if="{{dashboard_pinned.length === 0}}" data-url="/pages/milestones/milestones" bindtap="dashboard_goPage">
+
+      <!-- 添加 = 从「重要事项」里挑一个，不新建，保证两边共用一份数据 -->
+      <view class="pin-add {{dashboard_pinned.length === 0 ? 'is-empty' : ''}}" bindtap="dashboard_togglePinPicker">
         <view class="pin-add-plus">＋</view>
-        <view class="pin-add-text">添加倒计时</view>
+        <view class="pin-add-text">{{dashboard_pinned.length === 0 ? '添加倒计时' : '添加'}}</view>
+        <view class="pin-add-hint" wx:if="{{dashboard_pinned.length === 0}}">从重要事项里挑</view>
+      </view>
+    </view>
+
+    <!-- 选择器：列出还没钉上的事项 -->
+    <view class="pin-picker" wx:if="{{dashboard_pinPickerOpen}}">
+      <view class="pin-picker-head">从「重要事项」中选择（已显示的不会再列出）</view>
+      <view class="pin-picker-empty" wx:if="{{dashboard_availablePins.length === 0}}">
+        <text>重要事项里已经没有可添加的了</text>
+        <text class="pin-picker-link" bindtap="dashboard_goMilestones">去新建 →</text>
+      </view>
+      <view
+        class="pin-picker-item"
+        wx:for="{{dashboard_availablePins}}"
+        wx:key="id"
+        data-id="{{item.id}}"
+        bindtap="dashboard_pinMilestone"
+      >
+        <text class="pin-picker-emoji">{{item.emoji}}</text>
+        <view class="pin-picker-body">
+          <text class="pin-picker-title">{{item.title}}</text>
+          <text class="pin-picker-meta">{{item.date}}{{item.category ? ' · ' + item.category : ''}}</text>
+        </view>
+        <text class="pin-picker-days">{{item.daysText}}</text>
       </view>
     </view>
   </view>

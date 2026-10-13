@@ -136,6 +136,14 @@
         </view>
         <text class="ms-mini-days">{{item.done ? '已完成' : item.daysText}}</text>
       </view>
+
+      <!-- 超过 8 条时给个展开入口，避免底部事项被永久截断 -->
+      <view class="ms-more" wx:if="{{msMore > 0}}" bindtap="toggleMsExpand">
+        {{msExpanded ? '收起' : '展开全部（还有 ' + msMore + ' 条）'}}
+      </view>
+      <view class="ms-more" wx:elif="{{msExpanded && milestones.length > 8}}" bindtap="toggleMsExpand">
+        收起
+      </view>
     </view>
   </view>
 

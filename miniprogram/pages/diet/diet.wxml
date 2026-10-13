@@ -127,6 +127,7 @@
     <view class="card-head">
       <view class="icon-chip tone-violet">⚡</view>
       <view class="card-head-title">常用套餐（一键加入清单）</view>
+      <view class="card-head-action" bindtap="openSaveTpl">存为我的套餐</view>
     </view>
     <view class="card-body">
       <view class="tpl-grid">
@@ -135,6 +136,45 @@
           <view class="tpl-sum">{{item.summary}}</view>
           <view class="tpl-num">{{item.protein}}g 蛋白 · {{item.meal}}</view>
         </view>
+      </view>
+
+      <!-- 自己存过的套餐。与内置套餐分两排，靠 ★ 和绿色描边区分；
+           长按可删（内置的不能删）。 -->
+      <block wx:if="{{savedTemplates.length > 0}}">
+        <view class="tpl-sub">★ 我自己存的 · {{savedTemplates.length}} 个（长按可删）</view>
+        <view class="tpl-grid">
+          <view
+            class="tpl-card is-mine"
+            wx:for="{{savedTemplates}}"
+            wx:key="id"
+            data-id="{{item.id}}"
+            bindtap="applySaved"
+            bindlongpress="removeTemplate"
+          >
+            <view class="tpl-name">★ {{item.name}}</view>
+            <view class="tpl-sum">{{item.summary}}</view>
+            <view class="tpl-num">{{item.protein}}g 蛋白 · {{item.meal}} · {{item.count}} 项</view>
+          </view>
+        </view>
+      </block>
+      <view class="tiny-note" wx:else>
+        还没有自己的套餐。选好食物后点右上角「存为我的套餐」，下次一键复用。
+      </view>
+    </view>
+  </view>
+
+  <!-- ── 存为我的套餐 ── -->
+  <view class="modal-mask" wx:if="{{saveTplOpen}}" bindtap="closeSaveTpl">
+    <view class="modal-card" catchtap="noop">
+      <view class="modal-title">存为我的套餐</view>
+      <view class="modal-desc">
+        当前清单 {{picked.length}} 项，餐次「{{meal}}」。下次点一下就能整份加回来。
+      </view>
+      <input class="input" value="{{tplName}}" bindinput="onTplName"
+        placeholder="套餐名字（留空就用「{{meal}}套餐」）" placeholder-class="input-ph" cursor-spacing="24" />
+      <view class="modal-actions">
+        <view class="btn-primary btn-sm" bindtap="commitTemplate">保存</view>
+        <view class="btn-ghost btn-sm" bindtap="closeSaveTpl">取消</view>
       </view>
     </view>
   </view>
