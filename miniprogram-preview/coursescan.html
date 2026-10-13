@@ -717,6 +717,10 @@ page {
 .notice-err  { background: rgba(244, 63, 94, 0.12);  border-color: rgba(244, 63, 94, 0.35);  color: #fda4af; }
 .notice-info { background: rgba(14, 165, 233, 0.12); border-color: rgba(14, 165, 233, 0.35); color: #7dd3fc; }
 
+/* 解析警告可能有多条，叠在一起时留出间距（小程序不支持 :last-child，
+   所以统一用 margin-top，靠父级 .stack 的 gap 处理首条） */
+.parse-warn { margin-top: 6px; }
+
 /* ── 说明块 ───────────────────────────────────── */
 .hint-box {
   font-size: 11.5px;
@@ -950,6 +954,11 @@ page {
       <div class="week-detect">
         <span class="week-detect-text">文字里标了「第 ·· 周」</span>
         <div class="btn-ghost btn-xs">把当前周设为第 ·· 周</div>
+      </div>
+
+      
+      <div class="notice notice-err parse-warn">
+        <span class="notice-text">⚠ ··</span>
       </div>
 
       

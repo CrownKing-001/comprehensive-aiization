@@ -11,6 +11,14 @@
 
 .notice-text { color: inherit; }
 
+/* 解析警告里会带上出错的原句，可能很长且夹着长英文/路径，
+   加 word-break 防止把卡片撑破 */
+.parse-warn .notice-text {
+  display: block;
+  word-break: break-all;
+  overflow-wrap: anywhere;
+}
+
 .notice-ok   { background: rgba(16, 185, 129, 0.12); border-color: rgba(16, 185, 129, 0.35); color: #6ee7b7; }
 .notice-err  { background: rgba(244, 63, 94, 0.12);  border-color: rgba(244, 63, 94, 0.35);  color: #fda4af; }
 .notice-info { background: rgba(14, 165, 233, 0.12); border-color: rgba(14, 165, 233, 0.35); color: #7dd3fc; }

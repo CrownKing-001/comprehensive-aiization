@@ -42,9 +42,13 @@
 }
 
 .warn-text {
+  display: block;
   font-size: 23rpx;
   line-height: 1.65;
   color: #fcd34d;
+  /* 警告里会带上下文（例如整行原文），可能很长，防止撑破卡片 */
+  word-break: break-all;
+  overflow-wrap: anywhere;
 }
 
 /* ── 输入区 ───────────────────────────────────── */

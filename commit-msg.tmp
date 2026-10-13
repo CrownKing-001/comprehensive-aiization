@@ -1,52 +1,8 @@
-fix(miniprogram): 修掉 5 处脏数据白屏，并把验收自测固化进仓库
+fix(miniprogram): 解析警告文字加换行兜底
 
-一、脏数据会让 5 个页面白屏
+警告文案里会带上出错的整行原文（例如「1-2节 高等数学 A101 1-16周」），
+在窄屏上可能把卡片撑破。给 .notice-text / .warn-text 补上
+word-break: break-all 与 overflow-wrap: anywhere，
+并把 .warn-text 显式设为 block（text 是内联元素，换行行为不稳定）。
 
-桌面版的备份是直接导入的，字段不一定齐全；手改过的 JSON 更是什么都可能缺。
-用「字段缺失的假数据」跑一遍，抓到 5 处崩溃：
-
-  · todos 缺 priority      → priorityLabel[t.priority].text 抛错，
-                             整个待办页白屏（同时 rank[a.priority] 相减得 NaN，
-                             排序结果也会变得不确定）
-  · course 缺 weeks        → analysis / week 的 c.weeks.includes 抛错
-  · course 缺 start/end    → analysis 的 toHour(c.start).split 抛错
-                             异常还被 store.notify 吞掉，只在 console 里，
-                             页面表现为一直空着，很难查
-  · assignment 缺 due      → assignments / dashboard 的 a.due.localeCompare 抛错
-
-修法是从源头兜底，而不是在每个调用点打补丁：
-  · utils/plan.js   toHour 对非字符串返回 NaN；freeMatrix 检查 weeks 是数组
-  · utils/schedule.js  toMin 同上；新增 inWeek()，weeks 缺失视为「每周都上」
-  · utils/storage.js   fromKey 用正则解析，非法返回 null；
-                       daysUntil 收到 null 也返回 null（而不是抛错或 NaN）
-  · 各调用点显式处理 null
-
-顺带修掉两个「不崩但结果错」的问题：
-  · assignments：a.days <= 2 在 days 为 null 时是 true，
-    没有截止日期的作业会被标成「即将到期」
-  · today：daysUntil(...) <= 0 同理，没有 DDL 的作业会被显示成「今天截止」
-  · assignments 排序时 due 缺失会用 String() 兜底并排到最后
-
-二、验收自测固化
-
-新增 tools/selftest.js：用假的 wx / App / Page 把 app.onLaunch 和 14 个页面
-的生命周期真跑一遍，逐项检查课表增删改、文字解析、运动打卡、饮食记录、
-体重作息、重要事项、智能分析、设置、备份导入导出，外加 6 组脏数据用例。
-
-★ 一个踩过的坑写进注释了：必须先跑 app.js 的 onLaunch。
-  store.ready 初值 false，只有 hydrate() 会置 true，而每个页面都是
-  `if (store.ready) this.refresh()`。漏掉这步会让所有页面停在「没刷新」
-  状态，看起来像全盘崩了 —— 是脚手架的坑，不是小程序的问题。
-
-三、校历事件规则补全（本轮前半段）
-  桌面版 EVENT_RULES 里没有「期中考试」，7 行关键日期只解析出 6 条，静默丢弃。
-  补上期中考试/补考/四六级/计算机等级/运动会/选课/实习，并同步 AI 指令词表。
-  期中考试必须排在 /考试周/ 前，已用「期中+期末同文」用例锁住。
-  这是超出桌面版的修正：桌面版同样会丢。
-
-验证：
-  · tools/selftest.js  49 通过 / 0 失败
-  · 脏数据 44 通过 / 0 失败（含「全是空对象」）
-  · 事件规则 28 断言全过，原有 21 条无回归
-  · CLI 编译 0 错误（259.9 KB）
-  · 25 个 JS 语法通过，0 BOM
+验证：自测 49/49，编译 0 错误（260.1 KB），无未定义 CSS 类，0 BOM。
