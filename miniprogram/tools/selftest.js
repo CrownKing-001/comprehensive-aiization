@@ -2053,6 +2053,160 @@ section('[26] WXML 表达式（不能调用函数）');
     /\{\{typesText\}\}/.test(runWxml) && /\{\{run_typesText\}\}/.test(hhWxml));
 }
 
+// ── [27] 课表周次解析 ─────────────────────────────────────────
+// 「第 N 周」是 utils/aiPrompts.js 让 AI 输出的格式，也是用户手打最常见的写法。
+// 以前 RE_WEEK_ONE 分支只记 weeksLabel、不写 weeks，于是确认表里「周次」那格是空的
+// —— 用户报的「某些课程在第几周识别不出来」就是这个。
+section('[27] 课表周次解析');
+{
+  const tp = require(path.join(MP, 'utils', 'textParse.js'));
+  // 不传 periods → 回退内置 12 节时间表（与 coursescan 在 periods 为空时一致）
+  const W = (line) => {
+    const r = tp.parseTimetableText('周一\n' + line);
+    return r.courses[0] || {};
+  };
+  const eq = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+  const seq = (a, b) => Array.from({ length: b - a + 1 }, (_, i) => a + i);
+  const odd = [1, 3, 5, 7, 9, 11, 13, 15];
+  const even = [2, 4, 6, 8, 10, 12, 14, 16];
+
+  const c1 = W('高等数学，1-2节，瑞安楼阶3，第 4 周');
+  T('「第 4 周」解出 weeks=[4]', eq(c1.weeks, [4]), JSON.stringify(c1.weeks));
+  T('  周次没有污染地点', c1.place === '瑞安楼阶3', c1.place);
+
+  T('「1-16 周」解出 1..16', eq(W('高等数学，1-2节，A101，1-16 周').weeks, seq(1, 16)));
+  T('「第 1-16 周」同样解出 1..16', eq(W('高等数学，1-2节，A101，第 1-16 周').weeks, seq(1, 16)));
+
+  // 周次串内部的逗号曾被字段分隔符切碎，前半段还会漏进地点
+  const c3 = W('大学英语，3-4节，外语楼B203，1-8,10-16 周');
+  T('「1-8,10-16 周」解出两段', eq(c3.weeks, seq(1, 8).concat(seq(10, 16))), JSON.stringify(c3.weeks));
+  T('  逗号不再把周次漏进地点', c3.place === '外语楼B203', c3.place);
+
+  T('「1,3,5,7 周」解出单双周', eq(W('体育，5-6节，操场，1,3,5,7 周').weeks, [1, 3, 5, 7]));
+
+  T('「1-16 周（单）」= 8 个奇数周',
+    eq(W('高等数学，1-2节，A101，1-16 周（单）').weeks, odd));
+  T('「1-16 周（双）」= 8 个偶数周',
+    eq(W('高等数学，1-2节，A101，1-16 周（双）').weeks, even));
+  T('「1-16 周单周」不带括号也认',
+    eq(W('高等数学，1-2节，A101，1-16 周单周').weeks, odd));
+
+  // 省略「周」字的纯数字区间：地点总带别的字符（南229 / 教一A101 / 瑞安楼阶3），
+  // 所以一整段只有「数字-数字」时，只可能是周次。
+  const c8 = W('大学物理，7-8节，教一A101，1-16');
+  T('「1-16」不带「周」也认', eq(c8.weeks, seq(1, 16)));
+  T('  地点仍是教一A101', c8.place === '教一A101', c8.place);
+
+  const c9 = W('形势与政策，9-10节，教三，非本周');
+  T('「非本周」不写 weeks', !c9.weeks || !c9.weeks.length, JSON.stringify(c9.weeks));
+  T('  但仍记下标签', c9.weeksLabel === '非本周', c9.weeksLabel);
+
+  const c10 = W('讲座，11-12节，图书馆');
+  T('没写周次 = 每周都上', !c10.weeks || !c10.weeks.length);
+  T('  地点不被误吃', c10.place === '图书馆', c10.place);
+}
+
+// ── [28] 「设置当前第几教学周」 ─────────────────────────────────
+// 首装时 semesterStart 兜底成「本周一」，显示的「第 1 教学周」和
+// 「用户真在第 1 周」从数据上分不出来，所以要独立的 weekConfirmed 决定提示去留。
+section('[28] 「设置当前第几教学周」');
+{
+  const fs = require('fs');
+  const plan = require(path.join(MP, 'utils', 'plan.js'));
+  const storage = require(path.join(MP, 'utils', 'storage.js'));
+  const dashJs = fs.readFileSync(path.join(MP, 'pages', 'dashboard', 'dashboard.js'), 'utf8');
+  const dashWxml = fs.readFileSync(path.join(MP, 'pages', 'dashboard', 'dashboard.wxml'), 'utf8');
+  const dashWxss = fs.readFileSync(path.join(MP, 'pages', 'dashboard', 'dashboard.wxss'), 'utf8');
+
+  T('总览页用 weekConfirmed 决定提示去留',
+    /weekConfirmed:\s*s\.settings\.weekConfirmed === true/.test(dashJs));
+  T('总览页的选项先声明（避免 setData 前闪一下）',
+    /weekConfirmed:\s*true,/.test(dashJs) && /weekOptions:\s*\[\]/.test(dashJs));
+  T('提示条只在未确认时出现',
+    /wx:if="\{\{!dashboard_weekConfirmed\}\}"/.test(dashWxml));
+  T('提示条绑定了下拉与确认按钮',
+    /bindchange="dashboard_onWeekPick"/.test(dashWxml) && /bindtap="dashboard_confirmWeek"/.test(dashWxml));
+  T('提示条有样式（不是裸的 view）', /\.week-setup\s*\{/.test(dashWxss));
+
+  // 写学期起点的入口都必须走 store.setCurrentWeek 或补上已确认标记，
+  // 漏一个地方提示就撤不掉。coursescan 的「校准」和校历的「应用」都算。
+  const srcs = ['pages/settings/settings.js', 'pages/coursescan/coursescan.js',
+    'pages/calendaracademic/calendaracademic.js'];
+  const missing = [];
+  for (const rel of srcs) {
+    const src = fs.readFileSync(path.join(MP, rel), 'utf8');
+    if (!/setCurrentWeek|weekConfirmed/.test(src)) missing.push(rel);
+  }
+  T('三个写起点的入口都打了已确认标记', missing.length === 0, missing.join(', '));
+
+  // 真的走一遍：未确认 → setCurrentWeek(5) → 起点反推正确且已确认
+  store.setSettings({ weekConfirmed: false });
+  T('未确认时 weekConfirmed 是 false', store.shape.settings.weekConfirmed === false);
+
+  const r = store.setCurrentWeek(5);
+  T('setCurrentWeek(5) 反推出起点', r.week === 5 && !!r.start, JSON.stringify(r));
+  T('  写回了 settings.semesterStart', store.shape.settings.semesterStart === r.start);
+  T('  并标记已确认（醒目提示据此消失）', store.shape.settings.weekConfirmed === true);
+  const back = plan.currentWeek(store.today, storage.fromKey(r.start));
+  T('  反推的起点让当天正好落在第 5 周', back === 5, String(back));
+
+  const clamp = (v) => store.setCurrentWeek(v).week;
+  T('setCurrentWeek 夹取到 1..40',
+    clamp(0) === 1 && clamp(999) === 40 && clamp('abc') === 1 && clamp(2.4) === 2,
+    [clamp(0), clamp(999), clamp('abc'), clamp(2.4)].join(','));
+}
+
+section('[29] AI 提示词与解析器必须对齐');
+{
+  // 用户报的「某些课程在第几周识别不出来」根因就在这对组合上：
+  // aiPrompts.js 规定「这门课这周要上 → 写「第 N 周」」，
+  // 而 parseCourseLine 当年那个 RE_WEEK_ONE 分支只把它记成 weeksLabel、
+  // 不写 weeks，于是确认表里「周次」那一格是空的。
+  //
+  // aiPrompts.js 开头早就写了「指令必须与 textParse.js 严格对应」的警告，
+  // 但注释拦不住漂移。这里把提示词自己的「【输出示例】」当测试夹具直接喂给
+  // 解析器：示例都解不出来，就说明指令和解析规则已经对不上了。
+  const ap = require(path.join(MP, 'utils', 'aiPrompts.js'));
+  const tp = require(path.join(MP, 'utils', 'textParse.js'));
+
+  const exampleOf = (prompt) => {
+    const a = String(prompt).indexOf('【输出示例】');
+    const b = String(prompt).indexOf('【现在请处理', a);
+    return a < 0 || b < 0 ? null : String(prompt).slice(a, b);
+  };
+
+  const tt = exampleOf(ap.TIMETABLE_AI_PROMPT);
+  T('课表提示词里有「【输出示例】」段', !!tt);
+  if (tt) {
+    const r = tp.parseTimetableText(tt);
+    const cs = r.courses || [];
+    T('  示例里的 4 门课都被解析出来', cs.length === 4, String(cs.length));
+
+    const noWeek = cs.filter((c) => !c.weeks || !c.weeks.length);
+    T('  每门课的周次都解析出来了（不是空框）', noWeek.length === 0,
+      noWeek.map((c) => c.name).join('、'));
+
+    // 「第 N 周」是提示词对「这门课这周要上」的规定写法，必须解成单周
+    const one = cs.filter((c) => c.weeks && c.weeks.length === 1)[0];
+    T('  「第 N 周」解成单周而不是范围', !!one && one.weeks[0] === 4,
+      one ? JSON.stringify(one.weeks) : '一门单周课都没有');
+
+    const places = cs.map((c) => c.place).join('|');
+    T('  地点没被周次短语吃掉', /瑞安楼阶\s?3/.test(places), places);
+  }
+
+  const cal = exampleOf(ap.CALENDAR_AI_PROMPT);
+  T('校历提示词里有「【输出示例】」段', !!cal);
+  if (cal) {
+    const r = tp.parseCalendarText(cal);
+    T('  示例里的「共 N 周」被读到', r.totalWeeks === 19, String(r.totalWeeks));
+    T('  示例里的「第 N 周：M.D-M.D」被读到', (r.weeks || []).length === 4,
+      String((r.weeks || []).length));
+    T('  示例里的关键日期被读到', (r.events || []).length >= 2,
+      String((r.events || []).length));
+  }
+}
+
 console.log('\n══════════════════════════════');
 console.log(`  验收: ${ok} 通过 / ${bad} 失败`);
 process.exit(bad ? 1 : 0);
