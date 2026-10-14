@@ -4,7 +4,11 @@
    （变量若挂在 page 上，子元素的类名改不动 page 自身。） */
 
 page {
-  background: #12161d;
+  /* 这里刻意不写 background：page 是根节点，写死颜色就等于把「窗口底色」钉死成
+     某一个主题的颜色，切 tab 时新页面会先画一帧这个颜色再画内容 —— 浅色主题下
+     就是用户看到的「整屏黑闪一下」。
+     底色交给 app.json 的 window.backgroundColor 兜底，运行时由 utils/theme.js
+     用 wx.setBackgroundColor 按当前主题覆盖；page 留空即可透出那一层。 */
   font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif;
   font-size: 28rpx;
   line-height: 1.5;

@@ -18,6 +18,8 @@ const MP = process.argv[2] || path.join(__dirname, '..');
 
 // ── 假的微信运行环境 ──────────────────────────────────
 const mem = {};
+// [31] 用：记录 setBackgroundColor / setNavigationBarColor 的调用
+const shellCalls = [];
 // 模拟剪贴板：备份导出写进来、导入从这里读，这样能真的验一遍来回
 let clipboard = '';
 global.wx = {
@@ -34,6 +36,10 @@ global.wx = {
   switchTab: () => {},
   setNavigationBarTitle: () => {},
   getWindowInfo: () => ({ pixelRatio: 2, windowWidth: 375 }),
+  // 主题外壳用的两个原生 API：记下调用，好在 [31] 里断言
+  //「改主题真的同步到了导航栏 / 窗口底色」，而不是只换了页面内的 CSS 变量。
+  setBackgroundColor: (o) => { shellCalls.push(['bg', o.backgroundColor]); },
+  setNavigationBarColor: (o) => { shellCalls.push(['nav', o.backgroundColor, o.frontColor]); },
   createSelectorQuery: () => ({
     in: () => ({ select: () => ({ fields: () => ({ exec: (cb) => cb([{ node: null }]) }) }) }),
   }),
@@ -2254,6 +2260,52 @@ section('[30] 导入课表的反馈');
     && /\.notice-float\.notice-ok\s*\{[^}]*background-image:\s*linear-gradient/.test(wxss)
     && /notice-float/.test(wxml)
     && /\.import-done\s*\{/.test(wxss));
+}
+
+section('[31] 主题外壳（窗口底色 + 导航栏）');
+{
+  // 用户报：「切 tab 时整屏白/黑闪一下（颜色突变）」。
+  // 原因是主题只换了一半 —— 页面内靠 .page-wrap.theme-light 换 CSS 变量，
+  // 但窗口底色和导航栏写在 app.json 的 window 里，是编译期静态深色，没人改得动。
+  // 浅色主题下切 tab，新页面会先画一帧深色外壳再画浅色内容。
+  const fs = require('fs');
+  const theme = require(path.join(MP, 'utils', 'theme.js'));
+  const appJs = fs.readFileSync(path.join(MP, 'app.js'), 'utf8');
+  const appWxss = fs.readFileSync(path.join(MP, 'app.wxss'), 'utf8');
+  const appJson = JSON.parse(fs.readFileSync(path.join(MP, 'app.json'), 'utf8'));
+
+  T('深浅两套外壳颜色都定义了',
+    !!theme.SHELL.dark && !!theme.SHELL.light
+    && !!theme.SHELL.dark.bg && !!theme.SHELL.light.bg);
+  T('  frontColor 只用微信允许的 #ffffff / #000000',
+    [theme.SHELL.dark.front, theme.SHELL.light.front].every((c) => c === '#ffffff' || c === '#000000'));
+  T('  app.json 的静态兜底就是深色那套',
+    appJson.window.backgroundColor === theme.SHELL.dark.bg
+    && appJson.window.navigationBarBackgroundColor === theme.SHELL.dark.nav);
+  T('启动时按已存的主题应用外壳', /applyWindowTheme\(store\.shape\.settings\.theme\)/.test(appJs));
+  T('  主题后续变了也能跟上', /store\.subscribe\(/.test(appJs));
+  T('  page 不再写死背景色（写死就等于把外壳钉回深色）',
+    !/page\s*\{[^}]*background\s*:/.test(appWxss));
+
+  // 启动那一刻就应该已经调过一次（默认主题是深色）
+  T('onLaunch 已经应用过一次外壳',
+    shellCalls.some((c) => c[0] === 'bg' && c[1] === theme.SHELL.dark.bg)
+    && shellCalls.some((c) => c[0] === 'nav' && c[1] === theme.SHELL.dark.nav));
+
+  // 端到端：改主题 -> 订阅者把外壳同步过去
+  shellCalls.length = 0;
+  store.setSettings({ theme: 'light' });
+  T('改主题会同步到外壳（窗口底色 + 导航栏）',
+    shellCalls.some((c) => c[0] === 'bg' && c[1] === theme.SHELL.light.bg)
+    && shellCalls.some((c) => c[0] === 'nav' && c[1] === theme.SHELL.light.nav && c[2] === '#000000'));
+
+  // 同一个主题重复设置不该反复打原生 API（store 的任何一次改动都会回调订阅者）
+  shellCalls.length = 0;
+  store.setSettings({ theme: 'light' });
+  T('同主题重复设置不重复调用原生 API', shellCalls.length === 0);
+
+  store.setSettings({ theme: 'dark' });
+  T('切回深色也同步', shellCalls.some((c) => c[0] === 'nav' && c[2] === '#ffffff'));
 }
 
 console.log('\n══════════════════════════════');
