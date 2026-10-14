@@ -183,7 +183,7 @@
   <view class="card">
     <view class="card-head">
       <view class="icon-chip tone-amber">🥩</view>
-      <view class="card-head-title">食物库 · {{library.length}} 种</view>
+      <view class="card-head-title">食物库 · {{libraryTotal}} 种</view>
     </view>
     <view class="card-body">
       <input class="input" value="{{q}}" bindinput="onSearch"
@@ -203,11 +203,11 @@
         </view>
       </view>
 
-      <view class="row-actions mt" wx:if="{{libraryShown.length < library.length}}">
-        <view class="btn-ghost btn-sm" bindtap="showMoreLibrary">显示更多（还有 {{library.length - libraryShown.length}} 种）</view>
+      <view class="row-actions mt" wx:if="{{libraryShown.length < libraryTotal}}">
+        <view class="btn-ghost btn-sm" bindtap="showMoreLibrary">显示更多（还有 {{libraryTotal - libraryShown.length}} 种）</view>
       </view>
 
-      <view class="empty" wx:if="{{library.length === 0}}">
+      <view class="empty" wx:if="{{libraryTotal === 0}}">
         <view class="empty-desc">没有匹配的食物，换个词试试</view>
       </view>
     </view>

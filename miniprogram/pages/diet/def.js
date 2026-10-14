@@ -44,7 +44,8 @@ const DEFINITION = {
     cat: '全部',
     catOptions: ['全部', ...CATEGORIES],
     catIndex: 0,
-    library: [],
+    // 只放「一共筛出多少种」，不放整个食物库 —— 见 _applyFilter 的说明
+    libraryTotal: 0,
     libraryShown: [],
     libraryLimit: 30,
 
@@ -255,7 +256,17 @@ const DEFINITION = {
       calories: f.calories,
       category: f.category,
     }));
-    this.setData({ library, libraryShown: library.slice(0, this.data.libraryLimit) });
+    // 只把「要渲染的那几十条」交给渲染层。
+    //
+    // 以前这里 setData({ library, libraryShown })，library 是整个食物库
+    // （两百多种、每种 6 个字段），可 WXML 只 for 了 libraryShown（前 30/40 条），
+    // 库本身只用到 .length。真机实测这一段一次刷新就往渲染层推 ~40 KB ——
+    // 而 refresh() 每次 onLoad/onShow 都会走这里，是「切页卡顿」的主要来源。
+    // 现在只传条数和当前这一页。
+    this.setData({
+      libraryTotal: library.length,
+      libraryShown: library.slice(0, this.data.libraryLimit),
+    });
   },
 
   onSearch(e) {

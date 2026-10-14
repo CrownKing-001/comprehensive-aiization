@@ -1,0 +1,2 @@
+# 微信开发者工具跑 `cli auto` / `cli preview` 时会往仓库根目录丢日志
+/*.log

@@ -341,22 +341,30 @@ section('[12] 合并页');
 
   T('待办·作业页 加载', tasks.data.ready === true);
   T('  默认停在待办', tasks.data.seg === 'todos');
-  T('  两个模块的 data 都并入', Object.keys(tasks.data).some((k) => k.startsWith('todos_'))
-    && Object.keys(tasks.data).some((k) => k.startsWith('assignments_')));
+  // 分段是懒初始化的：onLoad 只并「当前显示那一段」的 data，并只跑它的 onLoad。
+  // 没显示的那一段不在渲染树上（wx:if），提前并进去 + 跑 refresh 都是白做 ——
+  // 真机实测健康页进入一次是 10 次 setData / 59 KB，大半花在隐藏分段上。
+  T('  只并入当前分段的 data', Object.keys(tasks.data).some((k) => k.startsWith('todos_'))
+    && !Object.keys(tasks.data).some((k) => k.startsWith('assignments_')));
 
   // 两个模块的同名方法不能串台 —— 这是组合机制最容易错的地方
   T('  同名方法各自存在', typeof tasks.todos_add === 'function' && typeof tasks.assignments_add === 'function');
   tasks.setData({ todos_text: '交实验报告', todos_due: '2026-10-20' });
   tasks.todos_add.call(tasks);
   T('  待办新增生效', store.shape.todos.length === 1 && store.shape.todos[0].text === '交实验报告');
+
+  // 切到作业段 —— 「切过去」这一步才会初始化它，之后才谈得上填表提交
+  tasks.switchSeg(ev({ id: 'assignments' }));
+  T('  分段切换到作业', tasks.data.seg === 'assignments');
+  T('  切过去后作业的 data 才并入',
+    Object.keys(tasks.data).some((k) => k.startsWith('assignments_')));
+
   tasks.setData({ assignments_title: '写论文', assignments_due: '2026-11-01' });
   tasks.assignments_add.call(tasks);
   T('  作业新增生效', store.shape.assignments.length === 1 && store.shape.assignments[0].title === '写论文');
   T('  互不干扰', store.shape.todos.length === 1 && store.shape.assignments.length === 1);
   T('  列表各自刷新', (tasks.data.todos_list || []).length === 1 && (tasks.data.assignments_list || []).length === 1);
 
-  tasks.switchSeg(ev({ id: 'assignments' }));
-  T('  分段切换到作业', tasks.data.seg === 'assignments');
   tasks.onUnload();
 
   store.resetAll();
@@ -364,15 +372,20 @@ section('[12] 合并页');
   hub.onLoad();
   T('健康页 加载', hub.data.ready === true);
   T('  默认停在饮食', hub.data.seg === 'diet');
-  T('  三个模块都并入',
-    ['diet_', 'run_', 'health_'].every((p) => Object.keys(hub.data).some((k) => k.startsWith(p))));
+  // 同 [12]：只初始化当前分段，另外两段等切过去时再并 data + 跑 onLoad
+  T('  只并入当前分段的 data', Object.keys(hub.data).some((k) => k.startsWith('diet_'))
+    && !Object.keys(hub.data).some((k) => k.startsWith('run_'))
+    && !Object.keys(hub.data).some((k) => k.startsWith('health_')));
   // 三个模块都有 refresh / save 之类的同名方法
   T('  同名方法各自存在',
     typeof hub.diet_refresh === 'function' && typeof hub.run_refresh === 'function' && typeof hub.health_refresh === 'function');
   hub.switchSeg(ev({ id: 'run' }));
   T('  切到运动', hub.data.seg === 'run');
+  T('  运动段的 data 此时才并入', Object.keys(hub.data).some((k) => k.startsWith('run_')));
   hub.switchSeg(ev({ id: 'health' }));
   T('  切到体重', hub.data.seg === 'health');
+  T('  体重段的 data 此时才并入', Object.keys(hub.data).some((k) => k.startsWith('health_')));
+  T('  前面切过的分段 data 还在', Object.keys(hub.data).some((k) => k.startsWith('diet_')));
   hub.onUnload();
   store.resetAll();
 }
@@ -576,7 +589,8 @@ section('[13b] 总览 · 今日 合并页');
   T('onLoad 后 ready', p.data.ready === true);
   // 两个模块的数据都带各自前缀并入
   T('总览数据带 dashboard_ 前缀', 'dashboard_stats' in p.data && 'dashboard_pinned' in p.data);
-  T('今日数据带 today_ 前缀', 'today_shown' in p.data && 'today_timeline' in p.data);
+  // 懒初始化：没显示的那一段 onLoad 时不并 data
+  T('未显示的分段还没并 data', !('today_shown' in p.data));
   T('compact 已声明（WXML 里用到）', 'dashboard_compact' in p.data);
 
   // tabHost 会挂带前缀的方法别名
@@ -586,6 +600,7 @@ section('[13b] 总览 · 今日 合并页');
 
   p.switchSeg({ currentTarget: { dataset: { id: 'today' } } });
   T('切到今日分段', p.data.seg === 'today');
+  T('  切过去后今日数据才并进来', 'today_shown' in p.data && 'today_timeline' in p.data);
   p.switchSeg({ currentTarget: { dataset: { id: 'dashboard' } } });
   T('切回总览分段', p.data.seg === 'dashboard');
   p.onUnload();
@@ -1841,12 +1856,18 @@ section('[24] 小程序运行时兼容性（不能用 Node 专有 API）');
       } catch (e) {
         results.push(`${name}: onLoad 抛 ${e.message}`);
       }
-      // 合并页的 data 键应该远多于单个页面（子模块的都并进来了）。
-      // 取不到子模块时 buildHost 只 console.error 再 continue，
-      // 页面照样注册成功、onLoad 也不抛 —— 只有键数能暴露。
-      const n = Object.keys(inst.data || {}).length;
-      const minKeys = { dashboard: 20, tasks: 20, healthhub: 20 }[name] || 5;
-      if (n < minKeys) results.push(`${name}: data 只有 ${n} 个键（应 >= ${minKeys}，子模块可能没挂上）`);
+      // buildHost 取不到子模块时只 console.error 再 continue，页面照样注册成功、
+      // onLoad 也不抛 —— 只能靠「默认分段的 data 键在不在」暴露出来。
+      // （分段是懒初始化的，onLoad 之后只有当前那一段的键，所以这里只看默认段。）
+      const defaultPrefix = { dashboard: 'dashboard_', tasks: 'todos_', healthhub: 'diet_' }[name];
+      const dsKeys = Object.keys(inst.data || {});
+      if (defaultPrefix) {
+        if (!dsKeys.some((k) => k.indexOf(defaultPrefix) === 0)) {
+          results.push(`${name}: onLoad 后没有 ${defaultPrefix}* 的 data（默认分段没初始化，子模块可能没挂上）`);
+        }
+      } else if (!inst.data || inst.data.ready !== true) {
+        results.push(`${name}: onLoad 后 ready 不是 true`);
+      }
     }
   } finally {
     // 一定要还原，否则后面的用例全废
@@ -1910,7 +1931,15 @@ section('[24] 小程序运行时兼容性（不能用 Node 专有 API）');
         },
       });
       let err = '';
-      try { inst.onLoad(); } catch (e) { err = e.message; }
+      try {
+        inst.onLoad();
+        // 分段是懒初始化的（onLoad 只管当前那一段），所以一段一段切过去，
+        // 切到哪一段才会有那一段的 data —— 这也正是真机上的顺序。
+        for (const s of specs[name].segments) {
+          if (inst.data.seg === s.id) continue;
+          inst.switchSeg({ currentTarget: { dataset: { id: s.id } } });
+        }
+      } catch (e) { err = e.message; }
       const keys = Object.keys(inst.data || {});
       const missing = [];
       for (const id of specs[name].segments.map((s) => s.id)) {
@@ -2342,6 +2371,45 @@ section('[32] 合并页的主题类挂在宿主根节点上');
     JSON.stringify(p.data.themeClass));
   store.setSettings({ theme: 'dark' });
   T('  换回深色同步', p.data.themeClass === '', JSON.stringify(p.data.themeClass));
+}
+
+section('[33] 渲染层的数据量');
+{
+  // setData 的代价在「跨线程传输 + 序列化」，推得越多越卡。
+  // 食物库有两百多种 × 6 个字段，而 WXML 只 for 了前 libraryLimit 条，
+  // 库本身只用到 .length。以前 _applyFilter 每次刷新都把整个库推给渲染层
+  // （真机实测健康页一次进入 45 KB setData），是「切页卡顿」的主因。
+  const fs = require('fs');
+  const dietSrc = fs.readFileSync(path.join(MP, 'pages', 'diet', 'def.js'), 'utf8');
+
+  T('diet 的 data 里不再放整个食物库',
+    !/^\s*library:\s*\[\],?$/m.test(dietSrc) && /libraryTotal:\s*0/.test(dietSrc));
+  // 只看代码，不看注释 —— 上面那段注释里就写着「以前这里 setData({ library, … })」
+  const dietCode = dietSrc.replace(/^\s*\/\/.*$/gm, '');
+  T('  _applyFilter 只推条数 + 当前这一页',
+    /libraryTotal:\s*library\.length/.test(dietCode) && !/setData\(\{\s*library\s*,/.test(dietCode));
+  T('  「显示更多」还在', /showMoreLibrary/.test(dietSrc) && /libraryLimit\s*\+\s*40/.test(dietSrc));
+
+  for (const f of ['pages/diet/diet.wxml', 'pages/healthhub/healthhub.wxml']) {
+    const wxml = fs.readFileSync(path.join(MP, f), 'utf8');
+    T(`${f} 用 libraryTotal 而不是 library.length`,
+      !/\blibrary\.length/.test(wxml) && /libraryTotal/.test(wxml));
+  }
+
+  // 真跑一遍：筛完之后 data 里不该有 library，libraryShown 只给一页
+  const inst = loadPage('diet');
+  inst.refresh();
+  const stray = Object.keys(inst.data).filter((k) => k === 'library');
+  T('  刷新后 data 里没有 library 键', stray.length === 0, stray.join(','));
+  T('  libraryTotal 是筛选后的种数', inst.data.libraryTotal > 40, String(inst.data.libraryTotal));
+  T('  libraryShown 只给一页',
+    inst.data.libraryShown.length <= inst.data.libraryLimit,
+    `${inst.data.libraryShown.length} / ${inst.data.libraryLimit}`);
+  const bytes = JSON.stringify({
+    libraryTotal: inst.data.libraryTotal,
+    libraryShown: inst.data.libraryShown,
+  }).length;
+  T('  这一次 setData 出去的字节数 < 8000', bytes < 8000, `${bytes} 字节`);
 }
 
 console.log('\n══════════════════════════════');

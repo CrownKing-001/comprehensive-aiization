@@ -239,36 +239,67 @@ function buildHost(opts) {
       segments: segments.map((s) => Object.assign({}, s)),
     },
 
+    /**
+     * 按需初始化一个分段：建视图 + 首次跑它的 onLoad。
+     *
+     * 以前这里对 ids 全量循环：三个分段都跑 onLoad（各自 subscribe + 全量
+     * refresh + setData），可 wx:if 只渲染当前这一段，另外两段的工作全是白做的。
+     * 真机实测健康页进入一次是 10 次 setData / 59 KB，其中大半是给没显示的分段
+     * 刷的。改成按需初始化后，切换分段时由 _revealSeg 补做，行为等价。
+     */
+    _initSeg(id) {
+      const mod = modules[id] && modules[id].def;
+      if (!mod) return null;
+      if (!this._views) this._views = {};
+      const view = this._views[id] || (this._views[id] = makeView(this, prefixOf(id), mod));
+      if (!this._segLoaded) this._segLoaded = {};
+      if (this._segLoaded[id]) return view;
+      this._segLoaded[id] = true;
+      if (typeof mod.onLoad === 'function') {
+        try {
+          mod.onLoad.call(view);
+        } catch (e) {
+          console.error(`[tabHost] ${id}.onLoad 出错`, e);
+        }
+      }
+      return view;
+    },
+
+    /** 把某个分段的 data 并进宿主；同一段只并一次（分段没显示时本来也不渲染） */
+    _dataPatchFor(id) {
+      const out = {};
+      if (!this._segData) this._segData = {};
+      if (this._segData[id]) return out;
+      const mod = modules[id] && modules[id].def;
+      if (!mod) return out;
+      const defaults = prefixKeys(mod, prefixOf(id));
+      // 只补「宿主 data 里还没有的键」。
+      // 不能无条件覆盖：子模块 onLoad 里的 refresh 可能已经把真数据写进来了，
+      // 再用它的初始 data 覆盖回去，界面会先闪一帧空列表。
+      for (const k of Object.keys(defaults)) {
+        if (!(k in this.data)) out[k] = defaults[k];
+      }
+      this._segData[id] = true;
+      return out;
+    },
+
     onLoad() {
       this._views = {};
       this._unsubs = [];
+      this._segLoaded = {};
+      this._segData = {};
       // 根节点上的主题类由宿主自己给：子模块算出来的那份会被加上 `<模块>_` 前缀，
       // 而 WXML 的根节点读的是不带前缀的这一个（以前没人给，于是三个合并页
       // 在浅色主题下一直是深色）。
       const initial = { themeClass: themeClassOf() };
-      // 先把各子模块的 data 并进来，再调它们的 onLoad
-      for (const id of ids) {
-        const mod = modules[id] && modules[id].def;
-        if (!mod) continue;
-        Object.assign(initial, prefixKeys(mod, prefixOf(id)));
-      }
+      // 只并「当前显示那一段」的 data，其余分段等切过去时再并 ——
+      // wx:if 没显示的分段不在渲染树上，早并是白并。
+      Object.assign(initial, this._dataPatchFor(this.data.seg));
       this.setData(initial);
       // 在「设置」里换主题不会重新进这个页面，所以得订阅一次
       this._themeUnsub = store.subscribe(() => this._syncTheme());
 
-      for (const id of ids) {
-        const mod = modules[id] && modules[id].def;
-        if (!mod) continue;
-        const view = makeView(this, prefixOf(id), mod);
-        this._views[id] = view;
-        if (typeof mod.onLoad === 'function') {
-          try {
-            mod.onLoad.call(view);
-          } catch (e) {
-            console.error(`[tabHost] ${id}.onLoad 出错`, e);
-          }
-        }
-      }
+      this._initSeg(this.data.seg);
       this.setData({ ready: true });
     },
 
@@ -349,15 +380,18 @@ function buildHost(opts) {
         return;
       }
 
-      for (const id of ids) {
-        const mod = modules[id] && modules[id].def;
-        const view = this._views && this._views[id];
-        if (mod && view && typeof mod.onShow === 'function') {
-          try {
-            mod.onShow.call(view);
-          } catch (e) {
-            console.error(`[tabHost] ${id}.onShow 出错`, e);
-          }
+      // 只跑「当前显示这一段」的 onShow。
+      // 子模块的 onShow 基本都是 this.refresh()（一次全量 setData），对没显示的
+      // 分段跑它纯属浪费 —— wx:if 分支不在渲染树上，刷了也看不到。
+      // 切过去的时候 _revealSeg 会补跑。
+      const cur = this.data.seg;
+      const cmod = modules[cur] && modules[cur].def;
+      const cview = this._initSeg(cur);
+      if (cmod && cview && typeof cmod.onShow === 'function') {
+        try {
+          cmod.onShow.call(cview);
+        } catch (e) {
+          console.error(`[tabHost] ${cur}.onShow 出错`, e);
         }
       }
     },
@@ -399,9 +433,14 @@ function buildHost(opts) {
      */
     _revealSeg(id) {
       const firstTime = !this._segReady || !this._segReady[id];
-      this.setData({ seg: id }, () => {
+      // 先按需初始化（首次会跑子模块 onLoad → refresh，把该段的 data 写好），
+      // 再连同 seg 一起 setData —— wx:if 在 seg 生效那一帧就渲染，分两次写会
+      // 先渲染出一帧「字段全是 undefined」的空分段。
+      const view = this._initSeg(id);
+      const patch = { seg: id };
+      Object.assign(patch, this._dataPatchFor(id));
+      this.setData(patch, () => {
         const mod = modules[id] && modules[id].def;
-        const view = this._views && this._views[id];
         if (!mod || !view) return;
 
         // 首次显示时补跑 onReady —— 此时节点才存在
@@ -415,8 +454,15 @@ function buildHost(opts) {
           }
         }
 
-        // 每次切过来都刷新一下，保证看到的是最新数据
-        if (typeof mod.refresh === 'function') {
+        // 每次切过来都刷新一下，保证看到的是最新数据。
+        // 优先走子模块的 onShow（语义上和它独立成页时一致），没有才退回 refresh。
+        if (typeof mod.onShow === 'function') {
+          try {
+            mod.onShow.call(view);
+          } catch (err) {
+            console.error(`[tabHost] ${id}.onShow 出错`, err);
+          }
+        } else if (typeof mod.refresh === 'function') {
           try {
             mod.refresh.call(view);
           } catch (err) {
@@ -448,7 +494,10 @@ function buildHost(opts) {
       if (key === 'data' || key === 'onLoad' || key === 'onShow' || key === 'onUnload') continue;
       if (typeof mod[key] !== 'function') continue;
       host[prefixOf(id) + key] = function (e) {
-        const view = this._views && this._views[id];
+        // 分段现在是懒初始化的；用户没切到过那一段时它的视图还没建。
+        // 这里兜一次，否则视图的 data 代理读不到自己的字段，
+        // 方法里 this.data.xxx 会全是 undefined。
+        const view = this._initSeg(id);
         return mod[key].call(view, e);
       };
     }
