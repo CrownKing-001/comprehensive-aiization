@@ -7,7 +7,7 @@
 // 数据形状、默认值、键名与桌面版逐字一致，保证备份互通。
 
 const { KEYS, loadAll, replaceAll, saveData, toKey } = require('../utils/storage');
-const { DEFAULT_SEMESTER_START, DEFAULT_TOTAL_WEEKS } = require('../utils/plan');
+const { DEFAULT_SEMESTER_START, DEFAULT_TOTAL_WEEKS, semesterStartForWeek } = require('../utils/plan');
 const { proteinTargetFor } = require('../data/foods');
 
 const DEFAULT_SETTINGS = {
@@ -16,6 +16,11 @@ const DEFAULT_SETTINGS = {
   notifyMinutesBefore: 15,
   semesterStart: toKey(DEFAULT_SEMESTER_START),
   totalWeeks: DEFAULT_TOTAL_WEEKS,
+  // 用户是否**显式**说明过「今天是第几周」。
+  // 首次安装时 semesterStart 被兜底成本周一 → 显示「第 1 教学周」，
+  // 这个值和「用户真的在第 1 周」长得一模一样，光看数据分不出来，
+  // 所以总览页那个「现在是第几周？」的醒目提示需要一个独立的标记来决定去留。
+  weekConfirmed: false,
   startMinimized: false,
   theme: 'dark',
   periods: [],
@@ -191,6 +196,23 @@ const store = {
     this.shape = Object.assign({}, this.shape, { settings: next });
     if (this.ready) saveData(KEYS.settings, next);
     this.notify();
+  },
+
+  /**
+   * 用户显式声明「今天是第 N 周」：反推学期起点，并记下「已经确认过」。
+   *
+   * 所有「让用户说明当前周次」的入口都走这里，而不是各自写 semesterStart：
+   *  · 设置页的「当前是第几周」输入框
+   *  · 课表识别页的「用识别到的周次校准」
+   *  · 校历识别页的「按正式上课日反推」
+   * 只要有一个入口漏了确认标记，总览页的醒目提示就会赖着不走。
+   * 返回实际生效的周次与学期起点，供调用方拼提示语。
+   */
+  setCurrentWeek(week) {
+    const n = Math.max(1, Math.min(40, Math.round(Number(week) || 1)));
+    const start = toKey(semesterStartForWeek(n, this.today));
+    this.setSettings({ semesterStart: start, weekConfirmed: true });
+    return { week: n, start };
   },
 
   // ── 备份 ──

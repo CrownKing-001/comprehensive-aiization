@@ -9,8 +9,8 @@
 // 移植自桌面版 src/views/CalendarScan.tsx
 
 const { store, uid } = require('../../store/store');
-const { currentWeek, semesterStartForWeek } = require('../../utils/plan');
-const { fromKey, toKey } = require('../../utils/storage');
+const { currentWeek } = require('../../utils/plan');
+const { fromKey } = require('../../utils/storage');
 const { parseTimetableText } = require('../../utils/textParse');
 const { weeksToText, parseWeeksText } = require('../../utils/weeks');
 const { TIMETABLE_AI_PROMPT } = require('../../utils/aiPrompts');
@@ -144,7 +144,9 @@ Page({
       end: c.end,
       place: c.place,
       weeks: c.weeks,
-      weeksText: weeksToText(c.weeks),
+      // weeks 没解析出来时退回原文里的周次标签 —— 空框的含义是「每周都上」，
+      // 和「没识别出来」长得一模一样，用户没法区分。宁可把原文摆出来让他改。
+      weeksText: weeksToText(c.weeks) || c.weeksLabel || '',
       raw: c.raw,
       nonThisWeek: c.nonThisWeek,
       confidence: c.confidence,
@@ -252,9 +254,8 @@ Page({
   applyCurrentWeek() {
     const w = this.data.detectedWeek;
     if (!w) return;
-    const start = semesterStartForWeek(w, store.today);
-    store.setSettings({ semesterStart: toKey(start) });
-    this._notify('ok', `已把当前周设为第 ${w} 周（学期起点调整为 ${toKey(start)}），全应用的周次会据此重算。`);
+    const r = store.setCurrentWeek(w);
+    this._notify('ok', `已把当前周设为第 ${r.week} 周（学期起点调整为 ${r.start}），全应用的周次会据此重算。`);
   },
 
   /** 把勾选的课程写进课表 */

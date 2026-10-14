@@ -12,8 +12,8 @@
 // 移植自桌面版 src/views/Settings.tsx
 
 const { store } = require('../../store/store');
-const { currentWeek, semesterStartForWeek } = require('../../utils/plan');
-const { fromKey, toKey } = require('../../utils/storage');
+const { currentWeek } = require('../../utils/plan');
+const { fromKey } = require('../../utils/storage');
 const { parsePeriodSchedule, formatPeriodSchedule } = require('../../utils/periods');
 
 Page({
@@ -183,7 +183,9 @@ Page({
 
   // ── 学期 ──────────────────────────────────────────
   onSemesterStart(e) {
-    store.setSettings({ semesterStart: e.detail.value });
+    // 直接选学期起点也算「用户说明了当前周次」，走 setCurrentWeek 之外的
+    // 普通写入会漏掉确认标记，总览页的醒目提示就撤不掉
+    store.setSettings({ semesterStart: e.detail.value, weekConfirmed: true });
     const week = currentWeek(store.today, fromKey(e.detail.value));
     this._flash('ok', `学期起点已设为 ${e.detail.value}，当前是第 ${week} 教学周。`);
   },
@@ -199,10 +201,9 @@ Page({
       this._flash('err', '请输入 1–40 之间的周次。');
       return;
     }
-    const start = semesterStartForWeek(n, store.today);
-    store.setSettings({ semesterStart: toKey(start) });
+    const r = store.setCurrentWeek(n);
     this.setData({ weekJump: '' });
-    this._flash('ok', `已按「今天第 ${n} 周」把学期起点设为 ${toKey(start)}，全应用周次已重算。`);
+    this._flash('ok', `已按「今天第 ${r.week} 周」把学期起点设为 ${r.start}，全应用周次已重算。`);
   },
 
   onTotalWeeks(e) {

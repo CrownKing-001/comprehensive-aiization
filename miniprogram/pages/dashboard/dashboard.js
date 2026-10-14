@@ -8,6 +8,12 @@ const DEFINITION = {
   data: {
     ready: false,
     week: 1,
+    // 「现在是第几周」的醒目提示条。只有用户明确设置过（weekConfirmed）才消失。
+    // 必须在 data 里先声明：WXML 在首次 setData 之前读到 undefined，
+    // 而 `!undefined` 为真 —— 会让提示条在已确认的机器上闪一下。
+    weekConfirmed: true,
+    weekOptions: [],
+    weekPickIndex: 0,
     dateText: '',
     weekdayText: '',
     greet: '',
@@ -224,9 +230,19 @@ const DEFINITION = {
       ? `今天还有 ${restCount} 节课，最近一节 ${restCourses[0].start} ${restCourses[0].name}`
       : '今天课都上完了，剩下的时间归你安排';
 
+    // 「现在是第几周」提示条的下拉选项。默认停**当前推算出的那一周**，
+    // 因为多数人只是被兜底的学期起点算错了，点一下「就是这个」就好；
+    // 真要改才去拨。上限 40 是 store.setCurrentWeek 的同一个夹取范围。
+    const totalWeeks = Math.max(1, Math.min(40, Number(s.settings.totalWeeks) || 18));
+    const weekOptions = [];
+    for (let i = 1; i <= totalWeeks; i++) weekOptions.push(`第 ${i} 周`);
+
     this.setData({
       ready: true,
       week,
+      weekConfirmed: s.settings.weekConfirmed === true,
+      weekOptions,
+      weekPickIndex: Math.max(0, Math.min(totalWeeks - 1, week - 1)),
       dateText: `${today.getMonth() + 1} 月 ${today.getDate()} 日`,
       weekdayText: `周${'日一二三四五六'[today.getDay()]}`,
       greet,
@@ -257,6 +273,21 @@ const DEFINITION = {
       todayDietCount: todayDiet.length,
       themeClass: s.settings.theme === 'light' ? 'theme-light' : '',
     });
+  },
+
+  /** 提示条上的「第 N 周」下拉 */
+  onWeekPick(e) {
+    this.setData({ weekPickIndex: Number(e.detail.value) || 0 });
+  },
+
+  /**
+   * 确认「现在就是第 N 教学周」。
+   * 必须走 store.setCurrentWeek —— 它同时写 semesterStart 和 weekConfirmed，
+   * 前者让全应用的周次对齐，后者让这条提示永久消失（设置页里仍可随时改）。
+   */
+  confirmWeek() {
+    const r = store.setCurrentWeek(this.data.weekPickIndex + 1);
+    wx.showToast({ title: `已设为第 ${r.week} 教学周`, icon: 'none' });
   },
 
   /**

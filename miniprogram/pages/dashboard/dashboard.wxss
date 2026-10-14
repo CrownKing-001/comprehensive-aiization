@@ -47,6 +47,102 @@
 /* ── 总览部分（原 dashboard.wxss） ── */
 /* 总览页样式。app.wxss 是全局样式，本就自动生效，无需 @import。 */
 
+/* ── 「现在是第几教学周」醒目提示 ─────────────────
+   只在 settings.weekConfirmed 为 false 时出现（首装默认 false）。
+   为什么需要它：semesterStart 兜底成「本周一」，于是首装就显示「第 1 教学周」，
+   和「用户真在第 1 周」从数据上分不出来 —— 用户普遍不知道自己该改这里。
+   确认一次后永久收起；设置页「学期与日期」里仍保留入口。
+   它不是 .card，所以拿不到 .stack > .card + .card 的间距，自己给下边距。 */
+.week-setup {
+  margin-bottom: 24rpx;
+  border-radius: 28rpx;
+  padding: 28rpx 28rpx 24rpx;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.16), rgba(5, 150, 105, 0.07));
+  border: 2rpx solid rgba(52, 211, 153, 0.34);
+}
+
+.week-setup-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 16rpx;
+}
+
+.week-setup-emoji {
+  font-size: 40rpx;
+  line-height: 1.15;
+}
+
+.week-setup-copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.week-setup-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: var(--text-1);
+}
+
+.week-setup-sub {
+  margin-top: 6rpx;
+  font-size: 23rpx;
+  color: var(--text-3);
+  line-height: 1.5;
+}
+
+.week-setup-row {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  margin-top: 22rpx;
+}
+
+.week-setup-pick {
+  flex: 1;
+  min-width: 0;
+}
+
+.week-setup-value {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12rpx;
+  height: 76rpx;
+  padding: 0 24rpx;
+  border-radius: 18rpx;
+  background: var(--surface-0);
+  border: 2rpx solid var(--border-2);
+  color: var(--text-1);
+  font-size: 28rpx;
+  font-weight: 500;
+}
+
+.week-setup-caret {
+  color: var(--text-4);
+  font-size: 22rpx;
+}
+
+.week-setup-go {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 76rpx;
+  padding: 0 32rpx;
+  border-radius: 18rpx;
+  background: #059669;
+  color: #fff;
+  font-size: 27rpx;
+  font-weight: 500;
+}
+
+.week-setup-foot {
+  margin-top: 18rpx;
+  font-size: 21rpx;
+  color: var(--text-4);
+  line-height: 1.5;
+}
+
 /* ── 欢迎条 ───────────────────────────────────── */
 .hero {
   border-radius: 28rpx;

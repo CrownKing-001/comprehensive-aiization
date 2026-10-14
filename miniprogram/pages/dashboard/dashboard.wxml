@@ -19,7 +19,30 @@
   </view>
 
   <!-- ── 总览 ── -->
-  <block wx:if="{{seg === 'dashboard'}}"><!-- 欢迎条 -->
+  <block wx:if="{{seg === 'dashboard'}}">
+  <!-- 当前教学周没被确认过：摆最上面。确认一次后永久消失；
+       设置页「学期与日期」里始终保留入口。见 store.setCurrentWeek。 -->
+  <view class="week-setup" wx:if="{{!dashboard_weekConfirmed}}">
+    <view class="week-setup-top">
+      <text class="week-setup-emoji">📅</text>
+      <view class="week-setup-copy">
+        <view class="week-setup-title">现在是第几教学周？</view>
+        <view class="week-setup-sub">选对之后，课表、作业、运动打卡的周次才会跟你对齐</view>
+      </view>
+    </view>
+    <view class="week-setup-row">
+      <picker class="week-setup-pick" mode="selector" range="{{dashboard_weekOptions}}"
+        value="{{dashboard_weekPickIndex}}" bindchange="dashboard_onWeekPick">
+        <view class="week-setup-value">
+          <text>{{dashboard_weekOptions[dashboard_weekPickIndex]}}</text>
+          <text class="week-setup-caret">▾</text>
+        </view>
+      </picker>
+      <view class="week-setup-go" bindtap="dashboard_confirmWeek">就是这个</view>
+    </view>
+    <view class="week-setup-foot">确认后这条提示就收起来，之后在「设置 → 学期与日期」里随时能改</view>
+  </view>
+  <!-- 欢迎条 -->
   <view class="hero">
     <view class="hero-week">🔥 第 {{dashboard_week}} 教学周</view>
     <view class="hero-date">

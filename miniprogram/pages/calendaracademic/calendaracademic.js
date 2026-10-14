@@ -351,14 +351,18 @@ Page({
       this._notify('err', '没找到「正式上课 / 教学周」这类条目，无法推断学期起点。');
       return;
     }
-    store.setSettings({ semesterStart: start.date });
+    store.setSettings({ semesterStart: start.date, weekConfirmed: true });
     this._notify('ok', `已把学期起点设为 ${start.date}，周计划与本学期周次会据此重算。`);
   },
 
   /** 把文字解析出的学期起点 / 总周数写进设置 */
   applyParsedSettings() {
     const patch = {};
-    if (this.data.parsedStart) patch.semesterStart = this.data.parsedStart;
+    if (this.data.parsedStart) {
+      patch.semesterStart = this.data.parsedStart;
+      // 有了明确的学期起点 = 用户说明了当前周次，总览页的醒目提示可以撤了
+      patch.weekConfirmed = true;
+    }
     if (this.data.parsedWeeks) patch.totalWeeks = this.data.parsedWeeks;
     if (!Object.keys(patch).length) {
       this._notify('err', '这段文字里没有学期起点或总周数，无法应用。');
