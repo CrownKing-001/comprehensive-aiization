@@ -2308,6 +2308,42 @@ section('[31] 主题外壳（窗口底色 + 导航栏）');
   T('切回深色也同步', shellCalls.some((c) => c[0] === 'nav' && c[2] === '#ffffff'));
 }
 
+section('[32] 合并页的主题类挂在宿主根节点上');
+{
+  // 用户报：「浅色模式下 总览 / 待办作业 / 健康 仍是黑色」。
+  // 三个合并页的根节点读的是不带前缀的 {{themeClass}}，而子模块算出来的那份
+  // 会被 makeView 的 setData 代理加上 `<模块>_` 前缀（tools/prefix-wxml.js 的
+  // NEVER 集合特意把 themeClass 排除在外，就是留给宿主的），
+  // 于是宿主这一个从来没人赋值，永远停在 data 里那个 ''。
+  const fs = require('fs');
+
+  for (const name of ['dashboard', 'tasks', 'healthhub']) {
+    const wxml = fs.readFileSync(path.join(MP, 'pages', name, name + '.wxml'), 'utf8');
+    T(`${name}.wxml 的根节点读不带前缀的 themeClass`,
+      /class="page-wrap[^"]*\{\{themeClass\}\}/.test(wxml));
+  }
+
+  store.setSettings({ theme: 'light' });
+  for (const name of ['dashboard', 'tasks', 'healthhub']) {
+    // loadPage 会捕获页面文件末尾那次 Page(buildHost(...))，也就是真正的宿主定义
+    global.__TABHOST_LOADING__ = false;
+    const p = loadPage(name);
+    p.onLoad();
+    T(`${name} 在浅色主题下带上 theme-light`,
+      p.data.themeClass === 'theme-light', JSON.stringify(p.data.themeClass));
+  }
+
+  // 页面已经开着时在「设置」里换主题，也要立刻同步（靠 onLoad 里的订阅，不用重进）
+  global.__TABHOST_LOADING__ = false;
+  const p = loadPage('dashboard');
+  p.onLoad();
+  store.setSettings({ theme: 'light' });
+  T('  页面已打开时换主题也能同步', p.data.themeClass === 'theme-light',
+    JSON.stringify(p.data.themeClass));
+  store.setSettings({ theme: 'dark' });
+  T('  换回深色同步', p.data.themeClass === '', JSON.stringify(p.data.themeClass));
+}
+
 console.log('\n══════════════════════════════');
 console.log(`  验收: ${ok} 通过 / ${bad} 失败`);
 process.exit(bad ? 1 : 0);
