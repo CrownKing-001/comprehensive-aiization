@@ -24,6 +24,10 @@ const DEFINITION = {
     barWidth: 0,
     remain: 0,
     types: [],
+    // ⚠️ WXML 的 {{}} 里**不能调用函数** —— 写 {{types.join(' / ')}} 不会报错，
+    // 只会静默渲染成空字符串（之前「打卡类型：」后面就是这么空的）。
+    // 所以字符串在 JS 里拼好，WXML 只做取值。
+    typesText: '',
     todayCount: 0,
 
     // 时间
@@ -145,6 +149,7 @@ const DEFINITION = {
       barWidth: Math.min(100, Math.round((done / target) * 100)),
       remain,
       types,
+      typesText: types.length ? types.join(' / ') : '尚未设置（去「设置」里填写）',
       todayCount,
       week,
       weeksLeft,

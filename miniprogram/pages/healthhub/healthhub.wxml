@@ -313,7 +313,7 @@
           </view>
           <view class="bullet">
             <text class="bullet-dot">•</text>
-            <text class="bullet-text">打卡类型：{{run_types.length ? run_types.join(' / ') : '尚未设置（去「设置」里填写）'}}。</text>
+            <text class="bullet-text">打卡类型：{{run_typesText}}。</text>
           </view>
           <view class="bullet" wx:if="{{run_hasStart || run_hasEnd}}">
             <text class="bullet-dot">•</text>
