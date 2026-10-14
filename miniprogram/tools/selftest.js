@@ -2207,6 +2207,55 @@ section('[29] AI 提示词与解析器必须对齐');
   }
 }
 
+section('[30] 导入课表的反馈');
+{
+  // 用户报：「识别课表后选择导入没有任何反馈提示用户已经成功导入」。
+  // 原因是顶部那条 msg notice 在这个长页面里会被滚出视野 ——
+  // 用户点「导入课表」时人已经在页面底部了。
+  store.resetAll();
+  store.setSettings({ semesterStart: '2026-09-07', totalWeeks: 18 });
+  const p = loadPage('coursescan');
+  p.onLoad();
+
+  p.onPasteInput({ detail: { value: '周一\n高等数学，1-2节，A101，1-16周' } });
+  p.parsePasted();
+  T('解析出 1 门课', p.data.draft.length === 1, String(p.data.draft.length));
+
+  p.importToCourses();
+  T('课程进了课表',
+    (store.shape.courses || []).some((c) => c.name === '高等数学'),
+    String((store.shape.courses || []).length));
+  T('导入后按钮旁出现确认条', !!p.data.importResult, JSON.stringify(p.data.importResult));
+  T('  确认条写清了导入门数', /已导入 1 门课程/.test(String(p.data.importResult)),
+    String(p.data.importResult));
+  T('  顶部提示条同时给出', !!p.data.msg && p.data.msg.kind === 'ok',
+    JSON.stringify(p.data.msg));
+
+  // 再点一次全是重复，要说「没有新增」，不能照样报「已导入 0 门课程」
+  p.importToCourses();
+  T('重复导入时说清没有新增', /没有新增/.test(String(p.data.importResult)),
+    String(p.data.importResult));
+
+  // 重新解析后上一次的结果就过期了
+  p.onPasteInput({ detail: { value: '周二\n线性代数，3-4节，B202，1-16周' } });
+  p.parsePasted();
+  T('重新解析后旧确认条被清掉', p.data.importResult === '', JSON.stringify(p.data.importResult));
+
+  // 布局守住：确认条必须跟着导入按钮，顶部提示必须粘住视口（否则滚下去就看不到）
+  const fs = require('fs');
+  const wxml = fs.readFileSync(path.join(MP, 'pages', 'coursescan', 'coursescan.wxml'), 'utf8');
+  const wxss = fs.readFileSync(path.join(MP, 'pages', 'coursescan', 'coursescan.wxss'), 'utf8');
+  T('确认条紧跟导入按钮', /bindtap="importToCourses"[\s\S]{0,400}?importResult/.test(wxml));
+  // 浮动时必须不透明：.notice-ok/.notice-err/.notice-info 的底色都只有 12% 不透明度，
+  // 贴到卡片上方后卡片文字会透出来，看着像被压在下面（踩过）。
+  T('顶部提示条 sticky + 不透明底色 + 有 import-done 样式',
+    /\.notice-float\s*\{[^}]*position:\s*sticky/.test(wxss)
+    && /\.notice-float\s*\{[^}]*background-color:\s*var\(--surface-0\)/.test(wxss)
+    && /\.notice-float\.notice-ok\s*\{[^}]*background-image:\s*linear-gradient/.test(wxss)
+    && /notice-float/.test(wxml)
+    && /\.import-done\s*\{/.test(wxss));
+}
+
 console.log('\n══════════════════════════════');
 console.log(`  验收: ${ok} 通过 / ${bad} 失败`);
 process.exit(bad ? 1 : 0);

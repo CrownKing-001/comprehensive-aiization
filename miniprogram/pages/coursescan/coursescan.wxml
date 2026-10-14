@@ -1,8 +1,10 @@
 <!-- 课表识别（文字解析导入） -->
 <view class="page-wrap stack {{themeClass}}">
 
-  <!-- ── 提示条 ── -->
-  <view class="notice notice-{{msg.kind}}" wx:if="{{msg}}">
+  <!-- ── 提示条 ──
+       notice-float 让它粘在视口顶部：这个页面很长（粘贴框 → 核对列表 →
+       导入按钮），提示如果跟着页面滚，用户在下面操作时根本看不到。 -->
+  <view class="notice notice-{{msg.kind}} notice-float" wx:if="{{msg}}">
     <text class="notice-text">{{msg.text}}</text>
   </view>
 
@@ -134,6 +136,12 @@
         <view class="btn-primary {{acceptedCount ? '' : 'is-disabled'}}" bindtap="importToCourses">
           导入课表{{acceptedCount ? ' (' + acceptedCount + ')' : ''}}
         </view>
+      </view>
+
+      <!-- 导入结果就地反馈：用户点完按钮视线就在这里，不用回头看顶部 -->
+      <view class="import-done" wx:if="{{importResult}}">
+        <view class="import-done-text">✅ {{importResult}}</view>
+        <view class="btn-ghost btn-sm" bindtap="goCourses">去课表看看</view>
       </view>
     </view>
   </view>

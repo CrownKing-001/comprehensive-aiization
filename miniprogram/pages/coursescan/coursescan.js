@@ -46,6 +46,10 @@ Page({
     docName: '',
 
     msg: null,
+    // 导入成功后贴在「导入课表」按钮下面的确认条。
+    // 顶部那条 msg notice 在这么长的核对列表里会被滚出视野 ——
+    // 用户点完「导入课表」看不到任何反馈，以为没成功。
+    importResult: '',
   },
 
   onLoad() {
@@ -114,7 +118,8 @@ Page({
     }));
 
     const acceptedCount = draft.filter((c) => c.accepted && String(c.name).trim()).length;
-    this.setData({ draft, acceptedCount, hasDraft: this._allDraft.length > 0 });
+    // 草稿一变（重新解析、改勾选、改字段），上一次的导入结果就过期了
+    this.setData({ draft, acceptedCount, hasDraft: this._allDraft.length > 0, importResult: '' });
   },
 
   onPasteInput(e) {
@@ -290,7 +295,14 @@ Page({
     });
 
     store.setCourses([...existing, ...newOnes]);
-    this._notify('ok', `已导入 ${newOnes.length} 门课程${skipped ? `，跳过 ${skipped} 门已存在的` : ''}。`);
+
+    const text = newOnes.length
+      ? `已导入 ${newOnes.length} 门课程${skipped ? `，跳过 ${skipped} 门已存在的` : ''}。`
+      : `${skipped} 门课程都已经在课表里了，没有新增。`;
+    // 必须放在 setCourses 之后：它会通知订阅者走一遍 refresh/_recompute，
+    // 而 _recompute 会把 importResult 清掉（草稿变了，旧结果就过期了）。
+    this.setData({ importResult: text });
+    this._notify('ok', text);
   },
 
   goCourses() {

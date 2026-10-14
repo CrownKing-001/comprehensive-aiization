@@ -27,6 +27,47 @@
    所以统一用 margin-top，靠父级 .stack 的 gap 处理首条） */
 .parse-warn { margin-top: 12rpx; }
 
+/* ── 顶部提示粘住视口 ────────────────────────────
+   这个页面从粘贴框到导入按钮隔着一整份核对列表，提示跟着滚就白提示了：
+   用户在下面点「导入课表」，结果只有页面顶端闪一下，他看不到。
+   sticky 只在滚动时贴顶，停在顶部时仍占正常位置，不会挡住第一张卡片。
+   只给 msg 那条加（.parse-warn 是卡片内的静态警告，不能一起浮起来）。 */
+.notice-float {
+  position: sticky;
+  top: 0;
+  z-index: 60;
+  margin-bottom: 16rpx;
+  /* 浮起来就必须不透明：.notice-* 的底色都只有 12% 不透明度，
+     贴在卡片上方时卡片文字会直接透出来，看着像被压在下面。
+     这里改成「页面底色 + 同色薄涂层」两层不透明组合（--surface-0 会随主题切换），
+     再给一点投影把它和底下的内容分开。 */
+  background-color: var(--surface-0);
+  box-shadow: 0 10rpx 24rpx rgba(0, 0, 0, 0.35);
+}
+
+.notice-float.notice-ok   { background-image: linear-gradient(rgba(16, 185, 129, 0.16), rgba(16, 185, 129, 0.16)); }
+.notice-float.notice-err  { background-image: linear-gradient(rgba(244, 63, 94, 0.16),  rgba(244, 63, 94, 0.16)); }
+.notice-float.notice-info { background-image: linear-gradient(rgba(14, 165, 233, 0.16), rgba(14, 165, 233, 0.16)); }
+
+/* ── 导入结果就地确认 ───────────────────────────── */
+.import-done {
+  margin-top: 20rpx;
+  padding: 22rpx 24rpx;
+  border-radius: 20rpx;
+  background: rgba(16, 185, 129, 0.12);
+  border: 2rpx solid rgba(16, 185, 129, 0.35);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16rpx;
+}
+
+.import-done-text {
+  font-size: 25rpx;
+  line-height: 1.6;
+  color: #6ee7b7;
+}
+
 /* ── 说明块 ───────────────────────────────────── */
 .hint-box {
   font-size: 23rpx;
