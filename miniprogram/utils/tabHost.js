@@ -17,6 +17,16 @@
 //   · 只处理对象方法，不支持子模块用 Object.defineProperty 之类的花活；
 //   · 子模块之间不共享状态，需要联动得自己在宿主里写。
 
+// 取当前主题对应的类名。放在宿主这一层算，是因为 .page-wrap 这个根节点是宿主的，
+// 而子模块算出来的 themeClass 会被加上 `<模块>_` 前缀（见 tools/prefix-wxml.js 的
+// NEVER 集合，那里特意把 themeClass 排除在外，不给它加前缀）。
+const { store } = require('../store/store');
+
+function themeClassOf() {
+  const settings = store && store.shape && store.shape.settings;
+  return settings && settings.theme === 'light' ? 'theme-light' : '';
+}
+
 /**
  * 在一段「正在加载子模块」的上下文里执行 fn。
  *
@@ -182,6 +192,10 @@ function buildHost(opts) {
     preloaded = ret || {};
   }
 
+  // 「宿主自己」那一段（如「总览 / 今日」里的总览）：定义由调用方用 selfDef
+  // 传进来，既不写 path 也不会出现在 loadDefs 里。先算出来，免得下面误报。
+  const selfId = opts.selfId || ids[0];
+
   // 先把各子模块的定义取出来（每个只取一次）
   const modules = {};
   for (const id of ids) {
@@ -197,6 +211,9 @@ function buildHost(opts) {
     if (!def && spec.path) def = loadPageDef(resolveFromUtils(spec.path));
 
     if (!def) {
+      // 宿主自己那一段马上会由下面的 selfDef 补上，不是错误 ——
+      // 以前这里会白报一条「取不到 dashboard 的 Page 定义」，把控制台染红。
+      if (opts.selfDef && id === selfId) continue;
       console.error(`[tabHost] 取不到 ${id} 的 Page 定义（${spec.path || id}）`);
       continue;
     }
@@ -206,8 +223,6 @@ function buildHost(opts) {
 
   // 宿主自己的定义也能作为一个分段参与（如「总览 / 今日」里的总览）。
   // 这时不需要 path —— 定义直接由调用方传进来，省掉一次自 require。
-  // selfId 不传时默认用第一个分段。
-  const selfId = opts.selfId || ids[0];
   if (opts.selfDef && !modules[selfId]) {
     modules[selfId] = { def: opts.selfDef, label: opts.selfLabel || selfId };
   }
@@ -227,14 +242,19 @@ function buildHost(opts) {
     onLoad() {
       this._views = {};
       this._unsubs = [];
+      // 根节点上的主题类由宿主自己给：子模块算出来的那份会被加上 `<模块>_` 前缀，
+      // 而 WXML 的根节点读的是不带前缀的这一个（以前没人给，于是三个合并页
+      // 在浅色主题下一直是深色）。
+      const initial = { themeClass: themeClassOf() };
       // 先把各子模块的 data 并进来，再调它们的 onLoad
-      const initial = {};
       for (const id of ids) {
         const mod = modules[id] && modules[id].def;
         if (!mod) continue;
         Object.assign(initial, prefixKeys(mod, prefixOf(id)));
       }
       this.setData(initial);
+      // 在「设置」里换主题不会重新进这个页面，所以得订阅一次
+      this._themeUnsub = store.subscribe(() => this._syncTheme());
 
       for (const id of ids) {
         const mod = modules[id] && modules[id].def;
@@ -250,6 +270,17 @@ function buildHost(opts) {
         }
       }
       this.setData({ ready: true });
+    },
+
+    /**
+     * 把当前主题同步到根节点的 class 上。
+     *
+     * 只在这一层算，原因见 themeClassOf。值没变就不 setData —— 订阅者会在
+     * store 的任何一次写入后被调用，没必要每次都惊动渲染层。
+     */
+    _syncTheme() {
+      const cls = themeClassOf();
+      if (this.data.themeClass !== cls) this.setData({ themeClass: cls });
     },
 
     /**
@@ -291,6 +322,9 @@ function buildHost(opts) {
     },
 
     onShow() {
+      // 兜一下：极端情况下（比如热重载）订阅可能没跑，进页面时对一次主题
+      this._syncTheme();
+
       // 别的页面可能用「switchTab + globalData.pendingSeg」的方式指定过
       // 要停在哪个分段（switchTab 的 url 不能带 query）。
       // 这里检查一次，用完即清，避免下次切回来又被改分段。
@@ -329,6 +363,10 @@ function buildHost(opts) {
     },
 
     onUnload() {
+      if (this._themeUnsub) {
+        try { this._themeUnsub(); } catch (e) { /* 退订失败不影响别的 */ }
+        this._themeUnsub = null;
+      }
       for (const id of ids) {
         const mod = modules[id] && modules[id].def;
         const view = this._views && this._views[id];
