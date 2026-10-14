@@ -1085,12 +1085,24 @@ section('[19] 健康 · 月历打卡与连续天数');
     const t = store.today;
     return new Date(t.getFullYear(), t.getMonth(), t.getDate() - n);
   };
+  // 训练日编号用 1(周一)~7(周日)，和 pages/health/def.js 的 parseTrainDays 一致
+  const TRAIN = [1, 3, 5];
+  const wdOf = (d) => (d.getDay() === 0 ? 7 : d.getDay());
 
   store.resetAll();
   // 训练日 = 周一 / 周三 / 周五
   store.setSettings({ trainDays: '1,3,5' });
-  // 最近的 4 个训练日
-  const td = [back(1), back(4), back(6), back(8)].map(K);
+  // ⚠️ 不要写死 back(1)/back(4)/back(6)/back(8)。
+  // 那组偏移量只在「今天恰好是某几天」时才都落在训练日上 ——
+  // 今天是周三时 back(1)=周二、back(4)=周六、back(6)=周四、back(8)=周二，
+  // 一个训练日都没有，整组连续天数断言会集体失败。
+  // 这里按 trainDays 真实回推最近 4 个训练日，跟星期几无关。
+  const td = [];
+  for (let i = 1; td.length < 4 && i <= 60; i++) {
+    const d = back(i);
+    if (TRAIN.indexOf(wdOf(d)) >= 0) td.push(K(d));
+  }
+  T('取到最近 4 个训练日（后续断言的基准）', td.length === 4, td.join(', '));
 
   let p = mkPage();
   store.setTrainDone(td);
@@ -1101,28 +1113,57 @@ section('[19] 健康 · 月历打卡与连续天数');
   T('默认不允许翻到未来', p.data.canGoNextMonth === false);
 
   // 连续打卡的边界：休息日不打断、漏一个训练日就断
+  //
+  // ⚠️ 用「下标」而不是具体日期来表述用例 —— 之前写死 back(1)/back(4)/back(6)/back(8)，
+  // 只在部分星期几才落在训练日上，换个日子整组就挂。
+  // 下面把「今天」用 settings.pinnedDate 钉到一整周的每一天各跑一遍，
+  // 保证这套断言跟运行当天是星期几无关。
   const cases = [
-    ['打满 4 次', td, 4],
-    ['漏掉最近那个训练日 → 断', td.slice(1), 0],
-    ['只漏中间那个 → 数到中间为止', [td[0], td[1], td[3]], 2],
-    ['只打最近两次', td.slice(0, 2), 2],
+    ['打满 4 次', [0, 1, 2, 3], 4],
+    ['漏掉最近那个训练日 → 断', [1, 2, 3], 0],
+    ['只漏中间那个 → 数到中间为止', [0, 1, 3], 2],
+    ['只打最近两次', [0, 1], 2],
     ['一个都没打', [], 0],
   ];
-  for (const [name, done, want] of cases) {
-    store.setTrainDone(done);
+  // 2026-10-12 是周一；连着取 7 天覆盖一整个星期
+  const weekdayFails = [];
+  for (let off = 0; off < 7; off++) {
+    const base = new Date(2026, 9, 12 + off);
+    store.setSettings({ pinnedDate: K(base) });
+    // 按这个「今天」回推最近 4 个训练日
+    const tdn = [];
+    for (let i = 1; tdn.length < 4 && i <= 60; i++) {
+      const d = new Date(base.getFullYear(), base.getMonth(), base.getDate() - i);
+      if (TRAIN.indexOf(wdOf(d)) >= 0) tdn.push(K(d));
+    }
+    for (const [name, idx, want] of cases) {
+      store.setTrainDone(idx.map((i2) => tdn[i2]));
+      const pp = mkPage();
+      pp.onLoad();
+      if (pp.data.streak !== want) {
+        weekdayFails.push(`${K(base)}(${'日一二三四五六'[base.getDay()]}) ${name}: 得 ${pp.data.streak} 期望 ${want}`);
+      }
+    }
+  }
+  T('连续天数断言的 5 个用例 × 一整周 7 天全部一致', weekdayFails.length === 0, weekdayFails.join('; '));
+  store.setSettings({ pinnedDate: null });
+
+  for (const [name, idx, want] of cases) {
+    store.setTrainDone(idx.map((i2) => td[i2]));
     p = mkPage();
     p.onLoad();
     T(`连续天数：${name}`, p.data.streak === want, `得 ${p.data.streak}，期望 ${want}`);
   }
 
-  // 今天（休息日）没安排，昨天的打卡仍应算在连续里
-  store.setTrainDone([K(back(1))]);
+  // 今天没打卡时，最近那个训练日的打卡仍应算在连续里
+  // （今天是不是训练日都成立：是训练日则「今天未打卡不打断」，是休息日则跳过）
+  store.setTrainDone([td[0]]);
   p = mkPage();
   p.onLoad();
   T('休息日不打断连续', p.data.streak === 1, String(p.data.streak));
 
   // 今天额外补练也计入
-  store.setTrainDone([K(back(1)), K(store.today)]);
+  store.setTrainDone([td[0], K(store.today)]);
   p = mkPage();
   p.onLoad();
   T('今天额外打卡也计入连续', p.data.streak === 2, String(p.data.streak));
@@ -1140,7 +1181,13 @@ section('[19] 健康 · 月历打卡与连续天数');
   T('回到本月后游标清空（跟随今天）', p.data.calCursor === null);
 
   // 点格子补打卡 / 取消
-  const cell = p.data.calCells.find((c) => !c.checked && c.inMonth && !c.isFuture);
+  // 今天是月初时，本月可能一个已过去的日子都没有 —— 先翻到上个月再找，
+  // 否则这条断言每月 1 号必然失败。
+  let cell = p.data.calCells.find((c) => !c.checked && c.inMonth && !c.isFuture);
+  if (!cell) {
+    p.shiftMonth({ currentTarget: { dataset: { delta: -1 } } });
+    cell = p.data.calCells.find((c) => !c.checked && c.inMonth && !c.isFuture);
+  }
   T('月历里有可点的历史格子', !!cell);
   if (cell) {
     p.toggleTrain({ currentTarget: { dataset: { key: cell.key } } });
@@ -1955,6 +2002,57 @@ section('[25] 盒模型（width:100% + padding 不能溢出容器）');
   }
   T('  .btn-* 自身也显式声明了 border-box', btnMissing.length === 0, btnMissing.join(', '));
 }
+
+// ══ 26. WXML 表达式 ══
+// WXML 的 {{}} 只支持简单表达式（三元、算术、逻辑、字符串拼接、数组/对象字面量），
+// **不支持函数调用**。写了不会编译报错，只会静默渲染成空 —— 最难查的那类 bug。
+//
+// 实际踩到：运动打卡页「打卡类型：{{types.length ? types.join(' / ') : '…'}}」，
+// 类型按钮都渲染出来了（说明 types 有 6 项），只有这行文字是空的。
+section('[26] WXML 表达式（不能调用函数）');
+{
+  const fs = require('fs');
+  const BANNED_FN = ['join', 'map', 'filter', 'slice', 'split', 'concat', 'indexOf',
+    'toFixed', 'replace', 'trim', 'push', 'sort', 'includes', 'some', 'every',
+    'reduce', 'find', 'substring', 'toString', 'parseInt', 'parseFloat',
+    'toUpperCase', 'toLowerCase', 'reverse', 'keys', 'values', 'entries',
+    'padStart', 'padEnd'];
+
+  const files = [];
+  const walk = (dir) => {
+    for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+      const p = path.join(dir, e.name);
+      if (e.isDirectory()) walk(p);
+      else if (e.name.endsWith('.wxml')) files.push(p);
+    }
+  };
+  walk(path.join(MP, 'pages'));
+
+  const hits = [];
+  const re = /\{\{[^{}]*?\.\s*([a-zA-Z_$][\w$]*)\s*\(/g;
+  for (const f of files) {
+    const lines = fs.readFileSync(f, 'utf8').split(/\r?\n/);
+    lines.forEach((line, i) => {
+      re.lastIndex = 0;
+      let m;
+      while ((m = re.exec(line)) !== null) {
+        if (BANNED_FN.indexOf(m[1]) >= 0) {
+          hits.push(`${path.relative(MP, f)}:${i + 1} .${m[1]}()`);
+        }
+      }
+    });
+  }
+  T('  WXML {{}} 里没有函数调用', hits.length === 0, hits.join('; '));
+
+  // 需要拼接的字符串必须由 JS 预先算好
+  const runDef = fs.readFileSync(path.join(MP, 'pages', 'run', 'def.js'), 'utf8');
+  T('  run 页把打卡类型串预算成 typesText', /typesText/.test(runDef));
+  const runWxml = fs.readFileSync(path.join(MP, 'pages', 'run', 'run.wxml'), 'utf8');
+  const hhWxml = fs.readFileSync(path.join(MP, 'pages', 'healthhub', 'healthhub.wxml'), 'utf8');
+  T('  两个页面的「打卡类型」都改用预算好的字段',
+    /\{\{typesText\}\}/.test(runWxml) && /\{\{run_typesText\}\}/.test(hhWxml));
+}
+
 console.log('\n══════════════════════════════');
 console.log(`  验收: ${ok} 通过 / ${bad} 失败`);
 process.exit(bad ? 1 : 0);
