@@ -64,16 +64,60 @@ const RE_NON_CURRENT = /非本周|本周无|停课|不上/;
 const RE_ODD = /单周|单数周|\(单\)/;
 const RE_EVEN = /双周|双数周|\(双\)/;
 
+// ── 周次短语 ────────────────────────────────────────────
+// 周次内部的逗号是它**自己的**枚举分隔符，不是字段分隔符：
+// 「1-8,10-16 周」整段只是一个周次。所以必须先整段摘出来再按逗号切字段 ——
+// 否则会被切成「1-8」和「10-16 周」两段，前一段掉进地点、后一段只剩 10-16。
+// 「1,3,5,7 周」更彻底：被切成 4 个光秃秃的数字全落到地点，weeks 直接变成 null，
+// 确认表里那一行的「周次」就是空的 —— 用户报的「某些课程在第几周识别不出来」。
+//
+// norm() 是逐字符等长替换（全角数字/括号/各种连字符都是 1 换 1），
+// 所以 norm(x) 上的下标可以直接拿去切 x 本身，用原文当显示标签。
+const RE_WEEK_PHRASE =
+  /(?:第\s*)?\d{1,2}(?:\s*(?:-|[,、])\s*\d{1,2})*\s*周\s*(?:\(\s*(?:单|双)\s*周?\s*\)|(?:单|双)\s*周)?/;
+
+/** 「1-8,10-16 周(单)」→ [1,3,5,7,9,11,13,15]；解析不出返回 [] */
+function weeksFromPhrase(phrase) {
+  const s = norm(phrase);
+  const parity = /单/.test(s) ? '单' : /双/.test(s) ? '双' : null;
+  // 去掉「第 / 周 / 单 / 双 / 括号」，只留数字与分隔符
+  const digits = s.replace(/[^\d,、-]/g, ' ');
+  const base = [];
+  for (const seg of digits.split(/[,、\s]+/).filter(Boolean)) {
+    const r = seg.match(/^(\d{1,2})-(\d{1,2})$/);
+    if (r) base.push(...range(+r[1], +r[2]));
+    else if (/^\d{1,2}$/.test(seg)) base.push(+seg);
+  }
+  const uniq = [...new Set(base)].filter((w) => w >= 1 && w <= 30).sort((a, b) => a - b);
+  if (!parity) return uniq;
+  const filtered = uniq.filter((w) => (parity === '单' ? w % 2 === 1 : w % 2 === 0));
+  // 奇偶过滤后为空说明写法自相矛盾（如「1-1 周(双)」）：
+  // 退回原列表，免得整段周次凭空消失，用户又以为没识别出来
+  return filtered.length ? filtered : uniq;
+}
+
+/** 在整行里找周次短语，返回 { weeks, label, index, length }；找不到返回 null */
+function extractWeekClause(body) {
+  const m = norm(body).match(RE_WEEK_PHRASE);
+  if (!m) return null;
+  const weeks = weeksFromPhrase(m[0]);
+  // weeksFromPhrase 按约定返回数组，但这里兜一下 null —— 它一旦改坏，
+  // 崩的是 every 一门课的解析（parseCourseLine 在整表上跑），不只是少个周次。
+  if (!weeks || !weeks.length) return null;
+  return {
+    weeks,
+    label: body.slice(m.index, m.index + m[0].length).trim(),
+    index: m.index,
+    length: m[0].length,
+  };
+}
+
 /** 解析一行课程：「名称，节次（时间），地点，第 N 周」 */
 function parseCourseLine(line, day, periods) {
   // 去掉行首序号：`1.` / `1、` / `1)` / `①`
   // 注意先做全角→半角归一化，否则「１．」这种全角序号会留在课程名里
   const body = norm(line).trim().replace(/^\s*(?:\d{1,2}\s*[.、)．]|[①-⑨])\s*/, '');
   if (!body) return null;
-
-  const parts = body.split(/[，,;；]/).map((s) => s.trim()).filter(Boolean);
-  const name = (parts[0] || '').replace(/[*_`]/g, '').trim();
-  if (!name) return null;
 
   let place = '';
   let start = '';
@@ -83,6 +127,23 @@ function parseCourseLine(line, day, periods) {
   let weeks = null;
   let weeksLabel = '';
   let nonThisWeek = false;
+
+  // 先把周次短语整段摘走：它内部的逗号不能参与字段切分（见 RE_WEEK_PHRASE 注释）
+  const wc = extractWeekClause(body);
+  let rest = body;
+  if (wc) {
+    weeks = wc.weeks;
+    weeksLabel = wc.label;
+    rest = `${body.slice(0, wc.index)} ${body.slice(wc.index + wc.length)}`;
+  }
+  if (RE_NON_CURRENT.test(body)) {
+    nonThisWeek = true;
+    if (!weeksLabel) weeksLabel = '非本周';
+  }
+
+  const parts = rest.split(/[，,;；]/).map((s) => s.trim()).filter(Boolean);
+  const name = (parts[0] || '').replace(/[*_`]/g, '').trim();
+  if (!name) return null;
 
   for (let i = 1; i < parts.length; i++) {
     const raw = parts[i];
@@ -129,7 +190,19 @@ function parseCourseLine(line, day, periods) {
       continue;
     }
     if (RE_WEEK_ONE.test(p)) {
-      // 只写「第 4 周」= 这门课在第 4 周有；整份课表通常就是那一周的
+      // 「第 4 周」= 这门课第 4 周有课。
+      // 正常情况下上面 extractWeekClause 已经整段摘走并算好了 weeks，
+      // 走到这里说明短语被别的字段切断了，兜底补一个单周。
+      if (!weeks) weeks = [+p.match(RE_WEEK_ONE)[1]];
+      weeksLabel = raw;
+      continue;
+    }
+    // 「1-16」这种省掉「周」字的纯区间。走到这里说明它既不是时间/节次、
+    // 也没有「周」字；纯数字区间基本只可能是周次（地点总带点别的字符，
+    // 例如「南 229」「教一A101」「瑞安楼阶 3」）。
+    const bare = p.match(/^(\d{1,2})\s*-\s*(\d{1,2})$/);
+    if (bare) {
+      if (!weeks) weeks = range(+bare[1], +bare[2]);
       weeksLabel = raw;
       continue;
     }
