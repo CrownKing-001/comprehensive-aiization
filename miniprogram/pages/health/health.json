@@ -1,4 +1,5 @@
 {
   "usingComponents": {},
-  "navigationBarTitleText": "体重作息"
+  "navigationBarTitleText": "体重作息",
+  "enableShareTimeline": true
 }

@@ -1,4 +1,4 @@
-// 设置：备份导入导出、学期起点、日期锁定、作息时间表、蛋白目标、运动打卡、主题
+﻿// 设置：备份导入导出、学期起点、日期锁定、作息时间表、蛋白目标、运动打卡、主题
 //
 // 与桌面版的差异（小程序能力所限，逐项说明）：
 //  · 数据位置：小程序没有文件系统，数据存在本地缓存（Storage）里，
@@ -15,6 +15,7 @@ const { store } = require('../../store/store');
 const { currentWeek } = require('../../utils/plan');
 const { fromKey } = require('../../utils/storage');
 const { parsePeriodSchedule, formatPeriodSchedule } = require('../../utils/periods');
+const { shareAppMessage, shareTimeline } = require('../../utils/share');
 
 Page({
   data: {
@@ -395,5 +396,16 @@ Page({
         this._flash('ok', '已清空全部数据');
       },
     });
+  },
+
+  // 分享：右上角「···」里的「转发」和「分享到朋友圈」。
+  // 这两个是页面级回调，不是普通方法 —— 合并页的 tabHost 必须跳过它们
+  // （见 utils/tabHost.js 的前缀循环），否则会被改名成 xxx_onShareAppMessage。
+  onShareAppMessage() {
+    return shareAppMessage('settings');
+  },
+
+  onShareTimeline() {
+    return shareTimeline('settings');
   },
 });

@@ -1,8 +1,9 @@
-// 今日：日期切换 + 课程 + 当天待办/作业。移植自桌面版 src/views/Today.tsx。
+﻿// 今日：日期切换 + 课程 + 当天待办/作业。移植自桌面版 src/views/Today.tsx。
 const { store } = require('../../store/store');
 const { currentWeek } = require('../../utils/plan');
 const { coursesOn, toMin, buildTimeline, addDays, keyOf } = require('../../utils/schedule');
 const { fromKey, daysUntil } = require('../../utils/storage');
+const { shareAppMessage, shareTimeline } = require('../../utils/share');
 
 const DEFINITION = {
   data: {
@@ -131,6 +132,17 @@ const DEFINITION = {
       dayAssign,
       themeClass: s.settings.theme === 'light' ? 'theme-light' : '',
     });
+  },
+
+  // 分享：右上角「···」里的「转发」和「分享到朋友圈」。
+  // 这两个是页面级回调，不是普通方法 —— 合并页的 tabHost 必须跳过它们
+  // （见 utils/tabHost.js 的前缀循环），否则会被改名成 xxx_onShareAppMessage。
+  onShareAppMessage() {
+    return shareAppMessage('today');
+  },
+
+  onShareTimeline() {
+    return shareTimeline('today');
   },
 };
 // 这个页面同时被「总览」合并页当作子模块使用（见 utils/tabHost.js）。

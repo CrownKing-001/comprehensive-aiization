@@ -1,4 +1,4 @@
-// 课表识别：粘贴课表文字 → 解析 → 逐条核对 → 导入课表。
+﻿// 课表识别：粘贴课表文字 → 解析 → 逐条核对 → 导入课表。
 //
 // 设计取舍（沿用桌面版）：
 //  · 解析一定会有错（课程名认错、周次串行、地点串到隔壁），所以**绝不自动写入**。
@@ -14,6 +14,7 @@ const { fromKey } = require('../../utils/storage');
 const { parseTimetableText } = require('../../utils/textParse');
 const { weeksToText, parseWeeksText } = require('../../utils/weeks');
 const { TIMETABLE_AI_PROMPT } = require('../../utils/aiPrompts');
+const { shareAppMessage, shareTimeline } = require('../../utils/share');
 
 const WEEKDAY_LABEL = ['', '周一', '周二', '周三', '周四', '周五', '周六', '周日'];
 
@@ -365,5 +366,16 @@ Page({
     this._timer = setTimeout(() => {
       this.setData({ msg: null });
     }, 6000);
+  },
+
+  // 分享：右上角「···」里的「转发」和「分享到朋友圈」。
+  // 这两个是页面级回调，不是普通方法 —— 合并页的 tabHost 必须跳过它们
+  // （见 utils/tabHost.js 的前缀循环），否则会被改名成 xxx_onShareAppMessage。
+  onShareAppMessage() {
+    return shareAppMessage('coursescan');
+  },
+
+  onShareTimeline() {
+    return shareTimeline('coursescan');
   },
 });

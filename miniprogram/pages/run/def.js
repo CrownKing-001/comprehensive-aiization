@@ -1,4 +1,4 @@
-// 运动打卡：通用打卡页。
+﻿// 运动打卡：通用打卡页。
 // 不预设任何考核规则：目标次数、打卡类型、起止日期全部读「设置」里用户自己填的值，
 // 没有填的部分就不显示对应的提示，页面只负责「计数 + 进度 + 记录管理」。
 // 移植自桌面版 src/views/Run.tsx
@@ -6,6 +6,7 @@
 const { store } = require('../../store/store');
 const { currentWeek } = require('../../utils/plan');
 const { fromKey, toKey, daysUntil } = require('../../utils/storage');
+const { shareAppMessage, shareTimeline } = require('../../utils/share');
 
 /** 把设置里的类型串拆成选项：中英文逗号都当分隔符，去空白、去重、丢掉空项 */
 function parseTypes(raw) {
@@ -207,6 +208,17 @@ const DEFINITION = {
     // 「设置」已经是 tabBar 页面，只能用 switchTab；
     // 用 navigateTo 会静默失败（不报错也不跳）。
     wx.switchTab({ url: '/pages/settings/settings' });
+  },
+
+  // 分享：右上角「···」里的「转发」和「分享到朋友圈」。
+  // 这两个是页面级回调，不是普通方法 —— 合并页的 tabHost 必须跳过它们
+  // （见 utils/tabHost.js 的前缀循环），否则会被改名成 xxx_onShareAppMessage。
+  onShareAppMessage() {
+    return shareAppMessage('run');
+  },
+
+  onShareTimeline() {
+    return shareTimeline('run');
   },
 };
 

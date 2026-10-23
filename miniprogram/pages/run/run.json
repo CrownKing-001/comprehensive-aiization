@@ -1,4 +1,5 @@
 {
   "usingComponents": {},
-  "navigationBarTitleText": "运动打卡"
+  "navigationBarTitleText": "运动打卡",
+  "enableShareTimeline": true
 }

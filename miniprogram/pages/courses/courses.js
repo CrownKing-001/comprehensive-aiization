@@ -1,4 +1,4 @@
-// 课表管理：查看 / 编辑 / 增删课程，改动存进数据文件
+﻿// 课表管理：查看 / 编辑 / 增删课程，改动存进数据文件
 // 移植自桌面版 src/views/Courses.tsx
 
 const { store, uid } = require('../../store/store');
@@ -6,6 +6,7 @@ const { currentWeek, semesterStartForWeek } = require('../../utils/plan');
 const { fromKey, toKey } = require('../../utils/storage');
 const { DAY_LABELS } = require('../../utils/schedule');
 const { weeksToText, parseWeeksText, weeksLabelText } = require('../../utils/weeks');
+const { shareAppMessage, shareTimeline } = require('../../utils/share');
 
 const EMPTY = {
   day: 1,
@@ -280,5 +281,16 @@ Page({
     const out = [];
     for (let i = a; i <= b; i++) out.push(i);
     return out;
+  },
+
+  // 分享：右上角「···」里的「转发」和「分享到朋友圈」。
+  // 这两个是页面级回调，不是普通方法 —— 合并页的 tabHost 必须跳过它们
+  // （见 utils/tabHost.js 的前缀循环），否则会被改名成 xxx_onShareAppMessage。
+  onShareAppMessage() {
+    return shareAppMessage('courses');
+  },
+
+  onShareTimeline() {
+    return shareTimeline('courses');
   },
 });

@@ -1,5 +1,6 @@
 {
   "usingComponents": {},
   "navigationBarTitleText": "总览",
+  "enableShareTimeline": true,
   "enablePullDownRefresh": false
 }

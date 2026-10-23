@@ -1,4 +1,5 @@
 {
   "usingComponents": {},
-  "navigationBarTitleText": "课表"
+  "navigationBarTitleText": "课表",
+  "enableShareTimeline": true
 }

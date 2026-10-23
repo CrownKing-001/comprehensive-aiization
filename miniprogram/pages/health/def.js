@@ -1,4 +1,4 @@
-// 体重作息：身体数据、体重曲线、睡眠曲线、训练打卡日历
+﻿// 体重作息：身体数据、体重曲线、睡眠曲线、训练打卡日历
 //
 // 注意：饮食相关的记录 / 统计 / 目标已全部搬到「饮食记录」页，
 // 这里不再出现任何饮食入口与重复统计 —— 一处记录、一处查看。
@@ -9,6 +9,7 @@ const { store } = require('../../store/store');
 const { currentWeek } = require('../../utils/plan');
 const { fromKey, toKey, addDays } = require('../../utils/storage');
 const { initChart, redrawChart, trendSummary } = require('../../utils/chart');
+const { shareAppMessage, shareTimeline } = require('../../utils/share');
 
 /** 睡眠目标（小时）—— 睡眠不足会直接影响恢复与增肌效率 */
 const SLEEP_TARGET = 7.5;
@@ -405,6 +406,17 @@ const DEFINITION = {
 
   /** 弹层内部点击：阻止冒泡到遮罩，不做任何事 */
   noop() {},
+
+  // 分享：右上角「···」里的「转发」和「分享到朋友圈」。
+  // 这两个是页面级回调，不是普通方法 —— 合并页的 tabHost 必须跳过它们
+  // （见 utils/tabHost.js 的前缀循环），否则会被改名成 xxx_onShareAppMessage。
+  onShareAppMessage() {
+    return shareAppMessage('health');
+  },
+
+  onShareTimeline() {
+    return shareTimeline('health');
+  },
 };
 
 

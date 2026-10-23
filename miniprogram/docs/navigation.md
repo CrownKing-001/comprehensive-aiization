@@ -68,6 +68,11 @@
 
 总览的指标卡和「全部功能」格子都是这么做的（`goStat` / `goTab`）。
 
+另一条路是**分享链接**：别人点开 `/pages/healthhub/healthhub?seg=run` 时，
+`tabHost` 的 `onLoad(query)` 先读 `query.seg`、再并该分段的数据。
+不处理的话，分享出去的「运动打卡」点开会落在默认的第一段「饮食」上 ——
+标题写着运动、内容却是饮食，比不跳更糟。
+
 分段内容在 `<block wx:if="{{seg === 'xxx'}}">` 里，没有显示的那几段不在渲染树上，
 所以子模块的 `onReady`（画 canvas 图表写在里面）不能在宿主 `onReady` 时统一跑，
 必须等那一段真的显示出来 —— `tabHost` 用 `_segReady` + `_revealSeg` 做延迟初始化。

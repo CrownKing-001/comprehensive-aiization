@@ -1,4 +1,5 @@
 {
   "usingComponents": {},
-  "navigationBarTitleText": "智能分析"
+  "navigationBarTitleText": "智能分析",
+  "enableShareTimeline": true
 }

@@ -1,4 +1,4 @@
-// 饮食记录：全应用**唯一**的饮食入口 —— 食物库点选 + 文字识别 + 套餐复用 + 手动记账 + 历史回顾。
+﻿// 饮食记录：全应用**唯一**的饮食入口 —— 食物库点选 + 文字识别 + 套餐复用 + 手动记账 + 历史回顾。
 //
 // 「体重作息」页不再记录或统计任何饮食数据，避免同一份数据两处各记一遍。
 //
@@ -15,6 +15,7 @@
 const { store, uid } = require('../../store/store');
 const { CATEGORIES, FOODS, TEMPLATES, analyzeText, foodById } = require('../../data/foods');
 const { toKey } = require('../../utils/storage');
+const { shareAppMessage, shareTimeline } = require('../../utils/share');
 
 const MEALS = ['早餐', '午餐', '晚餐', '加餐'];
 
@@ -647,6 +648,17 @@ const DEFINITION = {
 
   /** 弹层内部点击：阻止冒泡到遮罩，不做任何事 */
   noop() {},
+
+  // 分享：右上角「···」里的「转发」和「分享到朋友圈」。
+  // 这两个是页面级回调，不是普通方法 —— 合并页的 tabHost 必须跳过它们
+  // （见 utils/tabHost.js 的前缀循环），否则会被改名成 xxx_onShareAppMessage。
+  onShareAppMessage() {
+    return shareAppMessage('diet');
+  },
+
+  onShareTimeline() {
+    return shareTimeline('diet');
+  },
 };
 
 

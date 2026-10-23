@@ -1,10 +1,11 @@
-// 空闲时段分析：热力图 + 空闲时段排名 + 重要事项清单。
+﻿// 空闲时段分析：热力图 + 空闲时段排名 + 重要事项清单。
 // 结论全部由用户自己的课表算出来（freeMatrix），空白模板下不预设任何训练 / 备考方案。
 // 移植自桌面版 src/views/Analysis.tsx
 
 const { store } = require('../../store/store');
 const { TIME_SLOTS, currentWeek, freeMatrix } = require('../../utils/plan');
 const { fromKey, daysUntil } = require('../../utils/storage');
+const { shareAppMessage, shareTimeline } = require('../../utils/share');
 
 const DAYS = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
 
@@ -250,5 +251,16 @@ Page({
 
   goMilestones() {
     wx.navigateTo({ url: '/pages/milestones/milestones' });
+  },
+
+  // 分享：右上角「···」里的「转发」和「分享到朋友圈」。
+  // 这两个是页面级回调，不是普通方法 —— 合并页的 tabHost 必须跳过它们
+  // （见 utils/tabHost.js 的前缀循环），否则会被改名成 xxx_onShareAppMessage。
+  onShareAppMessage() {
+    return shareAppMessage('analysis');
+  },
+
+  onShareTimeline() {
+    return shareTimeline('analysis');
   },
 });

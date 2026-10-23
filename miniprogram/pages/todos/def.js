@@ -1,6 +1,7 @@
-// 待办清单。移植自桌面版 src/views/Todos.tsx。
+﻿// 待办清单。移植自桌面版 src/views/Todos.tsx。
 const { store, uid } = require('../../store/store');
 const { addDays, toKey } = require('../../utils/storage');
+const { shareAppMessage, shareTimeline } = require('../../utils/share');
 
 const FILTERS = [
   { id: 'all', label: '全部' },
@@ -182,6 +183,17 @@ const DEFINITION = {
       filters: FILTERS.map((f) => Object.assign({}, f, { count: counts[f.id] })),
       themeClass: store.shape.settings.theme === 'light' ? 'theme-light' : '',
     });
+  },
+
+  // 分享：右上角「···」里的「转发」和「分享到朋友圈」。
+  // 这两个是页面级回调，不是普通方法 —— 合并页的 tabHost 必须跳过它们
+  // （见 utils/tabHost.js 的前缀循环），否则会被改名成 xxx_onShareAppMessage。
+  onShareAppMessage() {
+    return shareAppMessage('todos');
+  },
+
+  onShareTimeline() {
+    return shareTimeline('todos');
   },
 };
 

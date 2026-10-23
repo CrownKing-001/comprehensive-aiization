@@ -12,6 +12,8 @@ const { buildHost } = require('../../utils/tabHost');
 
 Page(
   buildHost({
+    // 分享用：标题跟着当前分段变（待办 / 作业），见 utils/share.js
+    shareKey: 'tasks',
     segments: [
       { id: 'todos', label: '待办', icon: '✅' },
       { id: 'assignments', label: '作业', icon: '📚' },

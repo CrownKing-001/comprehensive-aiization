@@ -1,4 +1,5 @@
 {
   "usingComponents": {},
-  "navigationBarTitleText": "饮食记录"
+  "navigationBarTitleText": "饮食记录",
+  "enableShareTimeline": true
 }

@@ -1,4 +1,5 @@
 {
   "usingComponents": {},
-  "navigationBarTitleText": "重要事项"
+  "navigationBarTitleText": "重要事项",
+  "enableShareTimeline": true
 }

@@ -1,4 +1,5 @@
 {
   "usingComponents": {},
-  "navigationBarTitleText": "设置"
+  "navigationBarTitleText": "设置",
+  "enableShareTimeline": true
 }

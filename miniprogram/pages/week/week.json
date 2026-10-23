@@ -1,4 +1,5 @@
 {
   "usingComponents": {},
-  "navigationBarTitleText": "周计划"
+  "navigationBarTitleText": "周计划",
+  "enableShareTimeline": true
 }

@@ -5,7 +5,7 @@
 从桌面版移植而来，**数据键名与备份格式和桌面版逐字一致**，桌面版导出的备份可以原样导入。
 **没有后端，也没有任何网络请求** —— 全部数据留在本机的小程序存储里。
 
-自测：`377` 项全部通过（`miniprogram/tools/selftest.js`）。
+自测：`435` 项全部通过（`miniprogram/tools/selftest.js`）。
 
 ## 界面
 
@@ -71,13 +71,26 @@ docs/                     小程序头像素材与生成脚本、给 Agent 的�
 - 键名和数据形状与桌面版一致，所以：**桌面版的备份能直接导进小程序，反之亦然**。
 - 设置页可以导出 / 导入 JSON（走剪贴板）、清理缓存、清空全部数据。
 
+## 分享
+
+16 个页面都能**转发给好友**和**分享到朋友圈**，文案集中在 `utils/share.js`：
+
+- 标题按页面走；合并页跟着**当前分段**变（「运动打卡 · 每周目标」而不是笼统的「健康」）。
+- 落地路径指向本页，合并页带上分段（`/pages/healthhub/healthhub?seg=run`），
+  对方点开就停在同一段，而不是默认的第一段。
+- 两个回调的返回值形状不一样：转发是 `path`，朋友圈是 `query` 且**不带开头问号**。
+
+> ⚠️ 分享出去的是**没有数据的**：本应用无后端、无登录，所有记录都在分享者自己手机上，
+> 对方点开看到的是他自己的空记录。所以文案只描述「这个工具能做什么」，
+> 不写「我的课表」「我的体重」这类只有分享者看得到的内容。
+
 ## 开发与自测
 
 只用 Node 跑，无需安装依赖：
 
 ```powershell
 # 行为自测：用假的 wx / App / Page 在 Node 里真跑 onLaunch 和每个页面的生命周期
-node miniprogram/tools/selftest.js "$PWD/miniprogram"   # 377 通过 / 0 失败
+node miniprogram/tools/selftest.js "$PWD/miniprogram"   # 435 通过 / 0 失败
 
 # 静态检查：WXML 里绑定的事件处理器在 JS 里是否真的存在（含合并页的前缀解析）
 node miniprogram/tools/check-handlers.js miniprogram

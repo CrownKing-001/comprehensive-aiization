@@ -1,10 +1,11 @@
-// 周计划：按教学周查看课程安排
+﻿// 周计划：按教学周查看课程安排
 // 移植自桌面版 src/views/Week.tsx
 
 const { store } = require('../../store/store');
 const { currentWeek } = require('../../utils/plan');
 const { weekGrid, DAY_LABELS } = require('../../utils/schedule');
 const { fromKey } = require('../../utils/storage');
+const { shareAppMessage, shareTimeline } = require('../../utils/share');
 
 Page({
   data: {
@@ -130,5 +131,16 @@ Page({
 
   goScan() {
     wx.navigateTo({ url: '/pages/coursescan/coursescan' });
+  },
+
+  // 分享：右上角「···」里的「转发」和「分享到朋友圈」。
+  // 这两个是页面级回调，不是普通方法 —— 合并页的 tabHost 必须跳过它们
+  // （见 utils/tabHost.js 的前缀循环），否则会被改名成 xxx_onShareAppMessage。
+  onShareAppMessage() {
+    return shareAppMessage('week');
+  },
+
+  onShareTimeline() {
+    return shareTimeline('week');
   },
 });

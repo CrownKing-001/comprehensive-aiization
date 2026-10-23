@@ -1,4 +1,5 @@
 {
   "usingComponents": {},
-  "navigationBarTitleText": "校历识别"
+  "navigationBarTitleText": "校历识别",
+  "enableShareTimeline": true
 }

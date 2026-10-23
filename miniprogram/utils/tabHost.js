@@ -21,6 +21,7 @@
 // 而子模块算出来的 themeClass 会被加上 `<模块>_` 前缀（见 tools/prefix-wxml.js 的
 // NEVER 集合，那里特意把 themeClass 排除在外，不给它加前缀）。
 const { store } = require('../store/store');
+const { shareAppMessage, shareTimeline } = require('./share');
 
 function themeClassOf() {
   const settings = store && store.shape && store.shape.settings;
@@ -283,11 +284,33 @@ function buildHost(opts) {
       return out;
     },
 
-    onLoad() {
+    /**
+     * 分享：转发给好友。
+     *
+     * 为什么声明在宿主上、而不是让子模块自己带：子模块的 onShareAppMessage
+     * 会被下面的前缀循环改名成 `todos_onShareAppMessage`，微信永远调不到它，
+     * 转发入口会一直是灰的。标题跟着**当前分段**走，所以这里读 this.data.seg。
+     */
+    onShareAppMessage() {
+      return shareAppMessage(opts.shareKey, { seg: this.data.seg });
+    },
+
+    /** 分享到朋友圈。同样在宿主上声明，理由同上。 */
+    onShareTimeline() {
+      return shareTimeline(opts.shareKey, { seg: this.data.seg });
+    },
+
+    onLoad(query) {
       this._views = {};
       this._unsubs = [];
       this._segLoaded = {};
       this._segData = {};
+      // 别人点开分享链接时带过来的分段（?seg=run）——
+      // 不处理的话分享出去的「运动打卡」会落在默认的第一段「饮食」上。
+      // 必须在下面 setData 之前设好：_dataPatchFor 读的就是 this.data.seg。
+      if (query && typeof query.seg === 'string' && ids.indexOf(query.seg) >= 0) {
+        this.data.seg = query.seg;
+      }
       // 根节点上的主题类由宿主自己给：子模块算出来的那份会被加上 `<模块>_` 前缀，
       // 而 WXML 的根节点读的是不带前缀的这一个（以前没人给，于是三个合并页
       // 在浅色主题下一直是深色）。
@@ -491,7 +514,20 @@ function buildHost(opts) {
     const mod = modules[id] && modules[id].def;
     if (!mod) continue;
     for (const key of Object.keys(mod)) {
-      if (key === 'data' || key === 'onLoad' || key === 'onShow' || key === 'onUnload') continue;
+      // 生命周期与「页面级回调」不挂前缀：
+      //   · onLoad / onShow / onUnload 由宿主自己转发（见上面那几个方法）；
+      //   · onShareAppMessage / onShareTimeline 只有微信在**页面根对象**上
+      //     才认，挂成 todos_onShareAppMessage 是死代码。宿主统一用
+      //     opts.shareKey 声明一份（见 host.onShareAppMessage）。
+      if (
+        key === 'data' ||
+        key === 'onLoad' ||
+        key === 'onShow' ||
+        key === 'onUnload' ||
+        key === 'onShareAppMessage' ||
+        key === 'onShareTimeline'
+      )
+        continue;
       if (typeof mod[key] !== 'function') continue;
       host[prefixOf(id) + key] = function (e) {
         // 分段现在是懒初始化的；用户没切到过那一段时它的视图还没建。

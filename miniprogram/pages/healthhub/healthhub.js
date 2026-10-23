@@ -8,6 +8,8 @@ const { buildHost } = require('../../utils/tabHost');
 
 Page(
   buildHost({
+    // 分享用：标题跟着当前分段变（饮食 / 运动 / 体重），见 utils/share.js
+    shareKey: 'healthhub',
     segments: [
       { id: 'diet', label: '饮食', icon: '🍚' },
       { id: 'run', label: '运动', icon: '🏃' },

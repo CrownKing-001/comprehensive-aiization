@@ -1,7 +1,8 @@
-// 作业 DDL 追踪。移植自桌面版 src/views/Assignments.tsx。
+﻿// 作业 DDL 追踪。移植自桌面版 src/views/Assignments.tsx。
 const { store, uid } = require('../../store/store');
 const { daysUntil, fromKey } = require('../../utils/storage');
 const { courseNames } = require('../../utils/plan');
+const { shareAppMessage, shareTimeline } = require('../../utils/share');
 
 const FILTERS = [
   { id: 'pending', label: '未完成' },
@@ -194,6 +195,17 @@ const DEFINITION = {
       byCourse,
       themeClass: store.shape.settings.theme === 'light' ? 'theme-light' : '',
     });
+  },
+
+  // 分享：右上角「···」里的「转发」和「分享到朋友圈」。
+  // 这两个是页面级回调，不是普通方法 —— 合并页的 tabHost 必须跳过它们
+  // （见 utils/tabHost.js 的前缀循环），否则会被改名成 xxx_onShareAppMessage。
+  onShareAppMessage() {
+    return shareAppMessage('assignments');
+  },
+
+  onShareTimeline() {
+    return shareTimeline('assignments');
   },
 };
 

@@ -438,6 +438,8 @@ if (!global.__TABHOST_LOADING__) {
   Page(
     buildHost({
       selfDef: DEFINITION,
+      // 分享用：标题跟着当前分段变（总览 / 今日），见 utils/share.js
+      shareKey: 'dashboard',
       segments: [
         { id: 'dashboard', label: '总览', icon: '🏠' },
         { id: 'today', label: '今日', icon: '📅' },

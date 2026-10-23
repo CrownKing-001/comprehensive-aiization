@@ -2412,6 +2412,68 @@ section('[33] 渲染层的数据量');
   T('  这一次 setData 出去的字节数 < 8000', bytes < 8000, `${bytes} 字节`);
 }
 
+section('[34] 分享（转发给好友 / 分享到朋友圈）');
+{
+  const fs = require('fs');
+  const share = require(path.join(MP, 'utils/share.js'));
+  const appJson = JSON.parse(fs.readFileSync(path.join(MP, 'app.json'), 'utf8'));
+  // "pages/dashboard/dashboard" → "dashboard"
+  const pages = appJson.pages.map((p) => p.split('/')[1]);
+
+  // ① 页面级回调。缺 onShareAppMessage → 右上角「···」里的「转发」是灰的；
+  //    缺 onShareTimeline → 根本没有「分享到朋友圈」这一项。
+  for (const name of pages) {
+    const inst = loadPage(name);
+    T(`${name} 有 onShareAppMessage`, typeof inst.onShareAppMessage === 'function');
+    T(`  ${name} 有 onShareTimeline`, typeof inst.onShareTimeline === 'function');
+  }
+
+  // ② 页面 json 的开关。onShareTimeline 有了但这里没开，朋友圈入口照样不出现，
+  //    而且不报错 —— 属于「看起来加了其实没生效」的那类问题。
+  for (const name of pages) {
+    const j = JSON.parse(fs.readFileSync(path.join(MP, 'pages', name, name + '.json'), 'utf8'));
+    T(`  ${name}.json 开了 enableShareTimeline`, j.enableShareTimeline === true);
+  }
+
+  // ③ 文案：每页都要有专门的一条，不能靠兜底的「大学日程」四个字。
+  const missing = pages.filter((p) => !share.PAGES[p] && !share.SEGMENTS[p]);
+  T('  16 个页面都有专门的分享文案', missing.length === 0, missing.join(','));
+
+  const one = share.shareAppMessage('courses');
+  T('  转发的 path 指向本页', one.path === '/pages/courses/courses', one.path);
+  T('  标题非空且不是兜底', /课表/.test(one.title), one.title);
+  T('  没有分段时 query 为空', share.shareTimeline('courses').query === '');
+
+  // ④ 合并页：标题跟着当前分段走，path/query 带上分段，
+  //    否则分享「运动打卡」点开却落在「饮食」。
+  const hub = loadPage('healthhub');
+  hub.data.seg = 'run';
+  const hubMsg = hub.onShareAppMessage();
+  T('  合并页标题跟着分段变', /运动打卡/.test(hubMsg.title), hubMsg.title);
+  T('  合并页 path 带 seg', hubMsg.path === '/pages/healthhub/healthhub?seg=run', hubMsg.path);
+  const hubTl = hub.onShareTimeline();
+  // 朋友圈的 query 不能带开头的 ?，带了会变成参数名的一部分
+  T('  朋友圈 query 是 seg=run（无问号）', hubTl.query === 'seg=run', hubTl.query);
+
+  const dash = loadPage('dashboard');
+  dash.data.seg = 'today';
+  const dashTitle = dash.onShareAppMessage().title;
+  // 总览/今日 两段的标题必须真的不同，否则「跟着分段变」等于没变
+  T('  总览/今日 也按分段给标题',
+    dashTitle === share.SEGMENTS.dashboard.today.title &&
+      dashTitle !== share.SEGMENTS.dashboard.dashboard.title,
+    dashTitle);
+
+  // ⑤ 分享链接真的能落到对应分段（?seg= 不是装饰）
+  const landing = loadPage('tasks');
+  landing.onLoad({ seg: 'assignments' });
+  T('  ?seg=assignments 打开后停在该分段', landing.data.seg === 'assignments', landing.data.seg);
+
+  // ⑥ tabHost 不能把子模块的回调改成带前缀的死代码
+  T('  tabHost 不生成 todos_onShareAppMessage',
+    typeof landing.todos_onShareAppMessage === 'undefined');
+}
+
 console.log('\n══════════════════════════════');
 console.log(`  验收: ${ok} 通过 / ${bad} 失败`);
 process.exit(bad ? 1 : 0);
