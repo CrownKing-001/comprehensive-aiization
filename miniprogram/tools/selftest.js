@@ -2474,6 +2474,27 @@ section('[34] 分享（转发给好友 / 分享到朋友圈）');
     typeof landing.todos_onShareAppMessage === 'undefined');
 }
 
+section('[35] 版本号（version.js 与 CHANGELOG 必须一致）');
+{
+  // 上传版本号是开发者工具里手填的，代码读不到；version.js 是唯一真源。
+  // 这里防的是「改了代码里的版本号但忘了写 CHANGELOG」这种半吊子发版。
+  const fs = require('fs');
+  const { VERSION } = require(path.join(MP, 'version.js'));
+  T('  version.js 里有版本号', /^\d+\.\d+\.\d+$/.test(VERSION), VERSION);
+
+  const changelog = fs.readFileSync(path.join(MP, '..', 'CHANGELOG.md'), 'utf8');
+  const first = /^##\s+v(\d+\.\d+\.\d+)/m.exec(changelog);
+  T('  CHANGELOG 有版本条目', !!first);
+  T('  CHANGELOG 最新版本 == version.js', !!first && first[1] === VERSION,
+    first ? `CHANGELOG ${first[1]} / version.js ${VERSION}` : '');
+
+  // 「设置 → 关于」把它显示出来：data 里有 version，模板里真的用了
+  const inst = loadPage('settings');
+  T('  设置页 data 带 version', inst.data.version === VERSION, String(inst.data.version));
+  const wxml = fs.readFileSync(path.join(MP, 'pages', 'settings', 'settings.wxml'), 'utf8');
+  T('  设置页模板显示了 {{version}}', /\{\{\s*version\s*\}\}/.test(wxml));
+}
+
 console.log('\n══════════════════════════════');
 console.log(`  验收: ${ok} 通过 / ${bad} 失败`);
 process.exit(bad ? 1 : 0);

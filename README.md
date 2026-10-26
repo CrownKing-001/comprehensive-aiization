@@ -5,7 +5,7 @@
 从桌面版移植而来，**数据键名与备份格式和桌面版逐字一致**，桌面版导出的备份可以原样导入。
 **没有后端，也没有任何网络请求** —— 全部数据留在本机的小程序存储里。
 
-自测：`435` 项全部通过（`miniprogram/tools/selftest.js`）。
+自测：`440` 项全部通过（`miniprogram/tools/selftest.js`）。当前版本 **v1.0.1**（见 [CHANGELOG.md](CHANGELOG.md)）。
 
 ## 界面
 
@@ -58,10 +58,12 @@ miniprogram/               ← 小程序本体，开发者工具导入这个目�
 ├── utils/                storage 存储 / schedule 课表派生 / plan 学期 / weeks 周次
 │                         / periods 作息 / theme 主题 / chart canvas 图表 / textParse 解析
 ├── data/foods.js         食物库 + 蛋白质目标算法
+├── version.js            版本号唯一真源（「设置 → 关于」读它）
 └── tools/                自测与静态检查（不进小程序包）
 
 miniprogram-preview/      页面静态渲染出的 HTML 与截图（**不是**小程序代码，不参与打包）
 docs/                     小程序头像素材与生成脚本、给 Agent 的工程约定
+CHANGELOG.md              版本更新记录
 ```
 
 ## 数据与隐私
@@ -90,7 +92,7 @@ docs/                     小程序头像素材与生成脚本、给 Agent 的�
 
 ```powershell
 # 行为自测：用假的 wx / App / Page 在 Node 里真跑 onLaunch 和每个页面的生命周期
-node miniprogram/tools/selftest.js "$PWD/miniprogram"   # 435 通过 / 0 失败
+node miniprogram/tools/selftest.js "$PWD/miniprogram"   # 440 通过 / 0 失败
 
 # 静态检查：WXML 里绑定的事件处理器在 JS 里是否真的存在（含合并页的前缀解析）
 node miniprogram/tools/check-handlers.js miniprogram
@@ -137,6 +139,7 @@ Agent 拿不到。所以「点一下看看」这条路走不通，只能把生�
 
 | 文件 | 内容 |
 | --- | --- |
+| `CHANGELOG.md` | 版本更新记录；当前 v1.0.1 |
 | `miniprogram/docs/navigation.md` | 底部菜单为什么这么排、合并页怎么实现、跳转的几个坑 |
 | `miniprogram/tools/README.md` | 页面预览工具的原理、已知近似项、踩过的假象 |
 | `docs/branding/README.md` | 小程序头像用哪个文件、圆形/方形裁切的余量约束 |

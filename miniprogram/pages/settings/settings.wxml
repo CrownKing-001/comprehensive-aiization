@@ -247,6 +247,10 @@
       </view>
       <view class="bullet">
         <view class="bullet-dot"></view>
+        <view class="bullet-text">版本 v{{version}}</view>
+      </view>
+      <view class="bullet">
+        <view class="bullet-dot"></view>
         <view class="bullet-text">数据保存在本机<view class="bullet-note">不上传云端，卸载小程序或清理缓存会丢失数据，请定期导出备份。</view></view>
       </view>
       <view class="bullet">
