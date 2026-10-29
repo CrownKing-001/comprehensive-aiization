@@ -136,7 +136,7 @@
   </view>
 
   <!-- 功能入口（tabBar 之外的页面都从这里进） -->
-  <view class="card">
+  <view class="card rise-in">
     <view class="card-head">
       <view class="icon-chip tone-sky">🧭</view>
       <view class="card-head-title">全部功能</view>
@@ -188,7 +188,7 @@
   </view>
 
   <!-- 今日时间轴 -->
-  <view class="card">
+  <view class="card rise-in d1">
     <view class="card-head">
       <view class="icon-chip tone-sky">🕐</view>
       <view class="card-head-title">今日时间轴</view>
@@ -220,7 +220,7 @@
   </view>
 
   <!-- 待办速览 -->
-  <view class="card">
+  <view class="card rise-in d2">
     <view class="card-head">
       <view class="icon-chip tone-emerald">✅</view>
       <view class="card-head-title">待办速览</view>
@@ -284,7 +284,7 @@
         </view>
       </view>
       <view class="bar">
-        <view class="bar-fill bar-emerald" style="width: {{dashboard_todayProtein >= dashboard_proteinTarget ? 100 : (dashboard_proteinTarget > 0 ? dashboard_todayProtein * 100 / dashboard_proteinTarget : 0)}}%"></view>
+        <view class="bar-fill bar-emerald" style="width: {{dashboard_todayProtein >= dashboard_proteinTarget ? 100 : (dashboard_proteinTarget > 0 ? dashboard_todayProtein * 100 / dashboard_proteinTarget : 0)}}%; --bar: {{(dashboard_todayProtein >= dashboard_proteinTarget ? 100 : (dashboard_proteinTarget > 0 ? dashboard_todayProtein * 100 / dashboard_proteinTarget : 0)) / 100}}"></view>
       </view>
       <view class="mini-sub" style="margin-top: 14rpx;">
         {{dashboard_todayProtein >= dashboard_proteinTarget ? '今日蛋白已达标 ✅' : '还差 ' + (dashboard_proteinTarget - dashboard_todayProtein) + 'g，继续加餐'}}
@@ -307,7 +307,7 @@
     <view class="card-body">
       <view class="big-num">{{dashboard_runDone}}<text class="big-sub"> / {{dashboard_runTarget}}</text></view>
       <view class="bar">
-        <view class="bar-fill bar-emerald" style="width: {{dashboard_runDone >= dashboard_runTarget ? 100 : dashboard_runDone * 100 / dashboard_runTarget}}%"></view>
+        <view class="bar-fill bar-emerald" style="width: {{dashboard_runDone >= dashboard_runTarget ? 100 : dashboard_runDone * 100 / dashboard_runTarget}}%; --bar: {{(dashboard_runDone >= dashboard_runTarget ? 100 : dashboard_runDone * 100 / dashboard_runTarget) / 100}}"></view>
       </view>
       <view class="mini-sub" style="margin-top: 14rpx;">
         {{dashboard_runDone >= dashboard_runTarget ? '已达成目标次数，保持住就行' : '继续加油 💪'}}
@@ -348,7 +348,7 @@
     <view class="card-body">
       <view class="big-num">{{dashboard_todayCalories}}<text class="big-sub"> kcal</text></view>
       <view class="bar">
-        <view class="bar-fill bar-amber" style="width: {{dashboard_todayCalories >= 2400 ? 100 : dashboard_todayCalories * 100 / 2400}}%"></view>
+        <view class="bar-fill bar-amber" style="width: {{dashboard_todayCalories >= 2400 ? 100 : dashboard_todayCalories * 100 / 2400}}%; --bar: {{(dashboard_todayCalories >= 2400 ? 100 : dashboard_todayCalories * 100 / 2400) / 100}}"></view>
       </view>
       <view class="mini-sub" style="margin-top: 14rpx;">
         {{dashboard_todayDietCount ? '已记 ' + dashboard_todayDietCount + ' 笔，' + dashboard_todayProtein + 'g 蛋白' : '今天还没记饮食'}}

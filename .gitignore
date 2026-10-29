@@ -1,2 +1,14 @@
 # 微信开发者工具跑 `cli auto` / `cli preview` 时会往仓库根目录丢日志
 /*.log
+
+# 改版前的代码快照（如 miniprogram.bak_v101）。
+# 回滚靠 git tag，不靠这个目录；留在本地即可，不要进仓库。
+/miniprogram.bak_*/
+
+# 设计素材源文件（Sketch 等二进制大文件），不进代码仓库
+*.sketch
+*.sketch.zip
+
+# node_modules 与构建产物
+node_modules/
+dist/

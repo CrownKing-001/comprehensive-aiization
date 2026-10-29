@@ -5,7 +5,7 @@
   <view class="msg-box {{msg.kind === 'ok' ? 'is-ok' : 'is-err'}}" wx:if="{{msg}}">{{msg.text}}</view>
 
   <!-- ── 外观 ── -->
-  <view class="card">
+  <view class="card rise-in">
     <view class="card-head">
       <view class="icon-chip tone-violet">🎨</view>
       <view class="card-head-title">外观</view>
@@ -22,7 +22,7 @@
   </view>
 
   <!-- ── 数据用量 ── -->
-  <view class="card">
+  <view class="card rise-in d1">
     <view class="card-head">
       <view class="icon-chip tone-emerald">💾</view>
       <view class="card-head-title">数据存放</view>
@@ -33,7 +33,7 @@
         <view class="big-side">{{quotaText}}</view>
       </view>
       <view class="bar-track">
-        <view class="bar-fill bar-emerald" style="width: 20%"></view>
+        <view class="bar-fill bar-emerald" style="width: 20%; --bar: 0.2"></view>
       </view>
       <view class="tiny-note">小程序数据保存在本地缓存里，卸载小程序会被清除，建议定期导出备份。</view>
 
@@ -47,7 +47,7 @@
   </view>
 
   <!-- ── 备份 ── -->
-  <view class="card">
+  <view class="card rise-in d2">
     <view class="card-head">
       <view class="icon-chip tone-sky">📦</view>
       <view class="card-head-title">备份与恢复</view>

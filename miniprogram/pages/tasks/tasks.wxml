@@ -25,7 +25,7 @@
   <!-- ══════════ 待办 ══════════ -->
   <block wx:if="{{seg === 'todos'}}">
 
-    <view class="card">
+    <view class="card rise-in">
       <view class="card-head">
         <view class="icon-chip tone-emerald">＋</view>
         <view class="card-head-title">新建待办</view>
@@ -72,7 +72,7 @@
       </view>
     </view>
 
-    <view class="card">
+    <view class="card rise-in d1">
       <view class="card-head">
         <view class="icon-chip tone-sky">☰</view>
         <view class="card-head-title">待办列表（{{todos_list.length}}）</view>
@@ -124,7 +124,7 @@
   <!-- ══════════ 作业 ══════════ -->
   <block wx:else>
 
-    <view class="card">
+    <view class="card rise-in d2">
       <view class="card-head">
         <view class="icon-chip tone-violet">＋</view>
         <view class="card-head-title">新建作业</view>

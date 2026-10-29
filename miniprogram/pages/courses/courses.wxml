@@ -2,7 +2,7 @@
 <view class="page-wrap stack {{themeClass}}">
 
   <!-- ── 课程总览 ── -->
-  <view class="card">
+  <view class="card rise-in">
     <view class="card-head">
       <view class="icon-chip tone-sky">📋</view>
       <view class="card-head-title">
@@ -124,7 +124,7 @@
   </view>
 
   <!-- ── 周课表速览 ── -->
-  <view class="card">
+  <view class="card rise-in d1">
     <view class="card-head">
       <view class="icon-chip tone-violet">🗓️</view>
       <view class="card-head-title">周课表速览 · 第 {{week}} 周</view>

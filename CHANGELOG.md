@@ -3,6 +3,55 @@
 版本号唯一真源是 `miniprogram/version.js`；打 tag 用 `v<版本>`。
 发版时三处一起改：`version.js`、本文件顶部、git tag。
 
+## v1.1.0 — 2026-10-29
+
+**性能：修掉动画卡顿的真正原因**
+
+- 进度条 `.bar-fill` 原来是 `transition: width 0.25s`。过渡 `width`
+  每帧都要 layout → paint → composite，而总览/健康页一屏有十几条
+  进度条同时动，低端安卓直接掉帧。改为 `transform: scaleX(var(--bar))`，
+  只走 composite，不再触发重排。
+- WXML 里同时保留 `width: X%` 和 `--bar: 0.xx` 两条：`width` 是兜底，
+  不支持 CSS 变量的环境仍然画得对；`@supports` 检测通过时由
+  `transform` 接管，避免「宽度 × 缩放」算两遍。
+- 迁移 9 条进度条（dashboard 3 条、healthhub 5 条、settings 1 条）。
+  其余页面（diet / analysis 等）仍是旧写法，靠 `width` 兜底正常工作，
+  后续版本再迁。
+
+**UI：对齐 WeUI 的结构语言（未引入 WeUI 包）**
+
+- 新增 `.cells` / `.cell` 列表组件：发丝线分隔、统一 96rpx 行高、
+  二行描述 + 右侧附加信息 + CSS chevron 箭头。适用于设置项、
+  历史记录、清单这类「逐行读」的内容。
+- 新增 8rpx 基准间距梯度 `.gap-1/2/3`。
+- 新增按压态 `.tap` / `.tap-active`（等价于 WeUI 的 `weui-active`），
+  `filter-pill` 补上了原来缺的按压反馈。
+- 之所以不引 WeUI 包：本项目已有调好的双主题 token
+  （`--surface-*` / `--text-*`），WeUI 自带的浅色+微信绿会顶掉它们，
+  等于推翻 96KB 现成样式，还要多背约 100KB 体积。只借结构约定，
+  样式全部映射回本项目 token，深浅两套主题自动跟随。
+
+**动效**
+
+- 卡片入场 `rise-in`：`opacity` + `translate3d`，一次性播放，
+  给 5 个 tabBar 主页的**前 3 个**卡片加，逐条 30ms 延迟。
+  只加前 3 个是刻意的 —— 页面里卡片有 13~60 个，全加会在加载瞬间
+  同时动画，反而更卡。
+- 大数字 `num-pop`、分段切换 `fade-slide`。
+- 写了性能红线注释：只允许过渡 `transform` / `opacity`，
+  禁止 `width` / `height` / `top` / `left` / `margin` / `padding` /
+  `box-shadow` / `font-size`。
+- 尊重系统「减弱动态效果」：`prefers-reduced-motion: reduce` 下全部关闭。
+
+**说明**
+
+- 未引入组件库，未启用 Skyline，未改动业务逻辑、存储和登录。
+- 未改动的页面：11 个非 tabBar 页面（today / week / run / diet /
+  health / milestones / analysis / todos / assignments /
+  calendaracademic / coursescan）。
+- 验证等级：仅完成 L1 静态校验（产物校验 PASS、WXML/WXSS 配平检查
+  通过）。**未在开发者工具编译、未真机验证**，动画流畅度需真机确认。
+
 ## v1.0.1 — 2026-10-23
 
 **新增：分享**

@@ -376,11 +376,33 @@ canvas {
 
 .bar-track-sm { margin-top: 0; height: 14rpx; }
 
+/* 进度条填充。
+   ── 性能：不要用 transition: width ──────────────────────────
+   过渡 width 会让每一帧都触发 layout → paint → composite，
+   而且进度条在总览/健康/饮食里是成组出现的，一屏十几条同时动，
+   低端安卓机上直接掉帧。这是 v1.0.x「动画卡顿」的主因。
+
+   改成 transform: scaleX() —— 只走 composite，不碰 layout。
+   WXML 里两条信息都保留：
+     width: X%    兜底，环境不支持 CSS 变量时仍能画对
+     --bar: 0.xx  给这里做 scaleX 动画
+   width 和 scaleX 同时生效会「宽度 × 缩放」算两遍，所以下面用
+   @supports 做能力检测：支持时把 width 交给 transform 接管，
+   不支持才退回纯 width。 */
 .bar-fill {
   height: 100%;
   border-radius: 999rpx;
   background: #059669;
-  transition: width 0.25s ease;
+  transform-origin: left center;
+  transition: transform 0.25s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+@supports (transform: scaleX(var(--bar, 1))) {
+  .bar-fill {
+    width: 100% !important;
+    transform: scaleX(var(--bar, 1));
+    will-change: transform;
+  }
 }
 
 .bar-emerald { background: #10b981; }
@@ -721,4 +743,199 @@ canvas {
 .hl {
   color: #34d399;
   font-weight: 600;
+}
+/* ══════════════════════════════════════════════════════════════
+   v1.1.0 · 结构规范（对齐 WeUI 的布局语言，不引 WeUI 包）
+   ─────────────────────────────────────────────────────────────
+   为什么不上 WeUI 组件包：
+   本项目已经有一套调好的双主题 token（--surface-* / --text-*），
+   WeUI 自带的浅色+微信绿会把它们顶掉，等于推翻 96KB 现成样式，
+   体积还要再多 ~100KB。这里只借 WeUI 三个真正有用的结构约定：
+     1. cell 列表：发丝线分隔 + 统一高度节奏
+     2. 8rpx 基准间距梯度
+     3. 按压态反馈（weui-active 的等价物）
+   样式全部映射到本项目 token，深色/浅色两套主题自动跟随。
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── 间距梯度（8rpx 基准，对齐 WeUI 的 16px 栅格） ── */
+.gap-1 { gap: 8rpx; }
+.gap-2 { gap: 16rpx; }
+.gap-3 { gap: 24rpx; }
+
+/* ── cell 列表：WeUI weui-cells 的等价实现 ──────────
+   用例：设置项、历史记录、清单。比 log-row 更适合「逐行读」的内容：
+   相邻行之间用发丝线，而不是每行一个独立方块 —— 视觉噪音更小。
+   注意用 :first-child/:last-child 去掉首尾的线，避免和卡片边缘重叠。 */
+.cells {
+  border-radius: 24rpx;
+  overflow: hidden;
+  background: var(--surface-2);
+  border: 2rpx solid var(--border-1);
+}
+
+.cell {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  min-height: 96rpx;
+  padding: 22rpx 26rpx;
+  background: var(--surface-1);
+  position: relative;
+}
+
+/* 分隔线用伪元素，避免 border 影响高度计算 */
+.cell + .cell::before {
+  content: '';
+  position: absolute;
+  left: 26rpx;
+  right: 0;
+  top: 0;
+  height: 2rpx;
+  background: var(--border-1);
+  transform: scaleY(0.5);
+  transform-origin: top;
+}
+
+.cell-main { flex: 1; min-width: 0; }
+
+.cell-title {
+  font-size: 28rpx;
+  color: var(--text-1);
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cell-desc {
+  font-size: 23rpx;
+  color: var(--text-4);
+  margin-top: 4rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cell-extra {
+  flex-shrink: 0;
+  font-size: 25rpx;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 右侧箭头：用 CSS 画的 chevron，不依赖字体图标 */
+.cell-arrow { position: relative; padding-right: 26rpx; }
+.cell-arrow::after {
+  content: '';
+  position: absolute;
+  right: 6rpx;
+  top: 50%;
+  width: 12rpx;
+  height: 12rpx;
+  margin-top: -6rpx;
+  border-right: 3rpx solid var(--text-4);
+  border-bottom: 3rpx solid var(--text-4);
+  transform: rotate(-45deg);
+}
+
+/* ── 按压态（WeUI weui-active 的等价物） ────────────
+   统一给可点击元素加 class="tap"，只改 opacity/transform，
+   不触发 layout。 */
+.tap {
+  transition: opacity 0.12s ease, transform 0.12s ease;
+}
+
+.tap-active,
+.tap:active {
+  opacity: 0.72;
+  transform: scale(0.985);
+}
+
+/* filter-pill 补按压态（原来只有选中态） */
+.filter-pill.tap:active {
+  transform: scale(0.96);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   v1.1.0 · 动效
+   ─────────────────────────────────────────────────────────────
+   ⚠ 性能红线 —— 只允许过渡这两个属性：
+       transform / opacity
+   因为它们只走 composite 阶段，GPU 直接合成。
+   以下属性一律禁止用于 transition（会导致逐帧 layout/paint，
+   在低端安卓上表现为掉帧、滚动发涩）：
+       width  height  top  left  right  bottom
+       margin  padding  border-width  font-size
+       box-shadow（大面积阴影尤其致命）
+   新增动画前先确认落在允许清单里。
+   ══════════════════════════════════════════════════════════════ */
+
+/* 卡片入场：淡入 + 轻微上浮。
+   一次性动画（forwards），不会在滚动时反复触发。 */
+@keyframes rise-in {
+  from { opacity: 0; transform: translate3d(0, 16rpx, 0); }
+  to   { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+.rise-in {
+  animation: rise-in 0.28s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  will-change: transform, opacity;
+}
+
+/* 逐条延迟：让同一组卡片有先后，而不是同时出现。
+   只给前 6 条不同延迟 —— 再多用户也感知不到，还白占内存。 */
+.rise-in.d1 { animation-delay: 0.03s; }
+.rise-in.d2 { animation-delay: 0.06s; }
+.rise-in.d3 { animation-delay: 0.09s; }
+.rise-in.d4 { animation-delay: 0.12s; }
+.rise-in.d5 { animation-delay: 0.15s; }
+.rise-in.d6 { animation-delay: 0.18s; }
+
+/* 动画结束后释放合成层，避免长期占用显存 */
+.rise-in {
+  animation-fill-mode: both;
+}
+.rise-in.done {
+  will-change: auto;
+  animation: none;
+  opacity: 1;
+  transform: none;
+}
+
+/* 数字滚动式的轻微上浮（大数字统计用） */
+@keyframes num-pop {
+  from { opacity: 0; transform: translate3d(0, 10rpx, 0); }
+  to   { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+.num-pop {
+  animation: num-pop 0.32s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+/* 分段切换 / tab 切换的滑块：用 transform 位移 */
+@keyframes fade-slide {
+  from { opacity: 0; transform: translate3d(12rpx, 0, 0); }
+  to   { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+.seg-item.is-active .seg-label,
+.seg-item.is-active .seg-icon {
+  animation: fade-slide 0.22s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+/* ── 无障碍：用户开了「减弱动态效果」时全部关掉 ──
+   这是系统级设置，尊重它比“好看”重要。 */
+@media (prefers-reduced-motion: reduce) {
+  .rise-in,
+  .rise-in.d1, .rise-in.d2, .rise-in.d3,
+  .rise-in.d4, .rise-in.d5, .rise-in.d6,
+  .num-pop,
+  .bar-fill,
+  .seg-item.is-active .seg-label,
+  .seg-item.is-active .seg-icon {
+    animation: none !important;
+    transition: none !important;
+    transform: none;
+    opacity: 1;
+  }
 }

@@ -24,7 +24,7 @@
   <!-- ══════════ 饮食 ══════════ -->
   <block wx:if="{{seg === 'diet'}}">
   <!-- ── 今日汇总 ── -->
-    <view class="card">
+    <view class="card rise-in">
       <view class="card-head">
         <view class="icon-chip tone-emerald">🍽️</view>
         <view class="card-head-title">今日摄入</view>
@@ -34,12 +34,12 @@
           <view class="nutri-col">
             <view class="nutri-num">{{diet_todayProtein}}<text class="nutri-unit"> / {{diet_proteinTarget}} g</text></view>
             <view class="nutri-label">蛋白质</view>
-            <view class="bar-track"><view class="bar-fill bar-emerald" style="width: {{diet_proteinBar}}%"></view></view>
+            <view class="bar-track"><view class="bar-fill bar-emerald" style="width: {{diet_proteinBar}}%; --bar: {{(diet_proteinBar) / 100}}"></view></view>
           </view>
           <view class="nutri-col">
             <view class="nutri-num">{{diet_todayCalories}}<text class="nutri-unit"> / {{diet_calorieTarget}}</text></view>
             <view class="nutri-label">热量 kcal</view>
-            <view class="bar-track"><view class="bar-fill bar-amber" style="width: {{diet_calorieBar}}%"></view></view>
+            <view class="bar-track"><view class="bar-fill bar-amber" style="width: {{diet_calorieBar}}%; --bar: {{(diet_calorieBar) / 100}}"></view></view>
           </view>
         </view>
   
@@ -71,7 +71,7 @@
     </view>
   
     <!-- ── 快速记录 ── -->
-    <view class="card">
+    <view class="card rise-in d1">
       <view class="card-head">
         <view class="icon-chip tone-sky">✍️</view>
         <view class="card-head-title">记一笔</view>
@@ -145,7 +145,7 @@
     </view>
   
     <!-- ── 套餐模板 ── -->
-    <view class="card">
+    <view class="card rise-in d2">
       <view class="card-head">
         <view class="icon-chip tone-violet">⚡</view>
         <view class="card-head-title">常用套餐（一键加入清单）</view>
@@ -205,7 +205,7 @@
         <view class="week-bar-row" wx:for="{{diet_trend}}" wx:key="date">
           <text class="week-bar-label">{{item.label}}</text>
           <view class="bar-track bar-track-sm">
-            <view class="bar-fill {{item.hit ? 'bar-emerald' : 'bar-sky'}}" style="width: {{item.barWidth}}%"></view>
+            <view class="bar-fill {{item.hit ? 'bar-emerald' : 'bar-sky'}}" style="width: {{item.barWidth}}%; --bar: {{(item.barWidth) / 100}}"></view>
           </view>
           <text class="week-bar-count">{{item.protein}}g</text>
         </view>
@@ -259,7 +259,7 @@
         </view>
   
         <view class="bar-track">
-          <view class="bar-fill bar-emerald" style="width: {{run_barWidth}}%"></view>
+          <view class="bar-fill bar-emerald" style="width: {{run_barWidth}}%; --bar: {{(run_barWidth) / 100}}"></view>
         </view>
   
         <!-- 打卡按钮 -->
@@ -387,7 +387,7 @@
           <view class="week-bar-row" wx:for="{{run_byWeek}}" wx:key="week">
             <text class="week-bar-label {{item.isCurrent ? 'is-current' : ''}}">第{{item.week}}周</text>
             <view class="bar-track bar-track-sm">
-              <view class="bar-fill bar-{{item.tone}}" style="width: {{item.barWidth}}%"></view>
+              <view class="bar-fill bar-{{item.tone}}" style="width: {{item.barWidth}}%; --bar: {{(item.barWidth) / 100}}"></view>
             </view>
             <text class="week-bar-count">{{item.n}} 次</text>
           </view>
