@@ -1,4 +1,5 @@
 {
   "usingComponents": {},
-  "navigationBarTitleText": "待办清单"
+  "navigationBarTitleText": "待办清单",
+  "enableShareTimeline": true
 }

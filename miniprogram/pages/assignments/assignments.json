@@ -1,4 +1,5 @@
 {
   "usingComponents": {},
-  "navigationBarTitleText": "作业 DDL"
+  "navigationBarTitleText": "作业 DDL",
+  "enableShareTimeline": true
 }

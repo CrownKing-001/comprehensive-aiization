@@ -5,7 +5,7 @@
 从桌面版移植而来，**数据键名与备份格式和桌面版逐字一致**，桌面版导出的备份可以原样导入。
 **没有后端，也没有任何网络请求** —— 全部数据留在本机的小程序存储里。
 
-自测：`440` 项全部通过（`miniprogram/tools/selftest.js`）。当前版本 **v1.0.1**（见 [CHANGELOG.md](CHANGELOG.md)）。
+自测：`440` 项全部通过（`miniprogram/tools/selftest.js`）。当前版本 **v1.1.0**（见 [CHANGELOG.md](CHANGELOG.md)）。
 
 ## 界面
 
@@ -45,7 +45,7 @@
 4. 基础库 `3.17.4`（`libVersion`）
 
 没有 npm 依赖，不用 `npm install`，也不需要构建步骤。
-`tools/` 已在 `packOptions.ignore` 里排除，不进小程序包；小程序包体（不含 `tools/`）约 **556 KB**。
+`tools/` 已在 `packOptions.ignore` 里排除，不进小程序包；小程序包体（不含 `tools/`）约 **584 KB**。
 
 ## 目录结构
 
@@ -123,6 +123,19 @@ Agent 拿不到。所以「点一下看看」这条路走不通，只能把生�
   / `wx.setNavigationBarColor` 运行时改）。只改一半就会在切 tab 时闪一下深色，见 `utils/theme.js`。
 - **识别一律先确认**：课表/校历解析一定有错（日期串行、表头截断），所以绝不自动落库，
   先列出结果让用户逐条勾选、可改日期和标题，确认后才写入。
+- **动画只碰 `transform` / `opacity`**：这两个属性走 GPU 合成，不触发 layout。
+  进度条曾用 `transition: width` —— 每帧都要 layout → paint，而总览页一屏有十几条同时动，
+  低端安卓直接掉帧。v1.1.0 改成 `transform: scaleX(var(--bar))`。
+  WXML 里 `width: X%` 和 `--bar: 0.xx` 两条并存：前者兜底（环境不支持 CSS 变量时仍画得对），
+  后者给 `@supports` 内的 `transform` 接管，避免「宽度 × 缩放」算两遍。
+  **加新动画前先确认属性在白名单里** —— `app.wxss` 末尾有红线注释。
+- **入场动画只给前 3 个卡片**：页面里卡片有 13~60 个，全加会在加载瞬间几十个元素同时动画，
+  与「不卡顿」直接矛盾。尊重系统「减弱动态效果」：`prefers-reduced-motion` 下全部关闭。
+- **UI 结构对齐 WeUI，但不引入 WeUI 包**：项目已有调好的双主题 token
+  （`--surface-*` / `--text-*`），WeUI 自带的浅色 + 微信绿会顶掉它们，
+  等于推翻约 96KB 现成样式，还要多背约 100KB。只借它的结构约定
+  （`.cells` / `.cell` 发丝线列表、8rpx 间距梯度、`.tap` 按压态），样式映射回本项目 token，
+  深浅两套主题自动跟随。
 
 ## 已知限制
 
@@ -134,12 +147,20 @@ Agent 拿不到。所以「点一下看看」这条路走不通，只能把生�
   看到的任何疑问都要回源码确认 —— 这个工具自己就制造过两次假象。
 - 非 tabBar 页（如 `pages/today`）只能 `wx.navigateTo`，写成 `wx.switchTab` 会**静默失败**；
   反过来 `switchTab` 也不能带 query，要跳到合并页的指定分段得走 `app.globalData.pendingSeg`。
+- **开发者工具会报 `无效的 page.json ["enableShareTimeline"]`，这是误报，不要删。**
+  工具版本 `2.02.2608080` 的校验规则不认识这个字段，会对全部 16 个页面各报一条；
+  基础库运行时是认识的，分享功能正常。`selftest.js` 要求全 16 页都有该字段
+  （只写 `onShareTimeline` 而不开它，朋友圈入口不出现且**不报错**），删了自测会挂。
+  不要按这条警告改 json。
+- **真机调试崩溃与本项目无关**：扫码后开发者工具主进程崩（`RemoteDebugWindow` 初始化，
+  伴随 `ios_webkit_debug_proxy` ECONNRESET），模拟器正常。属工具侧故障，
+  用**预览**代替真机调试即可绕过。
 
 ## 文档索引
 
 | 文件 | 内容 |
 | --- | --- |
-| `CHANGELOG.md` | 版本更新记录；当前 v1.0.1 |
+| `CHANGELOG.md` | 版本更新记录；当前 v1.1.0 |
 | `miniprogram/docs/navigation.md` | 底部菜单为什么这么排、合并页怎么实现、跳转的几个坑 |
 | `miniprogram/tools/README.md` | 页面预览工具的原理、已知近似项、踩过的假象 |
 | `docs/branding/README.md` | 小程序头像用哪个文件、圆形/方形裁切的余量约束 |
