@@ -1,4 +1,4 @@
-﻿// 空闲时段分析：热力图 + 空闲时段排名 + 重要事项清单。
+// 空闲时段分析：热力图 + 空闲时段排名 + 重要事项清单。
 // 结论全部由用户自己的课表算出来（freeMatrix），空白模板下不预设任何训练 / 备考方案。
 // 移植自桌面版 src/views/Analysis.tsx
 
@@ -6,6 +6,7 @@ const { store } = require('../../store/store');
 const { TIME_SLOTS, currentWeek, freeMatrix } = require('../../utils/plan');
 const { fromKey, daysUntil } = require('../../utils/storage');
 const { shareAppMessage, shareTimeline } = require('../../utils/share');
+const { emojiToIcon } = require('../../components/ui-icon/icons');
 
 const DAYS = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
 
@@ -108,6 +109,7 @@ Page({
         id: m.id,
         title: m.title,
         emoji: m.emoji || '📌',
+        icon: emojiToIcon(m.emoji),
         category: m.category || '其他',
         date: m.date || '',
         done: !!m.done,

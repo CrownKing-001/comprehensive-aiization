@@ -1,4 +1,4 @@
-﻿// 课表管理：查看 / 编辑 / 增删课程，改动存进数据文件
+// 课表管理：查看 / 编辑 / 增删课程，改动存进数据文件
 // 移植自桌面版 src/views/Courses.tsx
 
 const { store, uid } = require('../../store/store');
@@ -7,6 +7,7 @@ const { fromKey, toKey } = require('../../utils/storage');
 const { DAY_LABELS } = require('../../utils/schedule');
 const { weeksToText, parseWeeksText, weeksLabelText } = require('../../utils/weeks');
 const { shareAppMessage, shareTimeline } = require('../../utils/share');
+const { applyTabBarTheme } = require('../../utils/tabBarTheme');
 
 const EMPTY = {
   day: 1,
@@ -82,6 +83,8 @@ Page({
 
   onShow() {
     if (store.ready) this.refresh();
+    // tabBar 颜色是静态配置，不跟着 themeClass 变。每次回到 tab 页都对一次。
+    if (store.ready) applyTabBarTheme(store.shape.settings.theme);
   },
 
   refresh() {

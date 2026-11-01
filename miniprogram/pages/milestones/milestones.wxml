@@ -4,7 +4,7 @@
   <!-- ── 顶部 ── -->
   <view class="card">
     <view class="card-head">
-      <view class="icon-chip tone-violet">⭐</view>
+      <view class="icon-chip tone-violet"><ui-icon name="star" size="{{20}}" color="currentColor"/></view>
       <view class="card-head-title">重要事项 · {{totalCount}} 条 · 待办 {{upcomingCount}} 个</view>
     </view>
     <view class="card-body">
@@ -25,7 +25,7 @@
        快到期（剩的天数 <= 该事项自己的「提前提醒」）的整块标红。 -->
   <view class="card" wx:if="{{upcomingList.length > 0}}">
     <view class="card-head">
-      <view class="icon-chip tone-rose">⏰</view>
+      <view class="icon-chip tone-rose"><ui-icon name="time" size="{{20}}" color="currentColor"/></view>
       <view class="card-head-title">接下来 · {{upcomingList.length}} 条</view>
     </view>
     <view class="card-body">
@@ -34,7 +34,7 @@
           wx:for="{{upcomingList}}" wx:key="id"
           data-id="{{item.id}}" bindtap="startEdit">
           <view class="up-top">
-            <text class="up-emoji">{{item.emoji}}</text>
+            <view class="up-emoji"><ui-icon name="{{item.icon}}" size="{{16}}" color="currentColor"/></view>
             <text class="up-title">{{item.title}}</text>
             <text class="chip chip-{{item.urgencyTone}}">{{item.urgencyText}}</text>
           </view>
@@ -48,7 +48,7 @@
   <!-- ── 编辑 / 新建 ── -->
   <view class="card" wx:if="{{editing}}">
     <view class="card-head">
-      <view class="icon-chip tone-emerald">✨</view>
+      <view class="icon-chip tone-emerald"><ui-icon name="flash" size="{{20}}" color="currentColor"/></view>
       <view class="card-head-title">{{isNew ? '新建事项' : '编辑事项'}}</view>
     </view>
     <view class="card-body">
@@ -58,7 +58,7 @@
         <view class="field-label">快捷模板</view>
         <view class="filter-row">
           <view class="filter-pill" wx:for="{{presets}}" wx:key="label"
-            data-label="{{item.label}}" bindtap="applyPreset">{{item.emoji}} {{item.label}}</view>
+            data-label="{{item.label}}" bindtap="applyPreset"><ui-icon name="{{item.icon}}" size="{{16}}" color="currentColor" inline="{{true}}"/>{{item.label}}</view>
         </view>
       </block>
 
@@ -78,7 +78,7 @@
         <view class="field">
           <view class="field-label">图标</view>
           <input class="input" value="{{draft.emoji}}" data-field="emoji" bindinput="onDraftInput"
-            placeholder="📌" placeholder-class="input-ph" cursor-spacing="24" />
+            placeholder="选择图标" placeholder-class="input-ph" cursor-spacing="24" />
         </view>
       </view>
 
@@ -124,7 +124,7 @@
         <view class="field-label">准备清单（{{draft.checklist.length}} 项）</view>
         <view class="check-item" wx:for="{{draft.checklist}}" wx:key="*this">
           <text class="check-text">{{item}}</text>
-          <view class="icon-btn tone-rose btn-mini" data-idx="{{index}}" bindtap="dropDraftCheck">✕</view>
+          <view class="icon-btn tone-rose btn-mini" data-idx="{{index}}" bindtap="dropDraftCheck"><ui-icon name="close" size="{{18}}" color="currentColor"/></view>
         </view>
         <view class="add-row">
           <input class="input add-input" value="{{newItem}}" bindinput="onNewItemInput"
@@ -158,12 +158,12 @@
   <!-- ── 列表 ── -->
   <view class="card">
     <view class="card-head">
-      <view class="icon-chip tone-sky">📌</view>
+      <view class="icon-chip tone-sky"><ui-icon name="target" size="{{20}}" color="currentColor"/></view>
       <view class="card-head-title">事项列表（{{list.length}}）</view>
     </view>
     <view class="card-body">
       <view class="empty" wx:if="{{list.length === 0}}">
-        <view class="empty-icon">⭐</view>
+        <view class="empty-icon"><ui-icon name="star" size="{{32}}" color="currentColor"/></view>
         <view class="empty-title">还没有事项</view>
         <view class="empty-desc">点上面「新建事项」，或先用快捷模板生成一份</view>
       </view>
@@ -173,9 +173,9 @@
           <view class="checkbox {{item.done ? 'is-on' : ''}}" data-id="{{item.id}}" bindtap="toggleDone">
             <text wx:if="{{item.done}}">✓</text>
           </view>
-          <text class="ms-emoji">{{item.emoji}}</text>
+          <view class="ms-emoji"><ui-icon name="{{item.icon}}" size="{{20}}" color="currentColor"/></view>
           <text class="ms-title">{{item.title}}</text>
-          <text class="ms-pin {{item.pinned ? 'is-on' : ''}}" data-id="{{item.id}}" bindtap="togglePin">📌</text>
+          <text class="ms-pin {{item.pinned ? 'is-on' : ''}}" data-id="{{item.id}}" bindtap="togglePin"><ui-icon name="pin" size="{{16}}" color="currentColor" inline="{{true}}"/></text>
         </view>
 
         <view class="chip-row">
@@ -189,14 +189,14 @@
         <!-- 清单项：点一下即勾掉 -->
         <view class="ms-check" wx:for="{{item.checklist}}" wx:for-item="c" wx:key="idx"
           data-id="{{item.id}}" data-idx="{{c.idx}}" bindtap="toggleCheck">
-          <text class="ms-check-box">☐</text>
+          <text class="ms-check-box"><ui-icon name="check" size="{{16}}" color="currentColor" inline="{{true}}"/></text>
           <text class="ms-check-text">{{c.text}}</text>
         </view>
 
         <view class="row-actions ms-ops">
-          <view class="btn-ghost btn-xs" data-id="{{item.id}}" bindtap="startEdit">✏️ 编辑</view>
-          <view class="btn-ghost btn-xs" data-id="{{item.id}}" bindtap="duplicate">📋 复制</view>
-          <view class="btn-ghost btn-xs" data-id="{{item.id}}" bindtap="remove">🗑️ 删除</view>
+          <view class="btn-ghost btn-xs" data-id="{{item.id}}" bindtap="startEdit"><ui-icon name="edit" size="{{16}}" color="currentColor" inline="{{true}}"/>编辑</view>
+          <view class="btn-ghost btn-xs" data-id="{{item.id}}" bindtap="duplicate"><ui-icon name="clipboard" size="{{16}}" color="currentColor" inline="{{true}}"/>复制</view>
+          <view class="btn-ghost btn-xs" data-id="{{item.id}}" bindtap="remove"><ui-icon name="trash" size="{{16}}" color="currentColor" inline="{{true}}"/>删除</view>
         </view>
       </view>
     </view>

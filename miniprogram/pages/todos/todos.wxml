@@ -4,7 +4,7 @@
   <!-- 新建待办 -->
   <view class="card">
     <view class="card-head">
-      <view class="icon-chip tone-emerald">＋</view>
+      <view class="icon-chip tone-emerald"><ui-icon name="add" size="{{20}}" color="currentColor"/></view>
       <view class="card-head-title">新建待办</view>
     </view>
     <view class="card-body">
@@ -52,7 +52,7 @@
   <!-- 待办列表 -->
   <view class="card">
     <view class="card-head">
-      <view class="icon-chip tone-sky">☰</view>
+      <view class="icon-chip tone-sky"><ui-icon name="tasks" size="{{20}}" color="currentColor"/></view>
       <view class="card-head-title">待办列表（{{list.length}}）</view>
       <view class="head-link" wx:if="{{counts.done > 0}}" bindtap="clearDone">清除已完成 ({{counts.done}})</view>
     </view>
@@ -70,8 +70,8 @@
       </view>
 
       <view class="empty" wx:if="{{list.length === 0}}">
-        <view class="empty-icon">✨</view>
-        <view class="empty-text">{{filter === 'done' ? '还没有完成的事项' : '这里空空的，享受一下吧 ✨'}}</view>
+        <view class="empty-icon"><ui-icon name="flash" size="{{32}}" color="currentColor"/></view>
+        <view class="empty-text">{{filter === 'done' ? '还没有完成的事项' : '这里空空的，享受一下吧'}}</view>
       </view>
 
       <view class="todo-list" wx:else>
@@ -82,12 +82,12 @@
           <view class="todo-main">
             <view class="todo-text {{item.done ? 'is-struck' : ''}}">{{item.text}}</view>
             <view class="todo-meta">
-              <text class="chip chip-{{item.priorityTone}}">⚑ {{item.priorityText}}</text>
-              <text class="todo-due is-{{item.dueTone}}" wx:if="{{item.due}}">📅 {{item.dueText}}</text>
+              <text class="chip chip-{{item.priorityTone}}"><ui-icon name="flag" size="{{14}}" color="currentColor" inline="{{true}}"/>{{item.priorityText}}</text>
+              <text class="todo-due is-{{item.dueTone}}" wx:if="{{item.due}}"><ui-icon name="calendar" size="{{16}}" color="currentColor" inline="{{true}}"/>{{item.dueText}}</text>
               <text class="chip chip-sky" wx:if="{{item.tag}}">{{item.tag}}</text>
             </view>
           </view>
-          <view class="del-btn" data-id="{{item.id}}" bindtap="remove">🗑</view>
+          <view class="del-btn" data-id="{{item.id}}" bindtap="remove"><ui-icon name="trash" size="{{16}}" color="currentColor" inline="{{true}}"/></view>
         </view>
       </view>
     </view>
@@ -98,6 +98,6 @@
     有 <text class="bold">{{counts.overdue}}</text> 项待办已经超过截止日期，建议重新排一下优先级。
   </view>
 
-  <view class="footnote">✅ 数据保存在本机，关掉小程序也不会丢</view>
+  <view class="footnote">数据保存在本机，关掉小程序也不会丢</view>
 
 </view>

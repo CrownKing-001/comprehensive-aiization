@@ -1,0 +1,18 @@
+/* ui-icon 自身不带视觉，只需保证：
+   1. 不参与文字排版（inline-block 的基线对齐会让图标上下跳 1-3px）；
+   2. 不收缩（图标在 flex 行里被压扁是另一类「看起来错位」）。 */
+.ui-icon {
+  display: block;
+  flex-shrink: 0;
+  vertical-align: middle;
+}
+
+/* 行内变体：写在文字前面的小图标（按钮前缀、正文里的 📍）。
+   ⚠️ 必须覆盖成 inline-block 并做微小的垂直校正：
+     图标用 px、文字用 rpx，两者的基线不一致，不校正时图标会偏低 1-2px，
+     看起来像没对齐。vertical-align 的值只影响行内排版，不影响块级用法。 */
+.ui-icon-inline {
+  display: inline-block;
+  vertical-align: -0.12em;
+  margin-right: 0.28em;
+}

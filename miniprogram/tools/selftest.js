@@ -2311,7 +2311,16 @@ section('[31] 主题外壳（窗口底色 + 导航栏）');
   T('  app.json 的静态兜底就是深色那套',
     appJson.window.backgroundColor === theme.SHELL.dark.bg
     && appJson.window.navigationBarBackgroundColor === theme.SHELL.dark.nav);
-  T('启动时按已存的主题应用外壳', /applyWindowTheme\(store\.shape\.settings\.theme\)/.test(appJs));
+  // 启动时必须按「用户上次存下的主题」应用外壳。
+  // 允许两种写法：
+  //   applyWindowTheme(store.shape.settings.theme)      —— 直接传
+  //   先 const t = store.shape.settings.theme 再 applyWindowTheme(t) —— 提取成变量
+  // 后者是为了让窗口主题和 tabBar 主题共用一个取值点（见 app.js 的 syncChrome），
+  // 语义完全等价，所以这里放宽成「能追溯到 store.shape.settings.theme」。
+  T('启动时按已存的主题应用外壳',
+    /applyWindowTheme\(\s*store\.shape\.settings\.theme\s*\)/.test(appJs)
+    || (/applyWindowTheme\(/.test(appJs)
+        && /(const|let|var)\s+\w+\s*=\s*store\.shape\.settings\.theme/.test(appJs)));
   T('  主题后续变了也能跟上', /store\.subscribe\(/.test(appJs));
   T('  page 不再写死背景色（写死就等于把外壳钉回深色）',
     !/page\s*\{[^}]*background\s*:/.test(appWxss));
@@ -2474,7 +2483,81 @@ section('[34] 分享（转发给好友 / 分享到朋友圈）');
     typeof landing.todos_onShareAppMessage === 'undefined');
 }
 
-section('[35] 版本号（version.js 与 CHANGELOG 必须一致）');
+section('[35] 合并页的 WXML 只读带前缀的 data 键');
+{
+  // 用户报：「AI 卡片有框、没有字」。
+  //
+  // dashboard.wxml 新写的 AI 区读的是裸 {{aiQuestion}}，而 dashboard.js 的
+  // DEFINITION 是被 buildHost 用 `dashboard_` 前缀并入宿主 data 的
+  // （见 utils/tabHost.js 的 prefixKeys），真实键叫 dashboard_aiQuestion。
+  // 裸键永远是 undefined → 卡片壳子照常渲染、里面一个字都没有。
+  //
+  // 以前没人抓得到：selftest 跑的是 JS 层，JS 层两个键都在、都对；
+  // 只有「把 WXML 里引用的根标识符拿去和真实 data 对一遍」才能发现。
+  // 所以这里做这层比对 —— 任何新加的裸键都会被拦下。
+  const fs = require('fs');
+
+  // 合并页宿主 → 它的前缀（= 分段 id + '_'）
+  const HOSTS = { dashboard: 'dashboard_', tasks: 'todos_', healthhub: 'diet_' };
+
+  // WXML 里不算「data 键」的东西：wx:for 自带的、字面量、模板内置
+  const BUILTIN = new Set([
+    'item', 'index', 'true', 'false', 'null', 'undefined',
+    'length', 'Math', 'that', 'this',
+  ]);
+
+  for (const [name, prefix] of Object.entries(HOSTS)) {
+    const wxml = fs.readFileSync(path.join(MP, 'pages', name, name + '.wxml'), 'utf8');
+    // 去掉注释和标签，只留 {{ }} 里的表达式 —— 模板里也有别的页面自己的键
+    const exprs = [...wxml.replace(/<!--[\s\S]*?-->/g, '').matchAll(/\{\{([^}]*)\}\}/g)]
+      .map((m) => m[1]);
+    const roots = new Set();
+
+    // wx:for-item="it" / wx:for-index="i" 定义的局部别名属于模板自己的作用域，
+    // 不是 data 键，按名字收集出来排除掉（不写死在 BUILTIN 里，免得漏）。
+    for (const m of wxml.matchAll(/wx:for-(?:item|index)\s*=\s*"([^"]+)"/g)) {
+      BUILTIN.add(m[1]);
+    }
+
+    for (const e of exprs) {
+      // 先去掉字符串字面量（'is-active' 里的 is / active 是 class 名片段，
+      // 不是 data 键）；再只认「不是紧跟 . 也不是紧跟在 - 后面」的标识符，
+      // 这样 chip-emerald、rise-in d1 这类 class 拼接不会误报。
+      const noStr = e.replace(/'[^']*'/g, "''").replace(/"[^"]*"/g, '""');
+      for (const m of noStr.matchAll(/(^|[^.\w$-])([A-Za-z_$][\w$]*)/g)) {
+        roots.add(m[2]);
+      }
+    }
+    global.__TABHOST_LOADING__ = false;
+    const page = loadPage(name);
+    page.onLoad();
+    // 非默认分段的键（today_* / assignments_* / run_* / health_*）要等那段
+    // 真正显示时才由 _revealSeg 并进宿主 data，所以这里把每一段都切一遍，
+    // 拿到「整个页面所有分段合起来」的键集合再做比对。
+    for (const seg of page.data.segments || []) {
+      if (seg.id !== page.data.seg) page.setSeg(seg.id);
+    }
+    const dataKeys = new Set(Object.keys(page.data));
+    if (process.env.DEBUG_KEYS) console.log('KEYS', name, [...dataKeys].join(','));
+
+    const missing = [...roots].filter((r) => {
+      if (BUILTIN.has(r) || dataKeys.has(r)) return false;
+      // 子模块自己的裸写法本来是允许的 —— 但只有**宿主自己也提供**这个键时
+      // 才算没写错（themeClass 就是这种刻意约定）。其余一律要求前缀。
+      return true;
+    });
+
+    T(`  ${name}.wxml 引用的每个根标识符都能在宿主 data 里找到`,
+      missing.length === 0,
+      missing.length ? `缺少: ${missing.join(', ')}（合并页要写 ${prefix}xxx）` : '');
+
+    // 反向兜底：确实带了前缀（证明上面的比对不是空转）
+    const prefixed = [...roots].filter((r) => r.startsWith(prefix));
+    T(`  ${name}.wxml 确实用到了 ${prefix} 前缀的键`, prefixed.length > 0, String(prefixed.length));
+  }
+}
+
+section('[36] 版本号（version.js 与 CHANGELOG 必须一致）');
 {
   // 上传版本号是开发者工具里手填的，代码读不到；version.js 是唯一真源。
   // 这里防的是「改了代码里的版本号但忘了写 CHANGELOG」这种半吊子发版。

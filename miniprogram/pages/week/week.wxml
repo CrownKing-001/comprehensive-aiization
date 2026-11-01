@@ -4,7 +4,7 @@
   <!-- ── 周次选择 ── -->
   <view class="card">
     <view class="card-head">
-      <view class="icon-chip tone-emerald">📅</view>
+      <view class="icon-chip tone-emerald"><ui-icon name="calendar" size="{{20}}" color="currentColor"/></view>
       <view class="card-head-title">第 {{week}} 教学周 · 共 {{weekCourses}} 节课</view>
       <view class="card-head-action" wx:if="{{!isCurrent}}" bindtap="goThisWeek">回本周</view>
     </view>
@@ -50,7 +50,7 @@
   <view class="card" wx:if="{{!hasCourses}}">
     <view class="card-body">
       <view class="empty">
-        <view class="empty-icon">📚</view>
+        <view class="empty-icon"><ui-icon name="book" size="{{32}}" color="currentColor"/></view>
         <view class="empty-title">课表为空</view>
         <view class="empty-desc">去「课表」页新增课程，或用「课表识别」粘贴导入</view>
       </view>

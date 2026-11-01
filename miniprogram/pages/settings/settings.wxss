@@ -23,7 +23,7 @@
 }
 
 .switch-hint {
-  font-size: 20rpx;
+  font-size: 24rpx;
   color: var(--text-4);
   line-height: 1.55;
 }
@@ -39,7 +39,7 @@
 .count-item {
   background: var(--surface-3);
   border: 2rpx solid var(--border-2);
-  border-radius: 14rpx;
+  border-radius: 12rpx;
   padding: 14rpx 6rpx;
   display: flex;
   flex-direction: column;
@@ -57,7 +57,7 @@
 }
 
 .count-label {
-  font-size: 19rpx;
+  font-size: 24rpx;
   color: var(--text-4);
 }
 
@@ -70,14 +70,14 @@
   border: 2rpx solid var(--border-2);
   border-radius: 16rpx;
   padding: 20rpx 22rpx;
-  font-size: 24rpx;
+  font-size: 28rpx;
   color: var(--text-1);
   line-height: 1.7;
   margin-top: 6rpx;
 }
 
 .field-hint {
-  font-size: 20rpx;
+  font-size: 24rpx;
   color: var(--text-4);
   line-height: 1.6;
   margin-top: 10rpx;
@@ -92,7 +92,7 @@
 .add-input { flex: 1; min-width: 0; }
 
 .schedule-msg {
-  font-size: 21rpx;
+  font-size: 24rpx;
   line-height: 1.6;
   margin-top: 12rpx;
 }
@@ -110,19 +110,19 @@
 .train-pick {
   flex: 1;
   height: 68rpx;
-  border-radius: 14rpx;
+  border-radius: 12rpx;
   border: 2rpx solid var(--border-3);
   background: var(--surface-3);
   color: var(--text-3);
-  font-size: 24rpx;
+  font-size: 28rpx;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .train-pick.is-on {
-  background: #059669;
-  border-color: #059669;
+  background: #047857;
+  border-color: #047857;
   color: #fff;
   font-weight: 600;
 }

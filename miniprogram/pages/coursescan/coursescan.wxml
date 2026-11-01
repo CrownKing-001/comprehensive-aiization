@@ -11,7 +11,7 @@
   <!-- ── 粘贴文字 ── -->
   <view class="card">
     <view class="card-head">
-      <view class="icon-chip tone-emerald">📋</view>
+      <view class="icon-chip tone-emerald"><ui-icon name="tasks" size="{{20}}" color="currentColor"/></view>
       <view class="card-head-title">粘贴课表文字</view>
     </view>
     <view class="card-body">
@@ -20,7 +20,7 @@
       </view>
 
       <view class="tip-box">
-        <view class="tip-text">💡 为什么不支持拍照识别</view>
+        <view class="tip-text"><ui-icon name="tip" size="{{14}}" color="currentColor" inline="{{true}}"/>为什么不支持拍照识别</view>
         <view class="bullet-note">
           桌面版用 Windows 自带的 OCR 识图，小程序没有这个能力。好消息是课表文字通常可以直接复制：
           在电脑教务系统里框选课表复制，用微信「文件传输助手」发给自己，再粘到下面就行。
@@ -28,7 +28,7 @@
       </view>
 
       <view class="row-actions">
-        <view class="btn-ghost btn-sm" bindtap="copyPrompt">📎 复制「给 AI 的指令」</view>
+        <view class="btn-ghost btn-sm" bindtap="copyPrompt"><ui-icon name="paperclip" size="{{16}}" color="currentColor" inline="{{true}}"/>复制「给 AI 的指令」</view>
         <view class="btn-ghost btn-sm" bindtap="togglePrompt">{{showPrompt ? '收起指令原文' : '查看指令原文'}}</view>
       </view>
 
@@ -54,8 +54,8 @@
       </view>
 
       <view class="row-actions mt">
-        <view class="btn-primary" bindtap="parsePasted">🔍 解析</view>
-        <view class="btn-ghost" bindtap="saveDoc">💾 存档这次识别</view>
+        <view class="btn-primary" bindtap="parsePasted"><ui-icon name="search" size="{{16}}" color="currentColor" inline="{{true}}"/>解析</view>
+        <view class="btn-ghost" bindtap="saveDoc"><ui-icon name="archive" size="{{16}}" color="currentColor" inline="{{true}}"/>存档这次识别</view>
         <view class="btn-ghost" bindtap="goCourses">去课表</view>
       </view>
     </view>
@@ -64,7 +64,7 @@
   <!-- ── 解析结果 ── -->
   <view class="card" wx:if="{{hasDraft}}">
     <view class="card-head">
-      <view class="icon-chip tone-sky">✅</view>
+      <view class="icon-chip tone-sky"><ui-icon name="tasks" size="{{20}}" color="currentColor"/></view>
       <view class="card-head-title">核对结果 · 已勾选 {{acceptedCount}} 门</view>
     </view>
     <view class="card-body">
@@ -77,7 +77,7 @@
 
       <!-- 解析警告：解析出课程但有问题的，一直挂在页面上直到重新解析 -->
       <view class="notice notice-err parse-warn" wx:for="{{parseWarnings}}" wx:key="*this">
-        <text class="notice-text">⚠ {{item}}</text>
+        <text class="notice-text"><ui-icon name="warn" size="{{14}}" color="currentColor" inline="{{true}}"/>{{item}}</text>
       </view>
 
       <!-- 只导入本周 -->
@@ -140,7 +140,7 @@
 
       <!-- 导入结果就地反馈：用户点完按钮视线就在这里，不用回头看顶部 -->
       <view class="import-done" wx:if="{{importResult}}">
-        <view class="import-done-text">✅ {{importResult}}</view>
+        <view class="import-done-text">{{importResult}}</view>
         <view class="btn-ghost btn-sm" bindtap="goCourses">去课表看看</view>
       </view>
     </view>
@@ -149,7 +149,7 @@
   <!-- ── 说明 ── -->
   <view class="card" wx:if="{{!hasDraft}}">
     <view class="card-head">
-      <view class="icon-chip tone-violet">💡</view>
+      <view class="icon-chip tone-violet"><ui-icon name="info" size="{{20}}" color="currentColor"/></view>
       <view class="card-head-title">支持的格式</view>
     </view>
     <view class="card-body">
@@ -166,7 +166,7 @@
        和「校历识别」共用同一份 store.calendars，两个页面的记录会汇总到一起。 -->
   <view class="card" wx:if="{{docs.length > 0}}">
     <view class="card-head">
-      <view class="icon-chip tone-amber">🗂️</view>
+      <view class="icon-chip tone-amber"><ui-icon name="folder" size="{{20}}" color="currentColor"/></view>
       <view class="card-head-title">识别记录 · {{docs.length}} 条</view>
     </view>
     <view class="card-body">

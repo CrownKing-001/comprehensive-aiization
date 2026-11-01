@@ -66,5 +66,8 @@
   },
   "style": "v2",
   "lazyCodeLoading": "requiredComponents",
-  "sitemapLocation": "sitemap.json"
+  "sitemapLocation": "sitemap.json",
+  "usingComponents": {
+    "ui-icon": "/components/ui-icon/ui-icon"
+  }
 }

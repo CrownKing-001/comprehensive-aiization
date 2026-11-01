@@ -4,7 +4,7 @@
   <!-- ── 打卡进度 ── -->
   <view class="card">
     <view class="card-head">
-      <view class="icon-chip tone-emerald">👟</view>
+      <view class="icon-chip tone-emerald"><ui-icon name="run" size="{{20}}" color="currentColor"/></view>
       <view class="card-head-title">打卡进度</view>
     </view>
     <view class="card-body">
@@ -54,7 +54,7 @@
   <!-- ── 打卡设置说明 ── -->
   <view class="card">
     <view class="card-head">
-      <view class="icon-chip tone-sky">ℹ️</view>
+      <view class="icon-chip tone-sky"><ui-icon name="info" size="{{20}}" color="currentColor"/></view>
       <view class="card-head-title">打卡设置</view>
     </view>
     <view class="card-body">
@@ -64,7 +64,7 @@
       <block wx:else>
         <view class="bullet">
           <text class="bullet-dot">•</text>
-          <text class="bullet-text">目标 {{target}} 次{{done >= target ? '，已经达成 🎉' : '，已完成 ' + done + ' 次'}}。</text>
+          <text class="bullet-text">目标 {{target}} 次{{done >= target ? '，已经达成' : '，已完成 ' + done + ' 次'}}。</text>
         </view>
         <view class="bullet">
           <text class="bullet-dot">•</text>
@@ -83,12 +83,12 @@
       <view class="tip-box">
         <text class="tip-text">
           {{pace > 0
-            ? '🔥 还差 ' + remain + ' 次，剩下 ' + weeksLeft + ' 周，每周约 ' + pace + ' 次就能完成目标'
-            : (done >= target ? '🔥 目标已达成，保持节奏就好' : '🔥 目标次数、类型、起止日期都可以在「设置」里随时调整')}}
+            ? '还差 ' + remain + ' 次，剩下 ' + weeksLeft + ' 周，每周约 ' + pace + ' 次就能完成目标'
+            : (done >= target ? '目标已达成，保持节奏就好' : '目标次数、类型、起止日期都可以在「设置」里随时调整')}}
         </text>
       </view>
       <view class="row-actions mt">
-        <view class="btn-ghost btn-sm" bindtap="goSettings">⚙️ 去设置</view>
+        <view class="btn-ghost btn-sm" bindtap="goSettings"><ui-icon name="settings" size="{{16}}" color="currentColor" inline="{{true}}"/>去设置</view>
       </view>
     </view>
   </view>
@@ -96,7 +96,7 @@
   <!-- ── 打卡记录 ── -->
   <view class="card">
     <view class="card-head">
-      <view class="icon-chip tone-violet">✅</view>
+      <view class="icon-chip tone-violet"><ui-icon name="tasks" size="{{20}}" color="currentColor"/></view>
       <view class="card-head-title">打卡记录（{{recordCount}}）</view>
     </view>
     <view class="card-body">
@@ -112,7 +112,7 @@
       </view>
 
       <view class="empty" wx:if="{{records.length === 0}}">
-        <view class="empty-icon">💪</view>
+        <view class="empty-icon"><ui-icon name="exercise" size="{{32}}" color="currentColor"/></view>
         <view class="empty-title">还没有记录</view>
         <view class="empty-desc">{{types.length === 0 ? '还没有打卡类型，去「设置」里填几个再回来打卡。' : '完成第一次打卡后开始计数'}}</view>
       </view>
@@ -122,7 +122,7 @@
           <view class="log-dot {{item.isPrimary ? 'is-primary' : ''}}"></view>
           <text class="log-date">{{item.date}}</text>
           <text class="log-type">{{item.type}}</text>
-          <view class="icon-btn tone-rose btn-mini" data-idx="{{item.idx}}" bindtap="removeAt">🗑️</view>
+          <view class="icon-btn tone-rose btn-mini" data-idx="{{item.idx}}" bindtap="removeAt"><ui-icon name="delete" size="{{18}}" color="currentColor"/></view>
         </view>
       </view>
     </view>
@@ -131,7 +131,7 @@
   <!-- ── 每周分布 ── -->
   <view class="card">
     <view class="card-head">
-      <view class="icon-chip tone-amber">🔥</view>
+      <view class="icon-chip tone-amber"><ui-icon name="fire" size="{{20}}" color="currentColor"/></view>
       <view class="card-head-title">每周分布</view>
     </view>
     <view class="card-body">

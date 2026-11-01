@@ -16,7 +16,7 @@
       data-id="{{item.id}}"
       bindtap="switchSeg"
     >
-      <text class="seg-icon">{{item.icon}}</text>
+      <text class="seg-icon"><ui-icon name="{{item.icon}}" size="{{16}}" color="currentColor" inline="{{true}}"/></text>
       <text class="seg-label">{{item.label}}</text>
     </view>
   </view>
@@ -26,7 +26,7 @@
   <!-- ── 今日汇总 ── -->
     <view class="card rise-in">
       <view class="card-head">
-        <view class="icon-chip tone-emerald">🍽️</view>
+        <view class="icon-chip tone-emerald"><ui-icon name="meal" size="{{20}}" color="currentColor"/></view>
         <view class="card-head-title">今日摄入</view>
       </view>
       <view class="card-body">
@@ -38,7 +38,7 @@
           </view>
           <view class="nutri-col">
             <view class="nutri-num">{{diet_todayCalories}}<text class="nutri-unit"> / {{diet_calorieTarget}}</text></view>
-            <view class="nutri-label">热量 kcal</view>
+            <view class="nutri-label">热量</view>
             <view class="bar-track"><view class="bar-fill bar-amber" style="width: {{diet_calorieBar}}%; --bar: {{(diet_calorieBar) / 100}}"></view></view>
           </view>
         </view>
@@ -58,12 +58,12 @@
           <view class="meal-item" wx:for="{{item.items}}" wx:for-item="it" wx:key="idx">
             <text class="meal-item-text">{{it.text}}</text>
             <text class="meal-item-num">{{it.protein}}g</text>
-            <view class="icon-btn tone-rose btn-mini" data-idx="{{it.idx}}" bindtap="diet_removeLog">🗑️</view>
+            <view class="icon-btn tone-rose btn-mini" data-idx="{{it.idx}}" bindtap="diet_removeLog"><ui-icon name="delete" size="{{18}}" color="currentColor"/></view>
           </view>
         </view>
   
         <view class="empty" wx:if="{{diet_meals.length === 0}}">
-          <view class="empty-icon">🥗</view>
+          <view class="empty-icon"><ui-icon name="meal" size="{{32}}" color="currentColor"/></view>
           <view class="empty-title">今天还没记录</view>
           <view class="empty-desc">下面点食物库，或写一句「2个鸡蛋 一碗粥」自动识别</view>
         </view>
@@ -73,7 +73,7 @@
     <!-- ── 快速记录 ── -->
     <view class="card rise-in d1">
       <view class="card-head">
-        <view class="icon-chip tone-sky">✍️</view>
+        <view class="icon-chip tone-sky"><ui-icon name="edit" size="{{20}}" color="currentColor"/></view>
         <view class="card-head-title">记一笔</view>
       </view>
       <view class="card-body">
@@ -100,7 +100,7 @@
               <view class="qty-btn" data-idx="{{index}}" data-delta="0.5" bindtap="diet_changeQty">＋</view>
             </view>
             <text class="picked-num">{{item.protein}}g</text>
-            <view class="icon-btn tone-rose btn-mini" data-idx="{{index}}" bindtap="diet_removePicked">✕</view>
+            <view class="icon-btn tone-rose btn-mini" data-idx="{{index}}" bindtap="diet_removePicked"><ui-icon name="close" size="{{18}}" color="currentColor"/></view>
           </view>
           <view class="row-actions">
             <view class="btn-primary btn-sm" bindtap="diet_save">保存到{{diet_meal}}</view>
@@ -115,7 +115,7 @@
             placeholder="如：2个鸡蛋 一碗粥 一杯牛奶" placeholder-class="input-ph" cursor-spacing="24" />
         </view>
         <view class="row-actions">
-          <view class="btn-ghost btn-sm" bindtap="diet_recognizeText">🔍 识别</view>
+          <view class="btn-ghost btn-sm" bindtap="diet_recognizeText"><ui-icon name="search" size="{{16}}" color="currentColor" inline="{{true}}"/>识别</view>
           <view class="btn-ghost btn-sm" wx:if="{{diet_picked.length === 0}}" bindtap="diet_save">直接保存</view>
         </view>
   
@@ -133,7 +133,7 @@
               placeholder="留空=自动算" placeholder-class="input-ph" cursor-spacing="24" />
           </view>
           <view class="field">
-            <view class="field-label">热量 kcal</view>
+            <view class="field-label">热量</view>
             <input class="input" type="digit" value="{{diet_mCalories}}" bindinput="diet_onMCalories"
               placeholder="留空=自动算" placeholder-class="input-ph" cursor-spacing="24" />
           </view>
@@ -147,7 +147,7 @@
     <!-- ── 套餐模板 ── -->
     <view class="card rise-in d2">
       <view class="card-head">
-        <view class="icon-chip tone-violet">⚡</view>
+        <view class="icon-chip tone-violet"><ui-icon name="flash" size="{{20}}" color="currentColor"/></view>
         <view class="card-head-title">常用套餐（一键加入清单）</view>
       </view>
       <view class="card-body">
@@ -164,7 +164,7 @@
     <!-- ── 食物库 ── -->
     <view class="card">
       <view class="card-head">
-        <view class="icon-chip tone-amber">🥩</view>
+        <view class="icon-chip tone-amber"><ui-icon name="meal" size="{{20}}" color="currentColor"/></view>
         <view class="card-head-title">食物库 · {{diet_libraryTotal}} 种</view>
       </view>
       <view class="card-body">
@@ -198,7 +198,7 @@
     <!-- ── 近 7 天趋势 ── -->
     <view class="card">
       <view class="card-head">
-        <view class="icon-chip tone-sky">📈</view>
+        <view class="icon-chip tone-sky"><ui-icon name="analysis" size="{{20}}" color="currentColor"/></view>
         <view class="card-head-title">近 7 天蛋白摄入</view>
       </view>
       <view class="card-body">
@@ -216,8 +216,8 @@
     <!-- ── 历史 ── -->
     <view class="card">
       <view class="card-head">
-        <view class="icon-chip tone-slate">📚</view>
-        <view class="card-head-title">历史记录 · {{historyTotal}} 天</view>
+        <view class="icon-chip tone-slate"><ui-icon name="book" size="{{20}}" color="currentColor"/></view>
+        <view class="card-head-title">历史记录 · {{diet_historyTotal}} 天</view>
       </view>
       <view class="card-body">
         <view class="empty" wx:if="{{diet_historyDays.length === 0}}">
@@ -233,7 +233,7 @@
               <text class="hist-meal">{{it.meal}}</text>
               <text class="hist-text">{{it.text}}</text>
               <text class="hist-num">{{it.protein}}g</text>
-              <view class="icon-btn tone-rose btn-mini" data-idx="{{it.idx}}" bindtap="diet_removeLog">🗑️</view>
+              <view class="icon-btn tone-rose btn-mini" data-idx="{{it.idx}}" bindtap="diet_removeLog"><ui-icon name="delete" size="{{18}}" color="currentColor"/></view>
             </view>
           </view>
           <view class="row-actions mt">
@@ -249,7 +249,7 @@
   <!-- ── 打卡进度 ── -->
     <view class="card">
       <view class="card-head">
-        <view class="icon-chip tone-emerald">👟</view>
+        <view class="icon-chip tone-emerald"><ui-icon name="run" size="{{20}}" color="currentColor"/></view>
         <view class="card-head-title">打卡进度</view>
       </view>
       <view class="card-body">
@@ -299,7 +299,7 @@
     <!-- ── 打卡设置说明 ── -->
     <view class="card">
       <view class="card-head">
-        <view class="icon-chip tone-sky">ℹ️</view>
+        <view class="icon-chip tone-sky"><ui-icon name="info" size="{{20}}" color="currentColor"/></view>
         <view class="card-head-title">打卡设置</view>
       </view>
       <view class="card-body">
@@ -309,7 +309,7 @@
         <block wx:else>
           <view class="bullet">
             <text class="bullet-dot">•</text>
-            <text class="bullet-text">目标 {{run_target}} 次{{run_done >= run_target ? '，已经达成 🎉' : '，已完成 ' + run_done + ' 次'}}。</text>
+            <text class="bullet-text">目标 {{run_target}} 次{{run_done >= run_target ? '，已经达成' : '，已完成 ' + run_done + ' 次'}}。</text>
           </view>
           <view class="bullet">
             <text class="bullet-dot">•</text>
@@ -328,12 +328,12 @@
         <view class="tip-box">
           <text class="tip-text">
             {{run_pace > 0
-              ? '🔥 还差 ' + run_remain + ' 次，剩下 ' + run_weeksLeft + ' 周，每周约 ' + run_pace + ' 次就能完成目标'
-              : (run_done >= run_target ? '🔥 目标已达成，保持节奏就好' : '🔥 目标次数、类型、起止日期都可以在「设置」里随时调整')}}
+              ? '还差 ' + run_remain + ' 次，剩下 ' + run_weeksLeft + ' 周，每周约 ' + run_pace + ' 次就能完成目标'
+              : (run_done >= run_target ? '目标已达成，保持节奏就好' : '目标次数、类型、起止日期都可以在「设置」里随时调整')}}
           </text>
         </view>
         <view class="row-actions mt">
-          <view class="btn-ghost btn-sm" bindtap="run_goSettings">⚙️ 去设置</view>
+          <view class="btn-ghost btn-sm" bindtap="run_goSettings"><ui-icon name="settings" size="{{16}}" color="currentColor" inline="{{true}}"/>去设置</view>
         </view>
       </view>
     </view>
@@ -341,7 +341,7 @@
     <!-- ── 打卡记录 ── -->
     <view class="card">
       <view class="card-head">
-        <view class="icon-chip tone-violet">✅</view>
+        <view class="icon-chip tone-violet"><ui-icon name="tasks" size="{{20}}" color="currentColor"/></view>
         <view class="card-head-title">打卡记录（{{run_recordCount}}）</view>
       </view>
       <view class="card-body">
@@ -357,7 +357,7 @@
         </view>
   
         <view class="empty" wx:if="{{run_records.length === 0}}">
-          <view class="empty-icon">💪</view>
+          <view class="empty-icon"><ui-icon name="exercise" size="{{32}}" color="currentColor"/></view>
           <view class="empty-title">还没有记录</view>
           <view class="empty-desc">{{run_types.length === 0 ? '还没有打卡类型，去「设置」里填几个再回来打卡。' : '完成第一次打卡后开始计数'}}</view>
         </view>
@@ -367,7 +367,7 @@
             <view class="log-dot {{item.isPrimary ? 'is-primary' : ''}}"></view>
             <text class="log-date">{{item.date}}</text>
             <text class="log-type">{{item.type}}</text>
-            <view class="icon-btn tone-rose btn-mini" data-idx="{{item.idx}}" bindtap="run_removeAt">🗑️</view>
+            <view class="icon-btn tone-rose btn-mini" data-idx="{{item.idx}}" bindtap="run_removeAt"><ui-icon name="delete" size="{{18}}" color="currentColor"/></view>
           </view>
         </view>
       </view>
@@ -376,7 +376,7 @@
     <!-- ── 每周分布 ── -->
     <view class="card">
       <view class="card-head">
-        <view class="icon-chip tone-amber">🔥</view>
+        <view class="icon-chip tone-amber"><ui-icon name="fire" size="{{20}}" color="currentColor"/></view>
         <view class="card-head-title">每周分布</view>
       </view>
       <view class="card-body">
@@ -405,7 +405,7 @@
     <view class="stat-grid">
       <view class="stat-card" wx:for="{{health_stats}}" wx:key="label">
         <view class="stat-top">
-          <view class="icon-chip tone-{{item.tone}}">{{item.icon}}</view>
+          <view class="icon-chip tone-{{item.tone}}"><ui-icon name="{{item.icon}}" size="{{20}}" color="currentColor"/></view>
           <view class="stat-label">{{item.label}}</view>
         </view>
         <view class="stat-value"><text class="stat-num-sm">{{item.value}}</text></view>
@@ -416,7 +416,7 @@
     <!-- ── 今日录入 ── -->
     <view class="card">
       <view class="card-head">
-        <view class="icon-chip tone-emerald">📝</view>
+        <view class="icon-chip tone-emerald"><ui-icon name="note" size="{{20}}" color="currentColor"/></view>
         <view class="card-head-title">记录今天的身体数据</view>
       </view>
       <view class="card-body">
@@ -447,7 +447,7 @@
     <!-- ── 体重曲线 ── -->
     <view class="card">
       <view class="card-head">
-        <view class="icon-chip tone-emerald">⚖️</view>
+        <view class="icon-chip tone-emerald"><ui-icon name="weight" size="{{20}}" color="currentColor"/></view>
         <view class="card-head-title">体重曲线（最近 {{health_weightPoints.length}} 次）</view>
       </view>
       <view class="card-body">
@@ -461,7 +461,7 @@
     <!-- ── 睡眠曲线 ── -->
     <view class="card">
       <view class="card-head">
-        <view class="icon-chip tone-sky">🌙</view>
+        <view class="icon-chip tone-sky"><ui-icon name="sleep" size="{{20}}" color="currentColor"/></view>
         <view class="card-head-title">睡眠曲线（最近 {{health_sleepPoints.length}} 次）</view>
       </view>
       <view class="card-body">
@@ -480,7 +480,7 @@
     <!-- ── 训练打卡 ── -->
     <view class="card">
       <view class="card-head">
-        <view class="icon-chip tone-amber">🏋️</view>
+        <view class="icon-chip tone-amber"><ui-icon name="exercise" size="{{20}}" color="currentColor"/></view>
         <view class="card-head-title">本周训练打卡 · 第 {{health_week}} 周 · {{health_doneCount}}/7 天</view>
       </view>
       <view class="card-body">
@@ -497,7 +497,7 @@
           {{health_hasPlan ? '带「·」的是你在设置里定的训练日，点格子打卡。' : '还没有设置训练日，去「设置」里填「训练日」后会显示计划标记。'}}
         </view>
         <view class="row-actions">
-          <view class="btn-ghost btn-sm" bindtap="health_goSettings">⚙️ 设置训练日</view>
+          <view class="btn-ghost btn-sm" bindtap="health_goSettings"><ui-icon name="settings" size="{{16}}" color="currentColor" inline="{{true}}"/>设置训练日</view>
         </view>
       </view>
     </view>
@@ -505,7 +505,7 @@
     <!-- ── 历史数据 ── -->
     <view class="card">
       <view class="card-head">
-        <view class="icon-chip tone-violet">📊</view>
+        <view class="icon-chip tone-violet"><ui-icon name="analysis" size="{{20}}" color="currentColor"/></view>
         <view class="card-head-title">历史数据 · {{health_logs.length}} 天</view>
       </view>
       <view class="card-body">
@@ -518,8 +518,8 @@
             <text class="hd-weight">{{item.weight}}kg</text>
             <text class="hd-sleep">{{item.sleep}}h</text>
             <text class="hd-steps">{{item.steps}}步</text>
-            <view class="icon-btn tone-emerald btn-mini" data-date="{{item.date}}" bindtap="health_startEdit">✏️</view>
-            <view class="icon-btn tone-rose btn-mini" data-date="{{item.date}}" bindtap="health_removeLog">🗑️</view>
+            <view class="icon-btn tone-emerald btn-mini" data-date="{{item.date}}" bindtap="health_startEdit"><ui-icon name="edit" size="{{18}}" color="currentColor"/></view>
+            <view class="icon-btn tone-rose btn-mini" data-date="{{item.date}}" bindtap="health_removeLog"><ui-icon name="delete" size="{{18}}" color="currentColor"/></view>
           </view>
         </block>
       </view>

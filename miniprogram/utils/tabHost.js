@@ -22,6 +22,7 @@
 // NEVER 集合，那里特意把 themeClass 排除在外，不给它加前缀）。
 const { store } = require('../store/store');
 const { shareAppMessage, shareTimeline } = require('./share');
+const { applyTabBarTheme } = require('./tabBarTheme');
 
 function themeClassOf() {
   const settings = store && store.shape && store.shape.settings;
@@ -335,6 +336,10 @@ function buildHost(opts) {
     _syncTheme() {
       const cls = themeClassOf();
       if (this.data.themeClass !== cls) this.setData({ themeClass: cls });
+      // tabBar 的颜色是 app.json 里的静态配置，不会跟着 themeClass 变。
+      // 浅色主题下如果不同步，底部会留一条深色带、深色图标压在上面看不见。
+      // 放在宿主这一层，所有 tabHost 页（待办/作业、健康）一次覆盖。
+      applyTabBarTheme(cls === 'theme-light' ? 'light' : 'dark');
     },
 
     /**

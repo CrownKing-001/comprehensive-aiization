@@ -1,9 +1,10 @@
-﻿// 重要事项：期末考试 / 竞赛 / 证书 / 报名 / 出行……全部由用户自由增删改。
+// 重要事项：期末考试 / 竞赛 / 证书 / 报名 / 出行……全部由用户自由增删改。
 // 移植自桌面版 src/views/Milestones.tsx
 
 const { store, uid } = require('../../store/store');
 const { fromKey, daysUntil } = require('../../utils/storage');
 const { shareAppMessage, shareTimeline } = require('../../utils/share');
+const { emojiToIcon } = require('../../components/ui-icon/icons');
 
 /** 常用分类，用户也可以自己输入 */
 const CATEGORIES = ['考试', '竞赛', '证书', '作业', '报名', '活动', '其他'];
@@ -13,24 +14,28 @@ const PRESETS = [
   {
     label: '期末考试',
     emoji: '📝',
+    icon: 'note',
     category: '考试',
     checklist: ['整理课件与笔记', '刷近 3 年真题', '背公式/单词', '考前确认考场与时间', '带学生证 + 文具'],
   },
   {
     label: '学科竞赛',
     emoji: '🏆',
+    icon: 'trophy',
     category: '竞赛',
     checklist: ['确认报名截止时间', '组队并分工', '准备作品/材料', '赛前模拟演练'],
   },
   {
     label: '证书报名',
     emoji: '🎓',
+    icon: 'graduation',
     category: '证书',
     checklist: ['确认报名入口与截止日', '准备证件照与身份证', '缴费并保存凭证'],
   },
   {
     label: '课程作业 DDL',
     emoji: '📄',
+    icon: 'doc',
     category: '作业',
     checklist: ['列提纲', '查资料', '写完初稿', '检查格式与参考文献', '提交前再读一遍'],
   },
@@ -134,6 +139,8 @@ Page({
         id: m.id,
         title: m.title,
         emoji: m.emoji || '📌',
+
+        icon: emojiToIcon(m.emoji),
         category: m.category || '其他',
         date: m.date || '',
         time: m.time || '',
@@ -170,6 +177,8 @@ Page({
       return {
         id: m.id,
         emoji: m.emoji || '📌',
+
+        icon: emojiToIcon(m.emoji),
         title: m.title,
         dateText: [m.date, m.time, m.place].filter(Boolean).join(' · '),
         urgencyText: u.text,

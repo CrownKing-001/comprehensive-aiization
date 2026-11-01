@@ -4,7 +4,7 @@
   <!-- ── 今日汇总 ── -->
   <view class="card">
     <view class="card-head">
-      <view class="icon-chip tone-emerald">🍽️</view>
+      <view class="icon-chip tone-emerald"><ui-icon name="meal" size="{{20}}" color="currentColor"/></view>
       <view class="card-head-title">今日摄入</view>
     </view>
     <view class="card-body">
@@ -36,12 +36,12 @@
         <view class="meal-item" wx:for="{{item.items}}" wx:for-item="it" wx:key="idx">
           <text class="meal-item-text">{{it.text}}</text>
           <text class="meal-item-num">{{it.protein}}g</text>
-          <view class="icon-btn tone-rose btn-mini" data-idx="{{it.idx}}" bindtap="removeLog">🗑️</view>
+          <view class="icon-btn tone-rose btn-mini" data-idx="{{it.idx}}" bindtap="removeLog"><ui-icon name="delete" size="{{18}}" color="currentColor"/></view>
         </view>
       </view>
 
       <view class="empty" wx:if="{{meals.length === 0}}">
-        <view class="empty-icon">🥗</view>
+        <view class="empty-icon"><ui-icon name="meal" size="{{32}}" color="currentColor"/></view>
         <view class="empty-title">今天还没记录</view>
         <view class="empty-desc">下面点食物库，或写一句「2个鸡蛋 一碗粥」自动识别</view>
       </view>
@@ -51,7 +51,7 @@
   <!-- ── 快速记录 ── -->
   <view class="card">
     <view class="card-head">
-      <view class="icon-chip tone-sky">✍️</view>
+      <view class="icon-chip tone-sky"><ui-icon name="edit" size="{{20}}" color="currentColor"/></view>
       <view class="card-head-title">记一笔</view>
     </view>
     <view class="card-body">
@@ -78,7 +78,7 @@
             <view class="qty-btn" data-idx="{{index}}" data-delta="0.5" bindtap="changeQty">＋</view>
           </view>
           <text class="picked-num">{{item.protein}}g</text>
-          <view class="icon-btn tone-rose btn-mini" data-idx="{{index}}" bindtap="removePicked">✕</view>
+          <view class="icon-btn tone-rose btn-mini" data-idx="{{index}}" bindtap="removePicked"><ui-icon name="close" size="{{18}}" color="currentColor"/></view>
         </view>
         <view class="row-actions">
           <view class="btn-primary btn-sm" bindtap="save">保存到{{meal}}</view>
@@ -93,7 +93,7 @@
           placeholder="如：2个鸡蛋 一碗粥 一杯牛奶" placeholder-class="input-ph" cursor-spacing="24" />
       </view>
       <view class="row-actions">
-        <view class="btn-ghost btn-sm" bindtap="recognizeText">🔍 识别</view>
+        <view class="btn-ghost btn-sm" bindtap="recognizeText"><ui-icon name="search" size="{{16}}" color="currentColor" inline="{{true}}"/>识别</view>
         <view class="btn-ghost btn-sm" wx:if="{{picked.length === 0}}" bindtap="save">直接保存</view>
       </view>
 
@@ -125,7 +125,7 @@
   <!-- ── 套餐模板 ── -->
   <view class="card">
     <view class="card-head">
-      <view class="icon-chip tone-violet">⚡</view>
+      <view class="icon-chip tone-violet"><ui-icon name="flash" size="{{20}}" color="currentColor"/></view>
       <view class="card-head-title">常用套餐（一键加入清单）</view>
       <view class="card-head-action" bindtap="openSaveTpl">存为我的套餐</view>
     </view>
@@ -182,7 +182,7 @@
   <!-- ── 食物库 ── -->
   <view class="card">
     <view class="card-head">
-      <view class="icon-chip tone-amber">🥩</view>
+      <view class="icon-chip tone-amber"><ui-icon name="meal" size="{{20}}" color="currentColor"/></view>
       <view class="card-head-title">食物库 · {{libraryTotal}} 种</view>
     </view>
     <view class="card-body">
@@ -216,7 +216,7 @@
   <!-- ── 近 7 天趋势 ── -->
   <view class="card">
     <view class="card-head">
-      <view class="icon-chip tone-sky">📈</view>
+      <view class="icon-chip tone-sky"><ui-icon name="analysis" size="{{20}}" color="currentColor"/></view>
       <view class="card-head-title">近 7 天蛋白摄入</view>
     </view>
     <view class="card-body">
@@ -234,7 +234,7 @@
   <!-- ── 历史 ── -->
   <view class="card">
     <view class="card-head">
-      <view class="icon-chip tone-slate">📚</view>
+      <view class="icon-chip tone-slate"><ui-icon name="book" size="{{20}}" color="currentColor"/></view>
       <view class="card-head-title">历史记录 · {{historyTotal}} 天</view>
     </view>
     <view class="card-body">
@@ -251,7 +251,7 @@
             <text class="hist-meal">{{it.meal}}</text>
             <text class="hist-text">{{it.text}}</text>
             <text class="hist-num">{{it.protein}}g</text>
-            <view class="icon-btn tone-rose btn-mini" data-idx="{{it.idx}}" bindtap="removeLog">🗑️</view>
+            <view class="icon-btn tone-rose btn-mini" data-idx="{{it.idx}}" bindtap="removeLog"><ui-icon name="delete" size="{{18}}" color="currentColor"/></view>
           </view>
         </view>
         <view class="row-actions mt">

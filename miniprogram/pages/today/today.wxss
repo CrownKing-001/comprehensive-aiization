@@ -7,7 +7,7 @@
   gap: 16rpx;
   background: var(--surface-1);
   border: 2rpx solid var(--border-1);
-  border-radius: 28rpx;
+  border-radius: 24rpx;
   padding: 16rpx 20rpx;
   margin-bottom: 24rpx;
 }
@@ -21,7 +21,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 38rpx;
+  font-size: 34rpx;
   color: var(--text-3);
   flex-shrink: 0;
   line-height: 1;
@@ -30,20 +30,20 @@
 .date-mid { flex: 1; text-align: center; min-width: 0; }
 
 .date-main {
-  font-size: 29rpx;
+  font-size: 30rpx;
   font-weight: 600;
   color: var(--text-1);
 }
 
 .date-rel {
-  font-size: 22rpx;
+  font-size: 24rpx;
   font-weight: 400;
   color: #34d399;
   margin-left: 12rpx;
 }
 
 .date-week {
-  font-size: 21rpx;
+  font-size: 24rpx;
   color: var(--text-4);
   margin-top: 4rpx;
 }
@@ -56,7 +56,7 @@
 }
 
 .btn-back-today {
-  font-size: 22rpx;
+  font-size: 24rpx;
   font-weight: 500;
   color: #34d399;
   background: rgba(16, 185, 129, 0.15);
@@ -64,7 +64,7 @@
   padding: 10rpx 22rpx;
 }
 
-.head-note { font-size: 22rpx; color: var(--text-4); }
+.head-note { font-size: 24rpx; color: var(--text-4); }
 
 /* ── 课程列表 ─────────────────────────────────── */
 .course-list { display: flex; flex-direction: column; gap: 16rpx; }
@@ -74,7 +74,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 18rpx;
-  border-radius: 18rpx;
+  border-radius: 16rpx;
   padding: 22rpx 26rpx;
   background: rgba(14, 165, 233, 0.12);
   border: 2rpx solid transparent;
@@ -94,7 +94,7 @@
 }
 
 .course-name {
-  font-size: 27rpx;
+  font-size: 30rpx;
   font-weight: 500;
   color: var(--text-1);
   overflow: hidden;
@@ -103,13 +103,13 @@
 }
 
 .course-place {
-  font-size: 23rpx;
+  font-size: 28rpx;
   color: var(--text-4);
   margin-top: 6rpx;
 }
 
 .course-time {
-  font-size: 27rpx;
+  font-size: 30rpx;
   font-weight: 600;
   color: #38bdf8;
   white-space: nowrap;
@@ -118,7 +118,7 @@
 
 /* ── 待处理 ───────────────────────────────────── */
 .sec-label {
-  font-size: 21rpx;
+  font-size: 24rpx;
   color: var(--text-4);
   margin-bottom: 12rpx;
 }
@@ -141,16 +141,16 @@
 .checkbox-sm {
   width: 32rpx;
   height: 32rpx;
-  border-radius: 10rpx;
+  border-radius: 8rpx;
   border: 3rpx solid #475569;
   flex-shrink: 0;
 }
 
-.todo-icon { font-size: 24rpx; flex-shrink: 0; }
+.todo-icon { font-size: 28rpx; flex-shrink: 0; }
 
 .todo-text {
   flex: 1;
-  font-size: 24rpx;
+  font-size: 28rpx;
   color: var(--text-2);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -173,7 +173,7 @@
 .tl-time {
   width: 92rpx;
   flex-shrink: 0;
-  font-size: 22rpx;
+  font-size: 24rpx;
   font-weight: 600;
   color: var(--text-4);
   padding-top: 16rpx;
@@ -183,7 +183,7 @@
 .tl-body {
   flex: 1;
   min-width: 0;
-  border-radius: 18rpx;
+  border-radius: 16rpx;
   padding: 18rpx 22rpx;
   background: var(--surface-2);
   border: 2rpx solid var(--border-1);
@@ -198,7 +198,7 @@
 
 .tl-title {
   flex: 1;
-  font-size: 27rpx;
+  font-size: 30rpx;
   font-weight: 500;
   color: var(--text-1);
   overflow: hidden;
@@ -206,8 +206,8 @@
   white-space: nowrap;
 }
 
-.tl-min { font-size: 20rpx; color: var(--text-4); }
+.tl-min { font-size: 24rpx; color: var(--text-4); }
 
-.tl-sub { font-size: 22rpx; color: var(--text-4); margin-top: 6rpx; }
+.tl-sub { font-size: 24rpx; color: var(--text-4); margin-top: 6rpx; }
 
 .full { width: 100%; box-sizing: border-box; }

@@ -1,0 +1,8 @@
+<!-- ui-icon —— 全站唯一的图标出口。
+     见 components/ui-icon/ui-icon.js 顶部注释。
+     iconName / iconVariant 由 JS 解析语义名得到，**不能**直接传 name。
+
+     inline：默认 false（作为块级元素放在定高底座里，如 .icon-chip）。
+     写在正文/按钮文字前面时必须传 inline="{{true}}" —— 否则 display:block
+     会让图标独占一行、把后面的文字挤下去。 -->
+<mp-icon icon="{{iconName}}" type="{{iconVariant}}" size="{{size}}" color="{{color}}" ext-class="ui-icon {{inline ? 'ui-icon-inline' : ''}}" />

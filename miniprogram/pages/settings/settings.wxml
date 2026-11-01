@@ -7,7 +7,7 @@
   <!-- ── 外观 ── -->
   <view class="card rise-in">
     <view class="card-head">
-      <view class="icon-chip tone-violet">🎨</view>
+      <view class="icon-chip tone-violet"><ui-icon name="brush" size="{{20}}" color="currentColor"/></view>
       <view class="card-head-title">外观</view>
     </view>
     <view class="card-body">
@@ -24,7 +24,7 @@
   <!-- ── 数据用量 ── -->
   <view class="card rise-in d1">
     <view class="card-head">
-      <view class="icon-chip tone-emerald">💾</view>
+      <view class="icon-chip tone-emerald"><ui-icon name="backup" size="{{20}}" color="currentColor"/></view>
       <view class="card-head-title">数据存放</view>
     </view>
     <view class="card-body">
@@ -49,7 +49,7 @@
   <!-- ── 备份 ── -->
   <view class="card rise-in d2">
     <view class="card-head">
-      <view class="icon-chip tone-sky">📦</view>
+      <view class="icon-chip tone-sky"><ui-icon name="folder" size="{{20}}" color="currentColor"/></view>
       <view class="card-head-title">备份与恢复</view>
     </view>
     <view class="card-body">
@@ -57,12 +57,12 @@
         导出会把整份数据复制到剪贴板，粘贴保存即可；导入时先把备份内容复制到剪贴板，再点导入。
       </view>
       <view class="row-actions mt">
-        <view class="btn-primary btn-sm" bindtap="doExport">⬇️ 导出到剪贴板</view>
-        <view class="btn-ghost btn-sm" bindtap="doImport">⬆️ 从剪贴板导入</view>
+        <view class="btn-primary btn-sm" bindtap="doExport"><ui-icon name="exportData" size="{{16}}" color="currentColor" inline="{{true}}"/>导出到剪贴板</view>
+        <view class="btn-ghost btn-sm" bindtap="doImport"><ui-icon name="importData" size="{{16}}" color="currentColor" inline="{{true}}"/>从剪贴板导入</view>
       </view>
       <view class="row-actions">
-        <view class="btn-ghost btn-sm" bindtap="clearStorageCache">🧹 清理缓存</view>
-        <view class="btn-ghost btn-sm btn-danger" bindtap="doReset">🗑️ 清空全部数据</view>
+        <view class="btn-ghost btn-sm" bindtap="clearStorageCache"><ui-icon name="broom" size="{{16}}" color="currentColor" inline="{{true}}"/>清理缓存</view>
+        <view class="btn-ghost btn-sm btn-danger" bindtap="doReset"><ui-icon name="trash" size="{{16}}" color="currentColor" inline="{{true}}"/>清空全部数据</view>
       </view>
     </view>
   </view>
@@ -70,7 +70,7 @@
   <!-- ── 学期与日期 ── -->
   <view class="card">
     <view class="card-head">
-      <view class="icon-chip tone-amber">📅</view>
+      <view class="icon-chip tone-amber"><ui-icon name="calendar" size="{{20}}" color="currentColor"/></view>
       <view class="card-head-title">学期与日期</view>
     </view>
     <view class="card-body">
@@ -113,7 +113,7 @@
   <!-- ── 作息时间表 ── -->
   <view class="card">
     <view class="card-head">
-      <view class="icon-chip tone-sky">🕐</view>
+      <view class="icon-chip tone-sky"><ui-icon name="clock" size="{{20}}" color="currentColor"/></view>
       <view class="card-head-title">作息时间表 · {{periodCount}} 节</view>
     </view>
     <view class="card-body">
@@ -134,7 +134,7 @@
   <!-- ── 蛋白质目标 ── -->
   <view class="card">
     <view class="card-head">
-      <view class="icon-chip tone-emerald">🎯</view>
+      <view class="icon-chip tone-emerald"><ui-icon name="target" size="{{20}}" color="currentColor"/></view>
       <view class="card-head-title">蛋白质目标</view>
     </view>
     <view class="card-body">
@@ -161,7 +161,7 @@
   <!-- ── 运动打卡 ── -->
   <view class="card">
     <view class="card-head">
-      <view class="icon-chip tone-amber">🏃</view>
+      <view class="icon-chip tone-amber"><ui-icon name="run" size="{{20}}" color="currentColor"/></view>
       <view class="card-head-title">运动打卡</view>
     </view>
     <view class="card-body">
@@ -215,7 +215,7 @@
   <!-- ── 提醒 ── -->
   <view class="card">
     <view class="card-head">
-      <view class="icon-chip tone-rose">🔔</view>
+      <view class="icon-chip tone-rose"><ui-icon name="bell" size="{{20}}" color="currentColor"/></view>
       <view class="card-head-title">提醒</view>
     </view>
     <view class="card-body">
@@ -237,7 +237,7 @@
   <!-- ── 关于 ── -->
   <view class="card">
     <view class="card-head">
-      <view class="icon-chip tone-slate">ℹ️</view>
+      <view class="icon-chip tone-slate"><ui-icon name="info" size="{{20}}" color="currentColor"/></view>
       <view class="card-head-title">关于</view>
     </view>
     <view class="card-body">

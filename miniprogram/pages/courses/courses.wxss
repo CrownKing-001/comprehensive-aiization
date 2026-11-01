@@ -24,7 +24,7 @@
 }
 
 .course-name {
-  font-size: 29rpx;
+  font-size: 30rpx;
   font-weight: 600;
   color: var(--text-1);
   overflow: hidden;
@@ -37,7 +37,7 @@
   display: flex;
   align-items: center;
   gap: 14rpx;
-  font-size: 23rpx;
+  font-size: 28rpx;
   color: var(--text-3);
   margin-bottom: 8rpx;
 }
@@ -47,17 +47,17 @@
   border-radius: 8rpx;
   background: var(--surface-4);
   color: var(--text-2);
-  font-size: 21rpx;
+  font-size: 24rpx;
 }
 
 .course-time { color: var(--text-2); font-variant-numeric: tabular-nums; }
-.course-weeks { color: var(--text-4); font-size: 22rpx; }
+.course-weeks { color: var(--text-4); font-size: 24rpx; }
 
 .course-sub {
   display: flex;
   flex-wrap: wrap;
   gap: 6rpx 16rpx;
-  font-size: 22rpx;
+  font-size: 24rpx;
   color: var(--text-4);
 }
 
@@ -73,11 +73,11 @@
 .icon-btn {
   width: 60rpx;
   height: 60rpx;
-  border-radius: 14rpx;
+  border-radius: 12rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 26rpx;
+  font-size: 28rpx;
   background: var(--surface-4);
   border: 2rpx solid var(--border-2);
 }
@@ -109,26 +109,26 @@
 }
 
 .week-day {
-  font-size: 26rpx;
+  font-size: 28rpx;
   font-weight: 600;
   color: var(--text-1);
 }
 
 .week-count {
   margin-left: auto;
-  font-size: 21rpx;
+  font-size: 24rpx;
   color: var(--text-4);
 }
 
 .week-none {
-  font-size: 22rpx;
+  font-size: 24rpx;
   color: var(--text-4);
   padding: 6rpx 0;
 }
 
 .week-item {
   background: var(--surface-1);
-  border-radius: 14rpx;
+  border-radius: 12rpx;
   padding: 14rpx 18rpx;
   margin-bottom: 10rpx;
 }
@@ -143,7 +143,7 @@
 .week-item-name {
   flex: 1;
   min-width: 0;
-  font-size: 24rpx;
+  font-size: 28rpx;
   font-weight: 500;
   color: var(--text-2);
   overflow: hidden;
@@ -152,14 +152,14 @@
 }
 
 .week-item-time {
-  font-size: 21rpx;
+  font-size: 24rpx;
   color: #38bdf8;
   font-variant-numeric: tabular-nums;
   flex-shrink: 0;
 }
 
 .week-item-place {
-  font-size: 21rpx;
+  font-size: 24rpx;
   color: var(--text-4);
   margin-top: 4rpx;
   overflow: hidden;
@@ -169,7 +169,7 @@
 
 .grid-hint {
   margin-top: 14rpx;
-  font-size: 22rpx;
+  font-size: 24rpx;
   color: var(--text-4);
   text-align: center;
 }

@@ -5,7 +5,7 @@
 从桌面版移植而来，**数据键名与备份格式和桌面版逐字一致**，桌面版导出的备份可以原样导入。
 **没有后端，也没有任何网络请求** —— 全部数据留在本机的小程序存储里。
 
-自测：`440` 项全部通过（`miniprogram/tools/selftest.js`）。当前版本 **v1.1.0**（见 [CHANGELOG.md](CHANGELOG.md)）。
+自测：`446` 项全部通过，另有 4 个静态检查脚本（见[开发与自测](#开发与自测)）。当前版本 **v1.2.0**（见 [CHANGELOG.md](CHANGELOG.md)）。
 
 ## 界面
 
@@ -44,19 +44,33 @@
 3. AppID 用 `project.config.json` 里那个测试号即可跑起来；要发布就换成自己的
 4. 基础库 `3.17.4`（`libVersion`）
 
-没有 npm 依赖，不用 `npm install`，也不需要构建步骤。
-`tools/` 已在 `packOptions.ignore` 里排除，不进小程序包；小程序包体（不含 `tools/`）约 **584 KB**。
+唯一的 npm 依赖是 `weui-miniprogram`，且**只用到它的 `icon` 一个组件**（v1.2.0 把 emoji 换成 SVG 图标时引入）。
+构建结果已提交在 `miniprogram_npm/`，所以导入即可运行，**不需要 `npm install`，也不需要手动点「构建 npm」**。
+`tools/` 已在 `packOptions.ignore` 里排除，不进小程序包。
+
+包体实测（不含 `tools/`、不含 `node_modules/`）：
+
+| 部分 | 大小 |
+| --- | --- |
+| 业务代码（页面 / 样式 / 数据） | ≈ 651 KB |
+| `miniprogram_npm/`（WeUI 构建产物） | ≈ 653 KB |
+| **合计** | **≈ 1304 KB**（主包上限 2048 KB，约 64%） |
+
+> 注：`miniprogram_npm/` 里 653 KB 中有 448 KB 是 WeUI 的其余组件，本项目并未用到。
+> 因为只用到 `icon`，后续可以把这些裁掉，包体能降到约 856 KB；本次为了「一次构建、稳定可跑」没有裁剪。
 
 ## 目录结构
 
 ```
 miniprogram/               ← 小程序本体，开发者工具导入这个目录
 ├── app.js / app.json     入口；页面注册（16 个页面）、tabBar、全局深色兜底
-├── app.wxss              全局样式与主题 CSS 变量
+├── app.wxss              全局样式与主题 CSS 变量（字号五档、配色 token）
 ├── pages/                16 个页面（5 个在底部菜单，其余从「全部功能」进）
+├── components/ui-icon/   图标组件：语义名 → WeUI SVG，icons.js 是唯一语义来源
 ├── store/store.js        全局单例数据仓库：hydrate 一次读盘，写入后 notify 广播
 ├── utils/                storage 存储 / schedule 课表派生 / plan 学期 / weeks 周次
-│                         / periods 作息 / theme 主题 / chart canvas 图表 / textParse 解析
+│                         / periods 作息 / theme 主题 / tabBarTheme 外壳配色
+│                         / chart canvas 图表 / textParse 解析
 ├── data/foods.js         食物库 + 蛋白质目标算法
 ├── version.js            版本号唯一真源（「设置 → 关于」读它）
 └── tools/                自测与静态检查（不进小程序包）
@@ -92,17 +106,30 @@ CHANGELOG.md              版本更新记录
 
 ```powershell
 # 行为自测：用假的 wx / App / Page 在 Node 里真跑 onLaunch 和每个页面的生命周期
-node miniprogram/tools/selftest.js "$PWD/miniprogram"   # 440 通过 / 0 失败
+node miniprogram/tools/selftest.js "$PWD/miniprogram"   # 446 通过 / 0 失败
 
 # 静态检查：WXML 里绑定的事件处理器在 JS 里是否真的存在（含合并页的前缀解析）
 node miniprogram/tools/check-handlers.js miniprogram
 
 # 静态检查：WXML 里的 {{item.xxx}} 是否对应真实字段（输出待人工确认的清单，不是通过/失败）
 node miniprogram/tools/check-item-fields.js miniprogram
+
+# 静态检查：图标语义名能否解析，以及有没有把语义名当文字直接渲染
+node miniprogram/tools/check-icons.js miniprogram
+
+# 静态检查：wxss 里的类名在对应 wxml 里是否真的存在（含合并页子模块）
+node miniprogram/tools/check-selectors.js miniprogram
+
+# 静态检查：直接读 wxss 真实色值，按 WCAG 算深浅两套主题的对比度
+node miniprogram/tools/check-contrast.js
 ```
 
-> `selftest.js` 要传**绝对路径**。它依赖 `app.onLaunch → store.hydrate()` 先把 `store.ready` 置真，
-> 漏掉这一步所有页面都会停在「没刷新」状态。
+`selftest.js` 要传**绝对路径**。它依赖 `app.onLaunch → store.hydrate()` 先把 `store.ready` 置真，
+漏掉这一步所有页面都会停在「没刷新」状态。
+
+后三个检查（icons / selectors / contrast）都针对同一类问题：**不报错，但界面是坏的**。
+语义名写错只是图标空白、类名写错只是规则不生效、颜色对比度不足只是「看着有点糊」——
+这些在真机上都很难靠眼睛发现，所以做成可重复执行的检查。
 
 为什么需要这套自测：微信开发者工具的自动化截图接口要一个只能在 IDE 里手工开启并复制的 token，
 Agent 拿不到。所以「点一下看看」这条路走不通，只能把生命周期真跑一遍。
@@ -131,6 +158,22 @@ Agent 拿不到。所以「点一下看看」这条路走不通，只能把生�
   **加新动画前先确认属性在白名单里** —— `app.wxss` 末尾有红线注释。
 - **入场动画只给前 3 个卡片**：页面里卡片有 13~60 个，全加会在加载瞬间几十个元素同时动画，
   与「不卡顿」直接矛盾。尊重系统「减弱动态效果」：`prefers-reduced-motion` 下全部关闭。
+- **图标不用 emoji**：v1.2.0 起全部换成 WeUI `mp-icon`（SVG，`mask-image` 渲染）。
+  原先 emoji 放在定高盒子里，而 emoji 的字形高度由系统字体决定（通常 1em×1.17，
+  基线还随字体变），经常超出盒子压到旁边文字上 —— 这是「UI 重叠」的真实原因。
+  SVG 的尺寸由代码按 px 控制，物理上不可能溢出。
+  语义名集中在 `components/ui-icon/icons.js`，**未知名字渲染成空白且不报错**，
+  所以有 `check-icons.js` 兜底。用户历史数据里的 emoji 不迁移、不销毁，
+  一律在渲染时用 `emojiToIcon()` 转换。
+- **图标默认 `display: block`**：跟在文字前的图标必须写 `inline="{{true}}"`，否则会把文字挤到下一行。
+- **字号只有五档**：对齐微信官方 22 / 17 / 15 / 14 / 12 pt（= 44 / 34 / 30 / 28 / 24 rpx）。
+  之前散成 24 种取值，21/22/23/24/25rpx 互相差 0.5pt，肉眼分不出却让页面没有层级。
+  同理圆角收敛到 5 档（8 / 12 / 16 / 20 / 24 + 胶囊）。
+- **对比度按 WCAG AA 卡**：正文和辅助文字在深浅两套主题下都 ≥ 4.5:1。
+  深色 `--text-4` 曾是 3.47:1、主按钮白字绿底 3.77:1、禁用按钮整体 `opacity: 0.4`
+  在浅色下只有 1.83:1 —— 都已修正，并由 `check-contrast.js` 持续把关。
+- **tabBar 要单独跟主题**：`app.json` 里的 tabBar 颜色是静态配置，不会跟着 CSS 变量变。
+  只在页面里切 `themeClass` 的话，浅色主题下底部仍是一条深色带。见 `utils/tabBarTheme.js`。
 - **UI 结构对齐 WeUI，但不引入 WeUI 包**：项目已有调好的双主题 token
   （`--surface-*` / `--text-*`），WeUI 自带的浅色 + 微信绿会顶掉它们，
   等于推翻约 96KB 现成样式，还要多背约 100KB。只借它的结构约定
@@ -155,12 +198,15 @@ Agent 拿不到。所以「点一下看看」这条路走不通，只能把生�
 - **真机调试崩溃与本项目无关**：扫码后开发者工具主进程崩（`RemoteDebugWindow` 初始化，
   伴随 `ios_webkit_debug_proxy` ECONNRESET），模拟器正常。属工具侧故障，
   用**预览**代替真机调试即可绕过。
+- **数据全在本机，换设备/清缓存就没了**：没有后端也没有登录，备份只能靠
+  「设置 → 导出 JSON」自己存。用户反馈**版本更新后本地数据没有自动继承，
+  需要手动导入备份**；v1.2.0 尚未处理这一点，已排进 1.1.5。
 
 ## 文档索引
 
 | 文件 | 内容 |
 | --- | --- |
-| `CHANGELOG.md` | 版本更新记录；当前 v1.1.0 |
+| `CHANGELOG.md` | 版本更新记录；当前 v1.2.0 |
 | `miniprogram/docs/navigation.md` | 底部菜单为什么这么排、合并页怎么实现、跳转的几个坑 |
 | `miniprogram/tools/README.md` | 页面预览工具的原理、已知近似项、踩过的假象 |
 | `docs/branding/README.md` | 小程序头像用哪个文件、圆形/方形裁切的余量约束 |

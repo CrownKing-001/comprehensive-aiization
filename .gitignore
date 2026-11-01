@@ -12,3 +12,12 @@
 # node_modules 与构建产物
 node_modules/
 dist/
+# Agent 调试用的临时截图目录
+/.shots/
+
+# 微信开发者工具「构建 npm」的中间产物；仓库里提交的是构建结果 miniprogram_npm/
+/miniprogram/node_modules/
+
+# 一次性 codemod 已跑完删除，不再产生；但若有人重跑留了文件，也别进库
+*.orig
+*.bak

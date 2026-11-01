@@ -13,18 +13,77 @@
       data-id="{{item.id}}"
       bindtap="switchSeg"
     >
-      <text class="seg-icon">{{item.icon}}</text>
+      <text class="seg-icon"><ui-icon name="{{item.icon}}" size="{{16}}" color="currentColor" inline="{{true}}"/></text>
       <text class="seg-label">{{item.label}}</text>
     </view>
   </view>
 
   <!-- ── 总览 ── -->
   <block wx:if="{{seg === 'dashboard'}}">
+
+  <!-- ══ AI 对话区（v1.2.0）══════════════════════════════════════
+       这是首页的第一屏，先于所有卡片出现。
+       设计意图见 utils/insight.js 开头注释：把「一屏要你填的表」换成
+       「一个懂你的助手」。用户每次只面对一件事，回答完立刻拿到洞察，
+       而不是看到一堆空白表格要自己理解。
+       下面的旧卡片全部保留，只是往后顺延 —— 老用户的数据和入口都还在。 -->
+  <!-- ⚠️ 这个页面是 tabHost 宿主页：WXML 里必须写 **带前缀** 的 data 键。
+       dashboard.js 的 DEFINITION 会被 buildHost 用 `dashboard_` 前缀并入宿主 data
+       （见 utils/tabHost.js 的 prefixKeys / makeView），所以裸写 {{aiQuestion}}
+       永远是 undefined —— 表现是卡片在、但一个字都不显示、点也没有按钮。 -->
+  <view class="ai-card">
+    <view class="ai-greet">{{dashboard_aiGreeting}}</view>
+
+    <!-- 当前这一步要问的问题 -->
+    <view class="ai-q" wx:if="{{dashboard_aiQuestion.step !== 'done'}}">
+      <view class="ai-q-title">{{dashboard_aiQuestion.title}}</view>
+      <view class="ai-q-body">{{dashboard_aiQuestion.body}}</view>
+
+      <!-- 贴课表：成本最低的输入方式。打字是最贵的操作，粘贴不是。 -->
+      <view class="ai-actions" wx:if="{{dashboard_aiQuestion.input === 'paste-course'}}">
+        <view class="ai-btn ai-btn-primary tap" bindtap="dashboard_aiPasteCourse">{{dashboard_aiQuestion.actionLabel}}</view>
+        <view class="ai-btn ai-btn-ghost tap" bindtap="dashboard_aiManualCourse">手动添加一门课</view>
+      </view>
+
+      <!-- 选择题：点一下就行，比填表轻得多 -->
+      <view class="ai-actions" wx:if="{{dashboard_aiQuestion.input === 'choice'}}">
+        <view
+          class="ai-choice tap"
+          wx:for="{{dashboard_aiQuestion.options}}"
+          wx:key="id"
+          data-step="{{dashboard_aiQuestion.step}}"
+          data-id="{{item.id}}"
+          bindtap="dashboard_aiAnswer"
+        >{{item.label}}</view>
+      </view>
+    </view>
+
+    <!-- 数据够了：不再提问 -->
+    <view class="ai-q ai-q-done" wx:else>
+      <view class="ai-q-title">{{dashboard_aiQuestion.title}}</view>
+      <view class="ai-q-body">{{dashboard_aiQuestion.body}}</view>
+    </view>
+  </view>
+
+  <!-- 洞察：每答一步就多一条。跨数据的洞察权重更高，排更前。 -->
+  <view class="ai-insights" wx:if="{{dashboard_aiInsights.length}}">
+    <view
+      class="ai-insight rise-in {{index === 0 ? '' : (index === 1 ? 'd1' : 'd2')}}"
+      wx:for="{{dashboard_aiInsights}}"
+      wx:key="id"
+    >
+      <view class="ai-insight-dot tone-{{item.tone === 'warn' ? 'amber' : (item.tone === 'good' ? 'emerald' : 'sky')}}"></view>
+      <view class="ai-insight-main">
+        <view class="ai-insight-title">{{item.title}}</view>
+        <view class="ai-insight-body">{{item.body}}</view>
+      </view>
+    </view>
+  </view>
   <!-- 当前教学周没被确认过：摆最上面。确认一次后永久消失；
        设置页「学期与日期」里始终保留入口。见 store.setCurrentWeek。 -->
   <view class="week-setup" wx:if="{{!dashboard_weekConfirmed}}">
     <view class="week-setup-top">
-      <text class="week-setup-emoji">📅</text>
+      <view class="week-setup-emoji"><ui-icon name="calendar" size="{{20}}" color="currentColor"/></view>
       <view class="week-setup-copy">
         <view class="week-setup-title">现在是第几教学周？</view>
         <view class="week-setup-sub">选对之后，课表、作业、运动打卡的周次才会跟你对齐</view>
@@ -44,7 +103,7 @@
   </view>
   <!-- 欢迎条 -->
   <view class="hero">
-    <view class="hero-week">🔥 第 {{dashboard_week}} 教学周</view>
+    <view class="hero-week">第 {{dashboard_week}} 教学周</view>
     <view class="hero-date">
       {{dashboard_dateText}}<text class="hero-wd">{{dashboard_weekdayText}}</text>
     </view>
@@ -102,7 +161,7 @@
         data-id="{{item.id}}"
         bindtap="dashboard_pinMilestone"
       >
-        <text class="pin-picker-emoji">{{item.emoji}}</text>
+        <text class="pin-picker-emoji"><ui-icon name="{{item.icon}}" size="{{16}}" color="currentColor"/></text>
         <view class="pin-picker-body">
           <text class="pin-picker-title">{{item.title}}</text>
           <text class="pin-picker-meta">{{item.date}}{{item.category ? ' · ' + item.category : ''}}</text>
@@ -124,7 +183,9 @@
       bindtap="dashboard_goStat"
     >
       <view class="stat-top">
-        <view class="icon-chip tone-{{item.tone}}">{{item.icon}}</view>
+        <!-- item.icon 是语义名（data 层给的，见 dashboard.js 的 stats），
+             不能直接当 WeUI 名用；由 ui-icon 负责 resolveName。 -->
+        <view class="icon-chip tone-{{item.tone}}"><ui-icon name="{{item.icon}}" size="{{20}}" color="currentColor"/></view>
         <view class="stat-label">{{item.label}}</view>
       </view>
       <view class="stat-value">
@@ -138,48 +199,48 @@
   <!-- 功能入口（tabBar 之外的页面都从这里进） -->
   <view class="card rise-in">
     <view class="card-head">
-      <view class="icon-chip tone-sky">🧭</view>
+      <view class="icon-chip tone-sky"><ui-icon name="analysis" size="{{20}}" color="currentColor"/></view>
       <view class="card-head-title">全部功能</view>
     </view>
     <view class="card-body">
       <view class="nav-grid">
         <view class="nav-item" data-url="/pages/healthhub/healthhub" data-seg="diet" bindtap="dashboard_goTab">
-          <view class="nav-icon tone-emerald">🍽️</view>
+          <view class="nav-icon tone-emerald"><ui-icon name="meal" size="{{24}}" color="currentColor"/></view>
           <view class="nav-name">饮食记录</view>
           <view class="nav-sub">{{dashboard_todayProtein}}/{{dashboard_proteinTarget}}g</view>
         </view>
         <view class="nav-item" data-url="/pages/healthhub/healthhub" data-seg="run" bindtap="dashboard_goTab" wx:if="{{dashboard_runEnabled}}">
-          <view class="nav-icon tone-amber">🏃</view>
+          <view class="nav-icon tone-amber"><ui-icon name="run" size="{{24}}" color="currentColor"/></view>
           <view class="nav-name">运动打卡</view>
           <view class="nav-sub">{{dashboard_runDone}}/{{dashboard_runTarget}} 次</view>
         </view>
         <view class="nav-item" data-url="/pages/healthhub/healthhub" data-seg="health" bindtap="dashboard_goTab">
-          <view class="nav-icon tone-sky">⚖️</view>
+          <view class="nav-icon tone-sky"><ui-icon name="weight" size="{{24}}" color="currentColor"/></view>
           <view class="nav-name">体重作息</view>
           <view class="nav-sub">{{dashboard_latestWeight ? dashboard_latestWeight + ' kg' : '未记录'}}</view>
         </view>
         <view class="nav-item" data-url="/pages/analysis/analysis" bindtap="dashboard_goPage">
-          <view class="nav-icon tone-violet">📊</view>
+          <view class="nav-icon tone-violet"><ui-icon name="analysis" size="{{24}}" color="currentColor"/></view>
           <view class="nav-name">智能分析</view>
           <view class="nav-sub">空闲时段</view>
         </view>
         <view class="nav-item" data-url="/pages/week/week" bindtap="dashboard_goPage">
-          <view class="nav-icon tone-emerald">🗓️</view>
+          <view class="nav-icon tone-emerald"><ui-icon name="schedule" size="{{24}}" color="currentColor"/></view>
           <view class="nav-name">周计划</view>
           <view class="nav-sub">按周看课</view>
         </view>
         <view class="nav-item" data-url="/pages/milestones/milestones" bindtap="dashboard_goPage">
-          <view class="nav-icon tone-rose">⭐</view>
+          <view class="nav-icon tone-rose"><ui-icon name="star" size="{{24}}" color="currentColor"/></view>
           <view class="nav-name">重要事项</view>
           <view class="nav-sub">考试 / DDL</view>
         </view>
         <view class="nav-item" data-url="/pages/coursescan/coursescan" bindtap="dashboard_goPage">
-          <view class="nav-icon tone-sky">📷</view>
+          <view class="nav-icon tone-sky"><ui-icon name="scan" size="{{24}}" color="currentColor"/></view>
           <view class="nav-name">课表识别</view>
           <view class="nav-sub">粘贴导入</view>
         </view>
         <view class="nav-item" data-url="/pages/calendaracademic/calendaracademic" bindtap="dashboard_goPage">
-          <view class="nav-icon tone-amber">🎓</view>
+          <view class="nav-icon tone-amber"><ui-icon name="graduation" size="{{24}}" color="currentColor"/></view>
           <view class="nav-name">校历识别</view>
           <view class="nav-sub">关键日期</view>
         </view>
@@ -190,7 +251,7 @@
   <!-- 今日时间轴 -->
   <view class="card rise-in d1">
     <view class="card-head">
-      <view class="icon-chip tone-sky">🕐</view>
+      <view class="icon-chip tone-sky"><ui-icon name="clock" size="{{20}}" color="currentColor"/></view>
       <view class="card-head-title">今日时间轴</view>
       <!-- 「今日」已并入总览，不再是 tabBar 页面。
            用 switchTab 打开 /pages/today/today 会**静默失败**（不报错也不跳），
@@ -200,8 +261,8 @@
     </view>
     <view class="card-body">
       <view class="empty" wx:if="{{dashboard_timeline.length === 0}}">
-        <view class="empty-icon">🕐</view>
-        <view class="empty-text">今天没有课程安排，好好休息 🎉</view>
+        <view class="empty-icon"><ui-icon name="clock" size="{{32}}" color="currentColor"/></view>
+        <view class="empty-text">今天没有课程安排，好好休息</view>
       </view>
       <view class="tl" wx:else>
         <view class="tl-item" wx:for="{{dashboard_timeline}}" wx:key="id">
@@ -222,14 +283,14 @@
   <!-- 待办速览 -->
   <view class="card rise-in d2">
     <view class="card-head">
-      <view class="icon-chip tone-emerald">✅</view>
+      <view class="icon-chip tone-emerald"><ui-icon name="tasks" size="{{20}}" color="currentColor"/></view>
       <view class="card-head-title">待办速览</view>
       <view class="head-link" data-url="/pages/tasks/tasks" data-seg="todos" bindtap="dashboard_goTab">全部 →</view>
     </view>
     <view class="card-body">
       <view class="empty" wx:if="{{dashboard_openTodos.length === 0}}">
-        <view class="empty-icon">✅</view>
-        <view class="empty-text">没有待办，清爽 ✨</view>
+        <view class="empty-icon"><ui-icon name="tasks" size="{{32}}" color="currentColor"/></view>
+        <view class="empty-text">没有待办，清爽</view>
       </view>
       <view class="mini-list" wx:else>
         <view class="mini-row" wx:for="{{dashboard_openTodos}}" wx:key="id">
@@ -244,14 +305,14 @@
   <!-- 作业倒计时 -->
   <view class="card">
     <view class="card-head">
-      <view class="icon-chip tone-violet">📖</view>
+      <view class="icon-chip tone-violet"><ui-icon name="assignment" size="{{20}}" color="currentColor"/></view>
       <view class="card-head-title">作业倒计时</view>
       <view class="head-link" data-url="/pages/tasks/tasks" data-seg="assignments" bindtap="dashboard_goTab">全部 →</view>
     </view>
     <view class="card-body">
       <view class="empty" wx:if="{{dashboard_dueSoon.length === 0}}">
-        <view class="empty-icon">📖</view>
-        <view class="empty-text">没有未完成作业 🎉</view>
+        <view class="empty-icon"><ui-icon name="assignment" size="{{32}}" color="currentColor"/></view>
+        <view class="empty-text">没有未完成作业</view>
       </view>
       <view class="mini-list" wx:else>
         <view class="mini-row is-block" wx:for="{{dashboard_dueSoon}}" wx:key="id">
@@ -268,7 +329,7 @@
   <!-- 身体数据 + 运动 -->
   <view class="card">
     <view class="card-head">
-      <view class="icon-chip tone-rose">💗</view>
+      <view class="icon-chip tone-rose"><ui-icon name="health" size="{{20}}" color="currentColor"/></view>
       <view class="card-head-title">身体数据</view>
       <view class="head-link" data-url="/pages/healthhub/healthhub" data-seg="health" bindtap="dashboard_goTab">记录 →</view>
     </view>
@@ -287,11 +348,11 @@
         <view class="bar-fill bar-emerald" style="width: {{dashboard_todayProtein >= dashboard_proteinTarget ? 100 : (dashboard_proteinTarget > 0 ? dashboard_todayProtein * 100 / dashboard_proteinTarget : 0)}}%; --bar: {{(dashboard_todayProtein >= dashboard_proteinTarget ? 100 : (dashboard_proteinTarget > 0 ? dashboard_todayProtein * 100 / dashboard_proteinTarget : 0)) / 100}}"></view>
       </view>
       <view class="mini-sub" style="margin-top: 14rpx;">
-        {{dashboard_todayProtein >= dashboard_proteinTarget ? '今日蛋白已达标 ✅' : '还差 ' + (dashboard_proteinTarget - dashboard_todayProtein) + 'g，继续加餐'}}
+        {{dashboard_todayProtein >= dashboard_proteinTarget ? '今日蛋白已达标' : '还差 ' + (dashboard_proteinTarget - dashboard_todayProtein) + 'g，继续加餐'}}
       </view>
       <view class="row-actions mt">
-        <view class="btn-ghost btn-emerald" data-url="/pages/healthhub/healthhub" data-seg="health" bindtap="dashboard_goTab">⚖️ 体重作息</view>
-        <view class="btn-ghost" data-url="/pages/healthhub/healthhub" data-seg="diet" bindtap="dashboard_goTab">🍽️ 饮食记录</view>
+        <view class="btn-ghost btn-emerald" data-url="/pages/healthhub/healthhub" data-seg="health" bindtap="dashboard_goTab"><ui-icon name="weight" size="{{16}}" color="currentColor" inline="{{true}}"/>体重作息</view>
+        <view class="btn-ghost" data-url="/pages/healthhub/healthhub" data-seg="diet" bindtap="dashboard_goTab"><ui-icon name="meal" size="{{16}}" color="currentColor" inline="{{true}}"/>饮食记录</view>
       </view>
     </view>
   </view>
@@ -300,7 +361,7 @@
        （桌面版 Dashboard.tsx:541-581 也是这个二选一）。 -->
   <view class="card" wx:if="{{dashboard_runEnabled}}">
     <view class="card-head">
-      <view class="icon-chip tone-emerald">👟</view>
+      <view class="icon-chip tone-emerald"><ui-icon name="run" size="{{20}}" color="currentColor"/></view>
       <view class="card-head-title">运动打卡</view>
       <view class="head-link" data-url="/pages/healthhub/healthhub" data-seg="run" bindtap="dashboard_goTab">去打卡 →</view>
     </view>
@@ -310,10 +371,10 @@
         <view class="bar-fill bar-emerald" style="width: {{dashboard_runDone >= dashboard_runTarget ? 100 : dashboard_runDone * 100 / dashboard_runTarget}}%; --bar: {{(dashboard_runDone >= dashboard_runTarget ? 100 : dashboard_runDone * 100 / dashboard_runTarget) / 100}}"></view>
       </view>
       <view class="mini-sub" style="margin-top: 14rpx;">
-        {{dashboard_runDone >= dashboard_runTarget ? '已达成目标次数，保持住就行' : '继续加油 💪'}}
+        {{dashboard_runDone >= dashboard_runTarget ? '已达成目标次数，保持住就行' : '继续加油'}}
       </view>
       <view class="row-actions mt">
-        <view class="btn-ghost btn-emerald" data-url="/pages/healthhub/healthhub" data-seg="run" bindtap="dashboard_goTab">🏃 打开运动打卡</view>
+        <view class="btn-ghost btn-emerald" data-url="/pages/healthhub/healthhub" data-seg="run" bindtap="dashboard_goTab"><ui-icon name="run" size="{{16}}" color="currentColor" inline="{{true}}"/>打开运动打卡</view>
       </view>
     </view>
   </view>
@@ -321,7 +382,7 @@
   <!-- 重要事项（运动打卡关闭时补位，桌面版 Dashboard.tsx:559-580）-->
   <view class="card" wx:else>
     <view class="card-head">
-      <view class="icon-chip tone-rose">🎯</view>
+      <view class="icon-chip tone-rose"><ui-icon name="target" size="{{20}}" color="currentColor"/></view>
       <view class="card-head-title">重要事项</view>
       <view class="head-link" bindtap="dashboard_goMilestones">去管理 →</view>
     </view>
@@ -331,8 +392,8 @@
         {{dashboard_nextMilestoneText ? '最近一项：' + dashboard_nextMilestoneText : '还没有待办事项'}}
       </view>
       <view class="row-actions mt">
-        <view class="btn-primary btn-sm" bindtap="dashboard_goMilestones">🎯 去管理</view>
-        <view class="btn-ghost btn-sm" data-url="/pages/settings/settings" bindtap="dashboard_goTab">⚙️ 去设置</view>
+        <view class="btn-primary btn-sm" bindtap="dashboard_goMilestones"><ui-icon name="target" size="{{16}}" color="currentColor" inline="{{true}}"/>去管理</view>
+        <view class="btn-ghost btn-sm" data-url="/pages/settings/settings" bindtap="dashboard_goTab"><ui-icon name="settings" size="{{16}}" color="currentColor" inline="{{true}}"/>去设置</view>
       </view>
     </view>
   </view>
@@ -340,7 +401,7 @@
   <!-- 今日饮食 -->
   <view class="card">
     <view class="card-head">
-      <view class="icon-chip tone-amber">🍚</view>
+      <view class="icon-chip tone-amber"><ui-icon name="meal" size="{{20}}" color="currentColor"/></view>
       <view class="card-head-title">今日饮食</view>
       <text class="chip chip-amber">{{dashboard_todayDietCount}} 笔</text>
       <view class="head-link" data-url="/pages/healthhub/healthhub" data-seg="diet" bindtap="dashboard_goTab">去记录 →</view>
@@ -354,14 +415,14 @@
         {{dashboard_todayDietCount ? '已记 ' + dashboard_todayDietCount + ' 笔，' + dashboard_todayProtein + 'g 蛋白' : '今天还没记饮食'}}
       </view>
       <view class="row-actions mt">
-        <view class="btn-ghost btn-emerald" data-url="/pages/healthhub/healthhub" data-seg="diet" bindtap="dashboard_goTab">🍽️ 打开饮食记录</view>
+        <view class="btn-ghost btn-emerald" data-url="/pages/healthhub/healthhub" data-seg="diet" bindtap="dashboard_goTab"><ui-icon name="meal" size="{{16}}" color="currentColor" inline="{{true}}"/>打开饮食记录</view>
       </view>
     </view>
   </view>
 
   <!-- 逾期警示 -->
   <view class="alert alert-rose" wx:if="{{dashboard_overdue.length > 0}}">
-    <text>⚠️ 有 <text class="bold">{{dashboard_overdue.length}}</text> 个作业已经逾期：{{dashboard_overdueTitles}}{{dashboard_overdue.length > 3 ? ' 等' : ''}}</text>
+    <text><ui-icon name="warn" size="{{14}}" color="currentColor" inline="{{true}}"/>有 <text class="bold">{{dashboard_overdue.length}}</text> 个作业已经逾期：{{dashboard_overdueTitles}}{{dashboard_overdue.length > 3 ? ' 等' : ''}}</text>
   </view>
 
   </block>
@@ -386,7 +447,7 @@
   <!-- 课程 -->
   <view class="card">
     <view class="card-head">
-      <view class="icon-chip tone-sky">📘</view>
+      <view class="icon-chip tone-sky"><ui-icon name="book" size="{{20}}" color="currentColor"/></view>
       <view class="card-head-title">
         {{today_isToday ? '今日' : '当日'}}课程（{{today_isToday ? '还有 ' + today_shown.length : today_shown.length}} 节）
       </view>
@@ -394,9 +455,9 @@
     </view>
     <view class="card-body">
       <view class="empty" wx:if="{{today_shown.length === 0}}">
-        <view class="empty-icon">🎉</view>
+        <view class="empty-icon"><ui-icon name="celebrate" size="{{32}}" color="currentColor"/></view>
         <view class="empty-text">
-          {{today_isToday && today_finished > 0 ? '今天的课都上完了 🎉' : '这一天没有课，时间都是你的 🎉'}}
+          {{today_isToday && today_finished > 0 ? '今天的课都上完了' : '这一天没有课，时间都是你的'}}
         </view>
       </view>
       <view class="course-list" wx:else>
@@ -418,13 +479,13 @@
   <!-- 当天要处理的事 -->
   <view class="card">
     <view class="card-head">
-      <view class="icon-chip tone-emerald">✅</view>
+      <view class="icon-chip tone-emerald"><ui-icon name="tasks" size="{{20}}" color="currentColor"/></view>
       <view class="card-head-title">当天要处理的事</view>
     </view>
     <view class="card-body">
       <view class="empty" wx:if="{{today_dayTodos.length === 0 && today_dayAssign.length === 0}}">
-        <view class="empty-icon">🎉</view>
-        <view class="empty-text">没有到期的待办和作业 🎉</view>
+        <view class="empty-icon"><ui-icon name="celebrate" size="{{32}}" color="currentColor"/></view>
+        <view class="empty-text">没有到期的待办和作业</view>
       </view>
       <view wx:else>
         <view wx:if="{{today_dayTodos.length > 0}}">
@@ -441,7 +502,7 @@
           <view class="sec-label">作业</view>
           <view class="todo-list-wrap">
             <view class="todo-line" wx:for="{{today_dayAssign}}" wx:key="id">
-              <view class="todo-icon">📖</view>
+              <view class="todo-icon"><ui-icon name="study" size="{{16}}" color="currentColor"/></view>
               <view class="todo-text"><text class="muted">{{item.course}} · </text>{{item.title}}</view>
               <text class="chip chip-{{item.chipTone}}">{{item.chipText}}</text>
             </view>
@@ -454,12 +515,12 @@
   <!-- 完整时间轴 -->
   <view class="card">
     <view class="card-head">
-      <view class="icon-chip tone-violet">🕐</view>
+      <view class="icon-chip tone-violet"><ui-icon name="clock" size="{{20}}" color="currentColor"/></view>
       <view class="card-head-title">当日完整时间轴</view>
     </view>
     <view class="card-body">
       <view class="empty" wx:if="{{today_timeline.length === 0}}">
-        <view class="empty-icon">🕐</view>
+        <view class="empty-icon"><ui-icon name="clock" size="{{32}}" color="currentColor"/></view>
         <view class="empty-text">这一天没有任何安排</view>
       </view>
       <view class="tl" wx:else>

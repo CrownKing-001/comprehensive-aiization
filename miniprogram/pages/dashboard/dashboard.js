@@ -3,6 +3,9 @@ const { store } = require('../../store/store');
 const { currentWeek } = require('../../utils/plan');
 const { coursesOn, buildTimeline, toMin } = require('../../utils/schedule');
 const { daysUntil, fromKey } = require('../../utils/storage');
+const { insightsFor, nextQuestion, greeting } = require('../../utils/insight');
+const { emojiToIcon } = require('../../components/ui-icon/icons');
+const { applyTabBarTheme } = require('../../utils/tabBarTheme');
 
 const DEFINITION = {
   data: {
@@ -46,6 +49,14 @@ const DEFINITION = {
     todayCalories: 0,
     todayDietCount: 0,
     themeClass: '',
+
+    // ── AI 对话区（v1.2.0，见 utils/insight.js）──
+    aiGreeting: '',
+    // 当前该问什么。结构见 insight.nextQuestion()。
+    // 必须在 data 里先声明 step，WXML 的 wx:if="{{aiQuestion.step !== 'done'}}"
+    // 在首次 setData 之前读到 undefined，不加保险会闪一下「有数了」。
+    aiQuestion: { step: '', title: '', body: '', input: 'none' },
+    aiInsights: [],
   },
 
   onLoad() {
@@ -55,6 +66,8 @@ const DEFINITION = {
 
   onShow() {
     this.refresh();
+    // tabBar 颜色是静态配置，不跟着 themeClass 变。每次回到 tab 页都对一次。
+    if (store.ready) applyTabBarTheme(store.shape.settings.theme);
   },
 
   onUnload() {
@@ -93,7 +106,9 @@ const DEFINITION = {
     const stats = [
       {
         key: 'courses',
-        icon: '📅',
+        // 语义名，不是 emoji —— 由 <ui-icon name="{{item.icon}}"> 解析成 WeUI 图形。
+        // 这里写语义名而不是 WeUI 名，是为了换图标库时只改 icons.js。
+        icon: 'calendar',
         tone: 'sky',
         label: '今日课程',
         value: String(restCourses.length),
@@ -107,7 +122,7 @@ const DEFINITION = {
       },
       {
         key: 'todos',
-        icon: '✅',
+        icon: 'tasks',
         tone: 'emerald',
         label: '未完成待办',
         value: String(openTodos.length),
@@ -119,7 +134,7 @@ const DEFINITION = {
       },
       {
         key: 'assign',
-        icon: '📖',
+        icon: 'study',
         tone: overdue.length ? 'rose' : 'amber',
         label: '临近作业',
         value: String(week7),
@@ -133,12 +148,13 @@ const DEFINITION = {
     if (s.settings.runEnabled) {
       stats.push({
         key: 'run',
-        icon: '👟',
+        icon: 'run',
         tone: 'emerald',
         label: '运动打卡',
         value: String(runDone),
         unit: `/ ${s.settings.runTarget} 次`,
-        sub: runDone >= s.settings.runTarget ? '已达标 🎉' : `还差 ${s.settings.runTarget - runDone} 次`,
+        // 图标已经表达「达成」，文案不再叠一个 🎉
+        sub: runDone >= s.settings.runTarget ? '已达标' : `还差 ${s.settings.runTarget - runDone} 次`,
         url: '/pages/healthhub/healthhub',
         seg: 'run',
         isTab: true,
@@ -152,7 +168,7 @@ const DEFINITION = {
         .sort((a, b) => String(a.date).localeCompare(String(b.date)))[0];
       stats.push({
         key: 'milestone',
-        icon: '🎯',
+        icon: 'target',
         tone: 'sky',
         label: '重要事项',
         value: String(undone),
@@ -183,7 +199,8 @@ const DEFINITION = {
       .map((m) => ({
         id: m.id,
         title: m.title,
-        emoji: m.emoji || '📌',
+        // 语义名（不是 emoji）：WXML 里交给 <ui-icon name="{{item.icon}}">。
+        icon: emojiToIcon(m.emoji),
         category: m.category || '',
         date: m.date,
         daysText: (() => {
@@ -272,12 +289,81 @@ const DEFINITION = {
       todayCalories,
       todayDietCount: todayDiet.length,
       themeClass: s.settings.theme === 'light' ? 'theme-light' : '',
+
+      // ── AI 对话区 ──
+      // 注意用 s.courses（原始数据）而不是今天的 todayCourses：
+      // 洞察要跨整周看，不能只看今天。
+      aiGreeting: greeting(now),
+      aiQuestion: nextQuestion({
+        courses: s.courses,
+        diet: s.diet,
+        run: s.run,
+        health: s.health,
+        todos: s.todos,
+        assignments: s.assignments,
+        aiAnswers: s.settings.aiAnswers,
+      }),
+      aiInsights: insightsFor(
+        {
+          courses: s.courses,
+          diet: s.diet,
+          run: s.run,
+          health: s.health,
+          todos: s.todos,
+          assignments: s.assignments,
+          now,
+          semesterStart,
+          totalWeeks: s.settings.totalWeeks,
+        },
+        3
+      ),
     });
   },
 
   /** 提示条上的「第 N 周」下拉 */
   onWeekPick(e) {
     this.setData({ weekPickIndex: Number(e.detail.value) || 0 });
+  },
+
+  // ══ AI 对话区的交互（v1.2.0）══════════════════════════════
+  //
+  // 设计原则：用户回答任何一步之后，立刻通过 store 写入触发 refresh()，
+  // refresh() 会重新跑 nextQuestion() 和 insightsFor() —— 于是
+  // 用户马上看到「新的问题」或「新的洞察」，而不是一句「已保存」。
+  // 这是 utils/insight.js 里「每答必给回报」原则的落地方式。
+
+  /** 粘贴课表：跳去课表识别页，它已经有完整的解析 + 逐条核对流程 */
+  aiPasteCourse() {
+    // 用户从引导进来，识别完应该回到首页看到新洞察，
+    // 所以带上 from=ai，识别页完成后可以据此返回。
+    wx.navigateTo({ url: '/pages/coursescan/coursescan?from=ai' });
+  },
+
+  /** 手动添加：课表是 tabBar 页，只能用 switchTab（navigateTo 会静默失败） */
+  aiManualCourse() {
+    wx.switchTab({ url: '/pages/courses/courses' });
+  },
+
+  /**
+   * 回答选择题。
+   *
+   * 目前「吃不吃早饭」「动不动」这类答案没有专门的存储字段，
+   * 所以不伪造一份数据写进 store —— 那会让 health / run 里出现
+   * 用户从来没有记过的假记录，污染后面的统计和图表。
+   *
+   * 正确做法是把答案记到 settings 里的 aiAnswers，只作为
+   * 「问询进度」使用，不参与任何数值统计。等有真实记录时，
+   * 真实记录优先，aiAnswers 只在没有记录时用于判断下一步问什么。
+   */
+  aiAnswer(e) {
+    const { step, id } = e.currentTarget.dataset;
+    if (!step || !id) return;
+
+    const cur = store.shape.settings.aiAnswers || {};
+    store.setSettings({ aiAnswers: Object.assign({}, cur, { [step]: id }) });
+
+    // 给一句即时反馈：让用户知道「点这一下有用」，而不是界面闪一下又变原样
+    wx.showToast({ title: '记住了', icon: 'none', duration: 800 });
   },
 
   /**
@@ -441,8 +527,10 @@ if (!global.__TABHOST_LOADING__) {
       // 分享用：标题跟着当前分段变（总览 / 今日），见 utils/share.js
       shareKey: 'dashboard',
       segments: [
-        { id: 'dashboard', label: '总览', icon: '🏠' },
-        { id: 'today', label: '今日', icon: '📅' },
+        // icon 是语义名（不是 emoji），见 components/ui-icon/icons.js。
+        // 目前 tabHost 只把它当 label 用，但留着图标是为了将来分段选择器能用上。
+        { id: 'dashboard', label: '总览', icon: 'home' },
+        { id: 'today', label: '今日', icon: 'calendar' },
       ],
       modules: {
         today: { path: '../today/today.js', label: '今日' },

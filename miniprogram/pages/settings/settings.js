@@ -17,6 +17,7 @@ const { fromKey } = require('../../utils/storage');
 const { parsePeriodSchedule, formatPeriodSchedule } = require('../../utils/periods');
 const { shareAppMessage, shareTimeline } = require('../../utils/share');
 const { VERSION } = require('../../version');
+const { applyTabBarTheme } = require('../../utils/tabBarTheme');
 
 Page({
   data: {
@@ -86,6 +87,9 @@ Page({
 
   onShow() {
     if (store.ready) this.refresh();
+    // 每次进入设置页都对一次 tabBar，防止应用启动时 store 还没加载完、
+    // 或用户在其他页面切换主题造成的不同步。
+    if (store.ready) applyTabBarTheme(store.shape.settings.theme);
   },
 
   refresh() {
@@ -184,6 +188,9 @@ Page({
   toggleTheme(e) {
     const next = e.detail.value ? 'light' : 'dark';
     store.setSettings({ theme: next });
+    // tabBar 的颜色是静态配置，必须显式改，否则浅色主题下底部还是深色带、
+    // 深色图标压在上面看不见。见 utils/tabBarTheme.js。
+    applyTabBarTheme(next);
     wx.showToast({ title: next === 'light' ? '已切浅色' : '已切深色', icon: 'none' });
   },
 

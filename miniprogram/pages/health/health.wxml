@@ -5,7 +5,7 @@
   <view class="stat-grid">
     <view class="stat-card" wx:for="{{stats}}" wx:key="label">
       <view class="stat-top">
-        <view class="icon-chip tone-{{item.tone}}">{{item.icon}}</view>
+        <view class="icon-chip tone-{{item.tone}}"><ui-icon name="{{item.icon}}" size="{{20}}" color="currentColor"/></view>
         <view class="stat-label">{{item.label}}</view>
       </view>
       <view class="stat-value"><text class="stat-num-sm">{{item.value}}</text></view>
@@ -16,7 +16,7 @@
   <!-- ── 今日录入 ── -->
   <view class="card">
     <view class="card-head">
-      <view class="icon-chip tone-emerald">📝</view>
+      <view class="icon-chip tone-emerald"><ui-icon name="note" size="{{20}}" color="currentColor"/></view>
       <view class="card-head-title">记录今天的身体数据</view>
     </view>
     <view class="card-body">
@@ -47,7 +47,7 @@
   <!-- ── 体重曲线 ── -->
   <view class="card">
     <view class="card-head">
-      <view class="icon-chip tone-emerald">⚖️</view>
+      <view class="icon-chip tone-emerald"><ui-icon name="weight" size="{{20}}" color="currentColor"/></view>
       <view class="card-head-title">体重曲线（最近 {{weightPoints.length}} 次）</view>
     </view>
     <view class="card-body">
@@ -61,7 +61,7 @@
   <!-- ── 睡眠曲线 ── -->
   <view class="card">
     <view class="card-head">
-      <view class="icon-chip tone-sky">🌙</view>
+      <view class="icon-chip tone-sky"><ui-icon name="sleep" size="{{20}}" color="currentColor"/></view>
       <view class="card-head-title">睡眠曲线（最近 {{sleepPoints.length}} 次）</view>
     </view>
     <view class="card-body">
@@ -80,7 +80,7 @@
   <!-- ── 训练打卡 ── -->
   <view class="card">
     <view class="card-head">
-      <view class="icon-chip tone-amber">🏋️</view>
+      <view class="icon-chip tone-amber"><ui-icon name="exercise" size="{{20}}" color="currentColor"/></view>
       <view class="card-head-title">本周训练打卡 · 第 {{week}} 周 · {{doneCount}}/7 天</view>
     </view>
     <view class="card-body">
@@ -139,7 +139,7 @@
 
       <view class="row-actions">
         <view class="btn-ghost btn-sm" bindtap="backToThisMonth">回到本月</view>
-        <view class="btn-ghost btn-sm" bindtap="goSettings">⚙️ 设置训练日</view>
+        <view class="btn-ghost btn-sm" bindtap="goSettings"><ui-icon name="settings" size="{{16}}" color="currentColor" inline="{{true}}"/>设置训练日</view>
       </view>
     </view>
   </view>
@@ -147,7 +147,7 @@
   <!-- ── 历史数据 ── -->
   <view class="card">
     <view class="card-head">
-      <view class="icon-chip tone-violet">📊</view>
+      <view class="icon-chip tone-violet"><ui-icon name="analysis" size="{{20}}" color="currentColor"/></view>
       <view class="card-head-title">历史数据 · {{logs.length}} 天</view>
     </view>
     <view class="card-body">
@@ -160,8 +160,8 @@
           <text class="hd-weight">{{item.weight}}kg</text>
           <text class="hd-sleep">{{item.sleep}}h</text>
           <text class="hd-steps">{{item.steps}}步</text>
-          <view class="icon-btn tone-emerald btn-mini" data-date="{{item.date}}" bindtap="startEdit">✏️</view>
-          <view class="icon-btn tone-rose btn-mini" data-date="{{item.date}}" bindtap="removeLog">🗑️</view>
+          <view class="icon-btn tone-emerald btn-mini" data-date="{{item.date}}" bindtap="startEdit"><ui-icon name="edit" size="{{18}}" color="currentColor"/></view>
+          <view class="icon-btn tone-rose btn-mini" data-date="{{item.date}}" bindtap="removeLog"><ui-icon name="delete" size="{{18}}" color="currentColor"/></view>
         </view>
       </block>
     </view>

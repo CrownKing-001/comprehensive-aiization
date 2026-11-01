@@ -20,7 +20,7 @@
   <!-- 课程 -->
   <view class="card">
     <view class="card-head">
-      <view class="icon-chip tone-sky">📘</view>
+      <view class="icon-chip tone-sky"><ui-icon name="book" size="{{20}}" color="currentColor"/></view>
       <view class="card-head-title">
         {{isToday ? '今日' : '当日'}}课程（{{isToday ? '还有 ' + shown.length : shown.length}} 节）
       </view>
@@ -28,9 +28,9 @@
     </view>
     <view class="card-body">
       <view class="empty" wx:if="{{shown.length === 0}}">
-        <view class="empty-icon">🎉</view>
+        <view class="empty-icon"><ui-icon name="celebrate" size="{{32}}" color="currentColor"/></view>
         <view class="empty-text">
-          {{isToday && finished > 0 ? '今天的课都上完了 🎉' : '这一天没有课，时间都是你的 🎉'}}
+          {{isToday && finished > 0 ? '今天的课都上完了' : '这一天没有课，时间都是你的'}}
         </view>
       </view>
       <view class="course-list" wx:else>
@@ -52,13 +52,13 @@
   <!-- 当天要处理的事 -->
   <view class="card">
     <view class="card-head">
-      <view class="icon-chip tone-emerald">✅</view>
+      <view class="icon-chip tone-emerald"><ui-icon name="tasks" size="{{20}}" color="currentColor"/></view>
       <view class="card-head-title">当天要处理的事</view>
     </view>
     <view class="card-body">
       <view class="empty" wx:if="{{dayTodos.length === 0 && dayAssign.length === 0}}">
-        <view class="empty-icon">🎉</view>
-        <view class="empty-text">没有到期的待办和作业 🎉</view>
+        <view class="empty-icon"><ui-icon name="celebrate" size="{{32}}" color="currentColor"/></view>
+        <view class="empty-text">没有到期的待办和作业</view>
       </view>
       <view wx:else>
         <view wx:if="{{dayTodos.length > 0}}">
@@ -75,7 +75,7 @@
           <view class="sec-label">作业</view>
           <view class="todo-list-wrap">
             <view class="todo-line" wx:for="{{dayAssign}}" wx:key="id">
-              <view class="todo-icon">📖</view>
+              <view class="todo-icon"><ui-icon name="study" size="{{16}}" color="currentColor" inline="{{true}}"/></view>
               <view class="todo-text"><text class="muted">{{item.course}} · </text>{{item.title}}</view>
               <text class="chip chip-{{item.chipTone}}">{{item.chipText}}</text>
             </view>
@@ -88,12 +88,12 @@
   <!-- 完整时间轴 -->
   <view class="card">
     <view class="card-head">
-      <view class="icon-chip tone-violet">🕐</view>
+      <view class="icon-chip tone-violet"><ui-icon name="clock" size="{{20}}" color="currentColor"/></view>
       <view class="card-head-title">当日完整时间轴</view>
     </view>
     <view class="card-body">
       <view class="empty" wx:if="{{timeline.length === 0}}">
-        <view class="empty-icon">🕐</view>
+        <view class="empty-icon"><ui-icon name="clock" size="{{32}}" color="currentColor"/></view>
         <view class="empty-text">这一天没有任何安排</view>
       </view>
       <view class="tl" wx:else>

@@ -4,18 +4,18 @@
   <!-- ── 空课表引导 ── -->
   <view class="card" wx:if="{{!hasCourses}}">
     <view class="card-head">
-      <view class="icon-chip tone-sky">📊</view>
+      <view class="icon-chip tone-sky"><ui-icon name="analysis" size="{{20}}" color="currentColor"/></view>
       <view class="card-head-title">空闲时段分析</view>
     </view>
     <view class="card-body">
       <view class="empty">
-        <view class="empty-icon">📚</view>
+        <view class="empty-icon"><ui-icon name="book" size="{{32}}" color="currentColor"/></view>
         <view class="empty-title">还没有课程数据</view>
         <view class="empty-desc">{{hint}}</view>
       </view>
       <view class="row-actions mt">
-        <view class="btn-primary btn-sm" bindtap="goScan">📷 课表识别</view>
-        <view class="btn-ghost btn-sm" bindtap="goCourses">✍️ 手动添加课程</view>
+        <view class="btn-primary btn-sm" bindtap="goScan"><ui-icon name="scan" size="{{16}}" color="currentColor" inline="{{true}}"/>课表识别</view>
+        <view class="btn-ghost btn-sm" bindtap="goCourses"><ui-icon name="edit" size="{{16}}" color="currentColor" inline="{{true}}"/>手动添加课程</view>
       </view>
     </view>
   </view>
@@ -24,7 +24,7 @@
     <!-- ── 结论 ── -->
     <view class="card">
       <view class="card-head">
-        <view class="icon-chip tone-sky">📊</view>
+        <view class="icon-chip tone-sky"><ui-icon name="analysis" size="{{20}}" color="currentColor"/></view>
         <view class="card-head-title">空闲时段分析</view>
       </view>
       <view class="card-body">
@@ -39,7 +39,7 @@
     <!-- ── 热力图 ── -->
     <view class="card">
       <view class="card-head">
-        <view class="icon-chip tone-emerald">🔥</view>
+        <view class="icon-chip tone-emerald"><ui-icon name="fire" size="{{20}}" color="currentColor"/></view>
         <view class="card-head-title">空闲热力图（第 {{weekFrom}}–{{weekTo}} 周）</view>
       </view>
       <view class="card-body">
@@ -68,7 +68,7 @@
         </view>
 
         <view class="tip-box" wx:if="{{hasFree}}">
-          <view class="tip-text">🏋️ 本周期最空闲的时段</view>
+          <view class="tip-text"><ui-icon name="exercise" size="{{14}}" color="currentColor" inline="{{true}}"/>本周期最空闲的时段</view>
           <view class="chip-row">
             <text class="chip chip-{{item.tone}}" wx:for="{{ranked}}" wx:key="key">{{item.first ? '最佳 · ' : ''}}{{item.text}}</text>
           </view>
@@ -79,7 +79,7 @@
     <!-- ── 推荐 ── -->
     <view class="card">
       <view class="card-head">
-        <view class="icon-chip tone-amber">💡</view>
+        <view class="icon-chip tone-amber"><ui-icon name="info" size="{{20}}" color="currentColor"/></view>
         <view class="card-head-title">空闲时段推荐（按优先级）</view>
       </view>
       <view class="card-body">
@@ -102,7 +102,7 @@
     <!-- ── 按时段汇总 ── -->
     <view class="card">
       <view class="card-head">
-        <view class="icon-chip tone-violet">🕐</view>
+        <view class="icon-chip tone-violet"><ui-icon name="clock" size="{{20}}" color="currentColor"/></view>
         <view class="card-head-title">各时段整体空闲度（跨 7 天）</view>
       </view>
       <view class="card-body">
@@ -120,7 +120,7 @@
   <!-- ── 重要事项 ── -->
   <view class="card">
     <view class="card-head">
-      <view class="icon-chip tone-rose">⭐</view>
+      <view class="icon-chip tone-rose"><ui-icon name="star" size="{{20}}" color="currentColor"/></view>
       <view class="card-head-title">接下来要做的事</view>
       <view class="card-head-action" bindtap="goMilestones">全部 ›</view>
     </view>
@@ -129,7 +129,7 @@
         <view class="empty-desc">还没有重要事项，去「重要事项」页记一条考试或 DDL 吧</view>
       </view>
       <view class="ms-mini {{item.urgent ? 'is-urgent' : ''}}" wx:for="{{milestones}}" wx:key="id">
-        <text class="ms-mini-emoji">{{item.emoji}}</text>
+        <view class="ms-mini-emoji"><ui-icon name="{{item.icon}}" size="{{16}}" color="currentColor"/></view>
         <view class="ms-mini-body">
           <text class="ms-mini-title {{item.done ? 'is-done' : ''}}">{{item.title}}</text>
           <text class="ms-mini-meta">{{item.category}}{{item.date ? ' · ' + item.date : ''}}</text>

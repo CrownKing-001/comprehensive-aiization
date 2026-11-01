@@ -45,6 +45,42 @@
       {
         "type": "folder",
         "value": "tools"
+      },
+      {
+        "type": "folder",
+        "value": "miniprogram_npm/weui-miniprogram/weui-wxss"
+      },
+      {
+        "type": "folder",
+        "value": "miniprogram_npm/weui-miniprogram/tabbar"
+      },
+      {
+        "type": "folder",
+        "value": "miniprogram_npm/weui-miniprogram/uploader"
+      },
+      {
+        "type": "folder",
+        "value": "miniprogram_npm/weui-miniprogram/slideview"
+      },
+      {
+        "type": "folder",
+        "value": "miniprogram_npm/weui-miniprogram/half-screen-dialog"
+      },
+      {
+        "type": "folder",
+        "value": "miniprogram_npm/weui-miniprogram/actionsheet"
+      },
+      {
+        "type": "folder",
+        "value": "miniprogram_npm/weui-miniprogram/gallery"
+      },
+      {
+        "type": "folder",
+        "value": "miniprogram_npm/weui-miniprogram/navigation-bar"
+      },
+      {
+        "type": "folder",
+        "value": "miniprogram_npm/weui-miniprogram/form-page"
       }
     ],
     "include": []

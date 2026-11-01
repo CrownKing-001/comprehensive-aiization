@@ -193,28 +193,28 @@ const DEFINITION = {
     const stats = [
       {
         tone: 'emerald',
-        icon: '⚖️',
+        icon: 'weight',
         label: '最新体重',
         value: latest && latest.weight ? `${latest.weight} kg` : '--',
         sub: latest && latest.weight ? '继续记录，看趋势曲线' : '开始记录吧',
       },
       {
         tone: 'sky',
-        icon: '🌙',
+        icon: 'sleep',
         label: '近 7 天均睡眠',
         value: `${avgSleep} h`,
         sub: `目标 ≥ ${SLEEP_TARGET}h，恢复关键`,
       },
       {
         tone: 'violet',
-        icon: '👣',
+        icon: 'steps',
         label: '今日步数',
         value: latest && latest.steps ? `${latest.steps}` : '--',
         sub: '配合训练打卡更有效',
       },
       {
         tone: 'amber',
-        icon: '🏋️',
+        icon: 'exercise',
         label: '本周训练',
         value: `${doneCount}/7 天`,
         sub: '在下方日历中点选',

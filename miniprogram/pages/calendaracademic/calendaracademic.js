@@ -1,4 +1,4 @@
-﻿// 校历识别：把校历文字解析成关键日期 → 逐条确认 → 写入重要事项。
+// 校历识别：把校历文字解析成关键日期 → 逐条确认 → 写入重要事项。
 //
 // 与「课表识别」的区别：课表识别的是课程网格（课程名/星期/节次/教室/周次），
 // 校历识别的是自然语言说明区里的关键日期（报到/上课/考试/放假），并可用
@@ -16,6 +16,7 @@ const { store, uid } = require('../../store/store');
 const { parseCalendarText } = require('../../utils/textParse');
 const { CALENDAR_AI_PROMPT, copyToClipboard } = require('../../utils/aiPrompts');
 const { shareAppMessage, shareTimeline } = require('../../utils/share');
+const { emojiToIcon } = require('../../components/ui-icon/icons');
 
 const CATEGORY_TONE = {
   教务: 'sky',
@@ -201,6 +202,7 @@ Page({
       date: e.date,
       category: e.category || guessCategory(e.title),
       emoji: e.emoji || '📌',
+      icon: emojiToIcon(e.emoji),
       raw: e.raw || '',
       confidence: e.confidence || 'high',
       accepted: e.accepted !== false,
@@ -300,6 +302,7 @@ Page({
       date: e.date,
       category: e.category || guessCategory(e.title),
       emoji: e.emoji || '📌',
+      icon: emojiToIcon(e.emoji),
       remindDaysBefore: e.category === '假期' ? 3 : 7,
       done: false,
       checklist: [],
